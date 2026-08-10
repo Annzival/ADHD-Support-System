@@ -15,3 +15,7 @@ This is a single-context repository. See `docs/agents/domain.md`.
 ### 文档语言
 
 新增和更新的项目文档正文默认使用简体中文。代码标识符、文件名、协议、库和产品的正式名称保留原文；领域词汇在需要与代码命名对应时采用“中文规范名（英文映射）”。
+
+### Grilling 发布流程
+
+Grilling 过程中产生的文档变更，按照 `docs/agents/grilling-git-workflow.md` 自主组织分支、commit、push 和 Draft PR。
