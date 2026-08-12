@@ -32,7 +32,7 @@
 - `debugging`；
 - `code review`。
 
-产品治理 session 为这些任务提供 Prompt、范围或证据回传地址，不等于把产品治理身份传给执行者。执行者也不得从父子 Agent 关系、共同工作目录或共享历史推断继承。
+产品治理 session 为其分流的 research、prototype、technical spike 和 implementation 任务提供 Prompt、范围或证据回传地址，不等于把产品治理身份传给执行者。debugging 或 code review session 无论由谁发起，也不得从父子 Agent 关系、共同工作目录或共享历史推断继承。
 
 ## 不改变人类协作与仓库权限
 
@@ -79,6 +79,8 @@
 
 同一问题同时包含“是否可行”和“正式实现”时，拆成 technical spike 与 implementation 两个任务。spike 通过不自动授权后续实现。
 
+下述任务契约和 Prompt 模板只适用于表中的四类产品治理分流任务。debugging 和 code review 出现在“不自动继承”与反向边界中，是为了排除角色误认，不表示它们自动纳入本工作流的仓库文档、Issue 和 Draft PR 交付要求；它们按各自任务 Prompt 和仓库既有流程执行。
+
 ## 转交独立 session 的任务契约
 
 产品治理 session 发现需要证据型任务时，不继续以纯讨论猜测答案，而是：
@@ -107,11 +109,11 @@
 产品治理 session 不得只给出一句任务标题。每次转交时，应根据具体问题填完下列模板，删除所有占位说明后再交给用户：
 
 ```text
-你正在 ADHD-Support-System 仓库中执行一个独立的【research / prototype / technical spike / implementation / debugging / code review】任务。
+你正在 ADHD-Support-System 仓库中执行一个独立的【research / prototype / technical spike / implementation】任务。
 
 身份边界：
-- 当前 session 是技术执行或审查 session，不是产品治理主线程，也不继承产品治理角色；
-- 当前 session 只能在本 Prompt 的范围内生产证据、原型、实现或审查结论；
+- 当前 session 是独立执行 session，不是产品治理主线程，也不继承产品治理角色；
+- 当前 session 只能在本 Prompt 的范围内生产证据、原型或实现；
 - 发现产品范围、领域模型或 ADR 冲突时，只记录并回传，不自行作出产品决策。
 
 任务背景：
@@ -121,7 +123,7 @@
 1. 【可判定的问题。】
 
 范围内：
-- 【允许执行的调查、实验、原型、实现或审查。】
+- 【允许执行的调查、实验、原型或实现。】
 
 范围外：
 - 不改变产品范围、领域模型或已有 ADR；
@@ -130,7 +132,7 @@
 
 必须遵守：
 - 先完整阅读仓库根目录 AGENTS.md、CONTEXT.md 以及【相关 ADR/设计文档】；
-- 在独立分支上工作，不直接修改 main；纯只读 code review 无需为了审查而创建提交；
+- 在独立分支上工作，不直接修改 main；
 - 如果结果与产品范围或 ADR 冲突，只记录冲突和证据，按本 Prompt 指定的路径回传，不得自行覆盖；
 - 保护用户已有修改，不执行 destructive git 操作，不自行合并 PR。
 
@@ -143,7 +145,7 @@
 必须交付：
 1. 在【指定路径】保存一份中文结果文档，记录环境、版本、方法、观察、证据、限制和结论；
 2. 创建或更新 GitHub Issue，写明任务类型、验收条件和结果链接；
-3. 对产生仓库变更的任务，将交付物提交到独立分支并创建 Draft PR，不标记 Ready、不合并；纯只读 code review 只提交审查报告，不制造空提交或 PR；
+3. 将交付物提交到独立分支并创建 Draft PR，不标记 Ready、不合并；
 4. 如有代码或原型，提供最小复现/运行步骤和与风险相称的验证；大量原始日志不要直接写入产品治理文档，只保留可复现位置和摘要；
 5. 最终回报：结论（通过/失败/部分通过）、证据、限制、未决风险、是否发现产品范围/领域模型/ADR 冲突，以及需要显式决策方判断的问题。
 ```
@@ -153,7 +155,7 @@
 未被显式激活为产品治理角色的技术执行或审查 session 应遵守以下边界：
 
 - 只执行当前 Prompt 明确授权的 research、prototype、technical spike、implementation、debugging 或 code review 工作；
-- 可以读取相关产品文档和 ADR 作为约束，但不能因为读取本文档而取得产品治理身份；
+- 可以读取相关产品文档和 ADR 作为约束；自身 Prompt、审查目标或冲突检查需要时也可以读取本文档，但读取不会激活产品治理身份；
 - 可以记录事实、证据、实现限制、风险和候选方案，但不能宣告 MVP 整体构建就绪，不能最终改变产品范围、领域模型、授权边界或 ADR；
 - 可以在任务范围内作出可逆的实现选择；需要新增产品能力、数据采集、支持平台或用户权限时必须停止扩张并回传；
 - 发现现有 ADR 在真实环境中不可行时，保留可复现证据并按 Prompt 指定路径报告，不直接重写、废弃或 supersede ADR；
