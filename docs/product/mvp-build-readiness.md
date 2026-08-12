@@ -33,7 +33,7 @@
 - PR #5：已合并，智能体建议场景和呈现边界已经完成；Issue #1、#2 已关闭。
 - PR #8：已合并，产品治理角色只在当前用户指令或任务 Prompt 显式激活。
 - [Issue #10](https://github.com/Annzival/ADHD-Support-System/issues/10)：持续跟踪本门槛及其证据。
-- [Issue #11](https://github.com/Annzival/ADHD-Support-System/issues/11)：承载可以立即开始的 V-01 Windows/Wails 薄宿主验证。
+- [Issue #11](https://github.com/Annzival/ADHD-Support-System/issues/11)：承载本两阶段契约合并后可立即开始 Linux 准备的 V-01 Windows/Wails 薄宿主验证。
 - [Issue #7](https://github.com/Annzival/ADHD-Support-System/issues/7)：恢复干预的具体本机载体仍未决定。
 
 对照当前主线程已经接受的决定，尚未发现只存在于对话、但完全没有进入 ADR、`CONTEXT.md`、产品文档或 Issue 的决定。后续如果发现遗漏，应先恢复其原始确认语境，不把候选意见误写成决定。
