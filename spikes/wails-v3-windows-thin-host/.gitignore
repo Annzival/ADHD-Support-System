@@ -1,0 +1,5 @@
+bin/
+.evidence/
+.spike-run.json
+.tools/
+agent_core/__pycache__/

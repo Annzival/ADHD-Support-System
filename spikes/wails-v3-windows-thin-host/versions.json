@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-08-13T00:00:00Z",
+  "candidates": {
+    "windows": {
+      "product": "Windows 10",
+      "release": "22H2",
+      "architecture": "x64",
+      "baseBuild": "10.0.19045",
+      "note": "Windows monthly servicing changes the UBR; Check-WindowsEnvironment.ps1 records the exact target UBR as phase B evidence."
+    },
+    "wails": {
+      "version": "v3.0.0-beta.8",
+      "releaseCommit": "81a149919f91f2149d3fe9be5a27472ae7617b8e",
+      "cliInstall": "go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8",
+      "source": "https://github.com/wailsapp/wails/releases/tag/v3.0.0-beta.8"
+    },
+    "go": {
+      "version": "go1.25.0",
+      "windowsInstaller": "https://go.dev/dl/go1.25.0.windows-amd64.msi",
+      "linuxArchiveSha256": "2852af0cb20a13139b3448992e69b868e50ed0f8a1e5940ee1de9e19a123b613",
+      "source": "https://go.dev/dl/"
+    },
+    "webview2": {
+      "mode": "Fixed Version Runtime",
+      "version": "151.0.4129.78",
+      "architecture": "x64",
+      "cabUrl": "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/355004fc-ebbc-42d3-b319-d43be39f8d39/Microsoft.WebView2.FixedVersionRuntime.151.0.4129.78.x64.cab",
+      "source": "https://developer.microsoft.com/en-us/microsoft-edge/webview2/",
+      "note": "使用 Fixed Version 而不是会自动更新的 Evergreen Runtime，确保这次 spike 的 WebView2 二进制版本可复现。"
+    },
+    "python": {
+      "version": "3.12.3",
+      "architecture": "amd64",
+      "windowsInstaller": "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe",
+      "source": "https://www.python.org/downloads/release/python-3123/"
+    }
+  }
+}

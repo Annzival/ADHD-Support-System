@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>V-01 Wails v3 验证宿主</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">ADHD-Support-System · technical spike V-01</p>
+      <h1>Wails v3 Windows 薄桌面宿主验证</h1>
+      <p>这是静态演示界面，不保存用户方案、执行状态或任何领域数据。</p>
+      <section>
+        <h2>本次运行的操作入口</h2>
+        <p>在 Windows 通知区域找到本程序图标，右键菜单依次提供：显示/隐藏置顶演示小窗、发送带操作的通知、启用或禁用开机启动、记录机械进程状态，以及退出。</p>
+      </section>
+      <section>
+        <h2>智能体核心测试替身</h2>
+        <p>只监听 <code>127.0.0.1</code>，只提供健康检查、演示上下文转交、受控异常退出和明确退出接口。它不接入 SQLite、PydanticAI、真实 LLM 或领域调度。</p>
+      </section>
+      <p class="hint">关闭此窗口会隐藏到托盘；从托盘选择“退出验证宿主”才会请求测试替身正常退出。</p>
+    </main>
+  </body>
+</html>
