@@ -25,6 +25,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 - 锁定并记录一个确切的 Wails v3、Go、WebView2、Python 和 Windows 构建版本；
 - 只实现验证所需的最小 Go/Wails 宿主、最小静态前端和最小 Python 假 Core；
 - 验证托盘、单实例、置顶小窗、开机启动、可交互通知、上下文转交、Python 进程守护和桌面集成日志；
+- Wails 可以实现机械性的进程守护：启动与健康检查、区分正常退出和异常退出、限制重启次数与退避、用户明确退出后停止重启，以及记录守护日志；
 - 为每项能力记录可重复步骤、观察结果和必要的截图、录屏或日志摘要；
 - 失败时只调研并记录至少一条可替换桌面宿主路线，不在本任务中实现第二个完整宿主。
 
@@ -33,7 +34,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 - 不实现用户方案、下一步行动、执行会话、调度规则或任何正式领域状态；
 - 不接入 SQLite、PydanticAI、真实 LLM、邮件、微信、QQ、Web/PWA 或移动端；
 - 不设计正式产品 UI，不实现安装器、自动更新或发布包；
-- 不把定时、重启策略、通知业务选择或上下文权威状态移入 Wails；
+- 不把任务定时与调度、干预规则、通知业务选择或上下文权威状态移入 Wails；机械性进程守护不属于这些领域职责；
 - 不修改产品范围、`CONTEXT.md` 或现有 ADR；发现冲突只记录并返回产品治理主线程。
 
 ## 验收条件
@@ -51,7 +52,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 
 整体结论规则：
 
-- 五项桌面能力及进程守护全部 `PASS`，才可建议保留 Wails v3 首选；
+- 托盘常驻、置顶小窗、开机启动、可交互通知和 Python 进程守护五项必需能力全部 `PASS`，才可建议保留 Wails v3 首选；
 - 任一必需项 `FAIL`，整体为 `FAIL`，返回主线程决定是否更换宿主；
 - 环境或外部依赖无法取得证据时为 `BLOCKED`，不得把文档或其他操作系统表现外推为 Windows 10 结论。
 
@@ -93,7 +94,10 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 范围内、范围外、验收条件和退出条件以 docs/spikes/plans/wails-v3-windows-thin-host.md 为准，不得自行扩张。
 
 工作要求：
-- 从最新 main 建立独立分支，建议名 agent/spike-wails-v3-windows-thin-host；
+- 开始前先检查 PR #9 的合并状态，并严格采用以下一种起点：
+  - 如果 PR #9 已合并：同步最新 main，从 main 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 main 为 base；
+  - 如果 PR #9 尚未合并：获取 origin/agent/mvp-build-readiness，从该分支最新 head 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 agent/mvp-build-readiness 为 base，作为 stacked PR；不得从尚未包含任务文档的 main 启动；
+  - PR #9 后续合并后，将 stacked PR 的 base 调整为 main；不为调整 base 改写或 force-push 历史；
 - 锁定并记录 Windows、Wails、Go、WebView2 和 Python 的确切版本；
 - 最小验证代码放在与正式产品源码明显分离的位置；
 - 每项能力分别给出 PASS、FAIL 或 BLOCKED 及复现步骤；
