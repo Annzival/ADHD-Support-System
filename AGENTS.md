@@ -19,3 +19,7 @@ This is a single-context repository. See `docs/agents/domain.md`.
 ### Grilling 发布流程
 
 Grilling 过程中产生的文档变更，按照 `docs/agents/grilling-git-workflow.md` 自主组织分支、commit、push 和 Draft PR。
+
+### 产品治理主线程
+
+产品治理、MVP 构建就绪判断以及 research、prototype、technical spike、implementation 的任务分流，遵循 `docs/agents/product-governance-thread.md`。技术线程不得自行改变产品范围或覆盖已有 ADR；发现冲突时必须返回产品治理主线程决策。

@@ -33,6 +33,12 @@ GitHub 在 issues 和 PRs 之间共享一个 number space，因此裸 `#42` 可�
 
 运行 `gh issue view <number> --comments`。
 
+## 产品治理任务
+
+由产品治理主线程分流的任务，在 Issue 正文中明确写出任务类型：`research`、`prototype`、`technical spike` 或 `implementation`，以及验证问题、范围内、范围外、验收条件、退出条件、相关 ADR 和预期交付物。完整分流及回传规则见 `docs/agents/product-governance-thread.md`。
+
+任务使用独立分支和 Draft PR。技术线程只提交证据或实现，不得自行改变产品范围、领域模型或已有 ADR；发现冲突时返回产品治理主线程决策。
+
 ## Wayfinding operations
 
 供 `/wayfinder` 使用。**map** 是单个 issue，以 **child** issues 作为 tickets。
