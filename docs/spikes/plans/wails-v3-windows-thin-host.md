@@ -13,7 +13,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 ## 验证问题
 
 1. 在 Windows 10 22H2 x64 上，锁定的 Wails v3 版本能否稳定提供系统托盘常驻，并区分关闭窗口、退出应用和单实例启动？
-2. 能否提供可显示、隐藏、置顶且不拥有领域状态的“当前任务/立即开始”演示小窗？
+2. 能否提供可显示、隐藏、置顶且不拥有领域状态的“当前下一步行动/立即开始”演示小窗？
 3. 能否注册、禁用并验证开机启动，且不会产生重复实例？
 4. 能否发送带可交互操作的系统通知，并把操作携带的演示上下文标识转交给主窗口或最小 Python 进程，而不是保存在 Wails 领域状态中？
 5. Wails 能否启动、健康检查、识别异常退出并按受限策略重启最小 Python 进程，同时在用户明确退出时不重启、不残留孤儿进程？
@@ -23,7 +23,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 
 - Windows 10 22H2 x64 实机或能够提供相同行为证据的虚拟机；
 - 锁定并记录一个确切的 Wails v3、Go、WebView2、Python 和 Windows 构建版本；
-- 只实现验证所需的最小 Go/Wails 宿主、最小静态前端和最小 Python 假 Core；
+- 只实现验证所需的最小 Go/Wails 宿主、最小静态前端和最小 Python 智能体核心测试替身；
 - 验证托盘、单实例、置顶小窗、开机启动、可交互通知、上下文转交、Python 进程守护和桌面集成日志；
 - Wails 可以实现机械性的进程守护：启动与健康检查、区分正常退出和异常退出、限制重启次数与退避、用户明确退出后停止重启，以及记录守护日志；
 - 为每项能力记录可重复步骤、观察结果和必要的截图、录屏或日志摘要；
@@ -42,10 +42,10 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 每项能力必须给出 `PASS`、`FAIL` 或 `BLOCKED`，不能只给“看起来可行”：
 
 - **托盘**：关闭主窗口后进程和托盘仍存在；托盘可恢复窗口并明确退出；第二次启动不会产生独立实例。
-- **置顶小窗**：可以独立显示、隐藏和保持置顶；关闭或隐藏不会改变假 Core 状态；操作只通过演示 API 或消息转交。
-- **开机启动**：能够启用、禁用，并在一次真实登录启动验证中只产生一个宿主和一个假 Core。
+- **置顶小窗**：可以独立显示、隐藏和保持置顶；关闭或隐藏不会改变智能体核心测试替身的状态；操作只通过演示 API 或消息转交。
+- **开机启动**：能够启用、禁用，并在一次真实登录启动验证中只产生一个宿主和一个智能体核心测试替身。
 - **通知**：至少一个通知操作能激活正确窗口或路由到预先生成的演示上下文标识；失败路径有日志，通知不保存领域状态。
-- **进程守护**：宿主可启动假 Core、完成健康检查、检测一次受控崩溃并重启；明确退出宿主后不重启，检查不到孤儿进程。
+- **进程守护**：宿主可启动智能体核心测试替身并完成健康检查；一次受控异常退出后按配置退避并重启；连续受控异常退出时，可以观察到退避并在达到预先记录的重启上限后停止重启且留下可诊断记录；明确退出宿主后不重启，检查不到孤儿进程。
 - **边界**：代码或说明能证明 Wails 未访问数据库、未执行调度规则、未调用 LLM，连接和上下文转交通过可替换接口完成。
 - **失败替代**：任何 `FAIL` 都要说明根因、影响范围和至少一条不破坏智能体核心边界的替代路线。
 - **复现**：另一名协作者可以按文档在相同目标环境复现结论。
@@ -75,29 +75,32 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 - 只生产可复现的技术证据和最小验证代码；
 - 不得修改产品范围、领域模型或已有 ADR；发现冲突时记录证据并返回主线程。
 
+仓库起点（在读取 PR #9 新增文档前执行）：
+- 先检查 PR #9 的合并状态；
+- 如果 PR #9 已合并：同步最新 main，从 main 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 main 为 base；
+- 如果 PR #9 尚未合并：获取 origin/agent/mvp-build-readiness，从该分支最新 head 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 agent/mvp-build-readiness 为 base，作为 stacked PR；不得从尚未包含任务文档的 main 启动；
+- PR #9 后续合并后：先把最新 origin/main 普通 merge 到 spike 分支，再将 Draft PR 的 base 调整为 main；不得 rebase 或 force-push。调整后运行 git diff origin/main...HEAD，确认 Git 差异只包含 spike 的验证代码和结果文档；Issue #11 的链接与状态另行核对。
+
 开始前完整阅读：
 - 仓库根目录 AGENTS.md、CONTEXT.md；
 - docs/agents/product-governance-workflow.md；
 - docs/product/mvp-build-readiness.md；
 - docs/spikes/plans/wails-v3-windows-thin-host.md；
 - ADR-0008、ADR-0009、ADR-0010、ADR-0011；
-- 对应 GitHub Issue 的全部评论。
+- Issue #11（https://github.com/Annzival/ADHD-Support-System/issues/11）的正文与全部评论。
 
 验证问题：
 1. Windows 10 22H2 x64 上，锁定版本的 Wails v3 能否实现托盘常驻、关闭/退出区分和单实例？
 2. 能否实现不拥有领域状态的置顶小窗？
 3. 能否启用、禁用并真实验证开机启动且不产生重复实例？
-4. 可交互系统通知能否把演示上下文标识返回正确窗口或最小 Python 假 Core？
-5. 能否启动、健康检查、异常重启 Python 假 Core，并在明确退出时不重启、不残留孤儿进程？
+4. 可交互系统通知能否把演示上下文标识返回正确窗口或最小 Python 智能体核心测试替身？
+5. 能否启动并健康检查 Python 智能体核心测试替身；在连续受控异常退出时按配置退避、达到重启上限后停止；在明确退出时不重启、不残留孤儿进程？
 6. 失败时是否有不破坏智能体核心 localhost API、唯一状态源和薄宿主边界的替代路线？
 
 范围内、范围外、验收条件和退出条件以 docs/spikes/plans/wails-v3-windows-thin-host.md 为准，不得自行扩张。
 
 工作要求：
-- 开始前先检查 PR #9 的合并状态，并严格采用以下一种起点：
-  - 如果 PR #9 已合并：同步最新 main，从 main 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 main 为 base；
-  - 如果 PR #9 尚未合并：获取 origin/agent/mvp-build-readiness，从该分支最新 head 创建独立分支 agent/spike-wails-v3-windows-thin-host，Draft PR 以 agent/mvp-build-readiness 为 base，作为 stacked PR；不得从尚未包含任务文档的 main 启动；
-  - PR #9 后续合并后，将 stacked PR 的 base 调整为 main；不为调整 base 改写或 force-push 历史；
+- 使用“仓库起点”中确定的独立分支和 Draft PR base；
 - 锁定并记录 Windows、Wails、Go、WebView2 和 Python 的确切版本；
 - 最小验证代码放在与正式产品源码明显分离的位置；
 - 每项能力分别给出 PASS、FAIL 或 BLOCKED 及复现步骤；
@@ -109,7 +112,7 @@ ADR-0008 要求 Wails v3 只有在托盘常驻、置顶小窗、开机启动、�
 必须交付：
 1. 中文结果文档 docs/spikes/results/wails-v3-windows-thin-host.md，包含环境、版本、方法、逐项观察、证据位置、限制和总体结论；
 2. 最小可复现验证代码及运行和清理步骤；
-3. 更新对应 GitHub Issue，链接结果文档与 Draft PR；
+3. 更新 Issue #11（https://github.com/Annzival/ADHD-Support-System/issues/11），链接结果文档与 Draft PR；
 4. 独立分支上的 checkpoint commit、push 和 Draft PR；
 5. 最终回报：总体 PASS/FAIL/BLOCKED、逐项证据、失败根因、替代路线、未决风险，以及是否发现与产品范围、领域模型或 ADR 的冲突。
 
