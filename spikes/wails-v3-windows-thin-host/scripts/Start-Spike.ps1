@@ -13,7 +13,7 @@ if ($existing) {
     throw "验证宿主已在运行（PID: $($existing.ProcessId -join ', ')）。先按清理脚本处理，避免混合证据。"
 }
 
-$versions = Get-Content (Join-Path $root 'versions.json') -Raw | ConvertFrom-Json
+$versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $runtimeRoot = Join-Path $root ".tools\webview2-fixed-$($versions.candidates.webview2.version)-$($versions.candidates.webview2.architecture)"
 $browser = Get-ChildItem -Path $runtimeRoot -Filter 'msedgewebview2.exe' -Recurse | Select-Object -First 1
 $pythonExe = (& py -3.12 -c 'import sys; print(sys.executable)').Trim()

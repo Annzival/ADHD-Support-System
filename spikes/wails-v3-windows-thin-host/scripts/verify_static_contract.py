@@ -35,7 +35,9 @@ def require(condition: bool, message: str) -> None:
 
 
 def main() -> int:
-    versions = json.loads(VERSIONS.read_text(encoding="utf-8"))
+    versions_raw = VERSIONS.read_bytes()
+    require(versions_raw.startswith(b"\xef\xbb\xbf"), "versions.json must be UTF-8 with BOM for Windows PowerShell 5.1")
+    versions = json.loads(versions_raw.decode("utf-8-sig"))
     require(versions["candidates"]["wails"]["version"] == "v3.0.0-beta.8", "Wails candidate changed")
     require(versions["candidates"]["go"]["version"] == "go1.25.0", "Go candidate changed")
     require(versions["candidates"]["python"]["version"] == "3.12.3", "Python candidate changed")

@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$versions = Get-Content (Join-Path $root 'versions.json') -Raw | ConvertFrom-Json
+$versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $expected = $versions.candidates.wails.version
 
 $go = Get-Command go -ErrorAction Stop

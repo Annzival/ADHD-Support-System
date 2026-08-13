@@ -24,7 +24,7 @@ Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' 
 Write-Host '已移除本 spike 的开机启动注册项（如存在）。'
 
 if ($RemoveFixedRuntime) {
-    $versions = Get-Content (Join-Path $root 'versions.json') -Raw | ConvertFrom-Json
+    $versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     $runtimeRoot = Join-Path $root ".tools\webview2-fixed-$($versions.candidates.webview2.version)-$($versions.candidates.webview2.architecture)"
     if (Test-Path $runtimeRoot) {
         Remove-Item -LiteralPath $runtimeRoot -Recurse -Force

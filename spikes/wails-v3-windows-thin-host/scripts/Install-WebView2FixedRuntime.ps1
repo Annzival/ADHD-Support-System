@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$versions = Get-Content (Join-Path $root 'versions.json') -Raw | ConvertFrom-Json
+$versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $candidate = $versions.candidates.webview2
 $tools = Join-Path $root '.tools'
 $destination = Join-Path $tools "webview2-fixed-$($candidate.version)-$($candidate.architecture)"

@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
-$versions = Get-Content (Join-Path $root 'versions.json') -Raw | ConvertFrom-Json
+$versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $evidence = Join-Path $root '.evidence\preparation'
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
 

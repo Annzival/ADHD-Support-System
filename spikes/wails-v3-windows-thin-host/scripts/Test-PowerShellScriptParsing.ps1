@@ -4,6 +4,8 @@ param()
 $ErrorActionPreference = 'Stop'
 $scripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File
 $failures = @()
+$root = Split-Path -Parent $PSScriptRoot
+$versionsPath = Join-Path $root 'versions.json'
 
 foreach ($script in $scripts) {
     $tokens = $null
@@ -19,4 +21,12 @@ if ($failures.Count -gt 0) {
     exit 1
 }
 
-Write-Host "PowerShell parser: OK ($($scripts.Count) scripts)"
+try {
+    Get-Content -LiteralPath $versionsPath -Raw | ConvertFrom-Json | Out-Null
+}
+catch {
+    Write-Error "[versions.json] $($_.Exception.Message)"
+    exit 1
+}
+
+Write-Host "PowerShell parser and versions JSON: OK ($($scripts.Count) scripts)"
