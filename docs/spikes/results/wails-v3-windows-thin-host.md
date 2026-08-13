@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验、干净的环境检查和 Windows 宿主构建；运行 A 的人工观察已报告通过，但单实例自动检查仅以 `Win32_Process.ExecutablePath` 匹配进程而失败。修正 checkpoint 必须在 Windows 上完成单实例检查，才可继续阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** 最小验证代码、版本锁定、运行/清理脚本、人工清单、平台无关检查、Draft PR 和 Issue 关联均已经完成；Windows 环境检查与宿主构建也已在目标机通过。此阶段状态只表示准备完整，不表示任何 Windows 桌面能力 `PASS`，也不满足 MVP 构建就绪门槛。阶段 B 的单实例结果见下文。
 
 阶段 A 产物预期包括：
 
@@ -72,6 +72,10 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 运行 A 后的单实例检查失败诊断：第二实例退出码为 `0`，但脚本按 `Win32_Process.ExecutablePath` 匹配的宿主计数为空，因此不能判断是 WMI 路径可见性问题还是单实例机制未激活。后续 checkpoint 改为在启动前后按验证二进制的进程名计数，并且必须在当前运行的 `host-events.jsonl` 中观察到 `second_instance_activated`，才将单实例写为通过。
 
+单实例实机结果（验证脚本 checkpoint `5064278c3cace3adfe2f14276ad70b012f2dcb49`）：第二实例退出码为 `0`，启动前后均恰有一个宿主进程，但五秒内没有 `second_instance_activated` 事件。因此这不是 WMI 计数误报，锁阻止了重复进程却没有把第二次启动送达首实例的回调。最小根因已由锁定 Wails `v3.0.0-beta.8` 的 Windows 实现与 Windows 文档交叉确认：该实现把接收端创建为 message-only window，却以 `FindWindowW` 查找；Windows 对此窗口类型要求经 `FindWindowEx(HWND_MESSAGE, ...)` 查找。Wails 在通知失败时只记内部错误、随后按配置以退出码 `0` 退出，符合实机观察。该结论针对锁定候选版本，不把 Linux 源码检查当作 Windows 能力 `PASS`。
+
+证据汇总脚本随后改为绑定 `.spike-run.json` 指向的实际运行目录，并同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。该修正不会改变宿主行为；Windows 端只需重跑汇总和打包步骤，不需重跑已完成的人工观察。
+
 ### Linux 已完成检查
 
 | 检查 | 结果 | 说明 |
@@ -87,11 +91,11 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 ## 阶段 B：Windows 10 22H2 x64 实机证据
 
-**总体状态：BLOCKED（等待用户在指定 checkpoint 的交互式 Windows 桌面会话执行）。**
+**总体状态：FAIL（锁定 Wails `v3.0.0-beta.8` 的单实例回调在目标 Windows 实机失败）。** 根据计划，任一必需能力 `FAIL` 即整体为 `FAIL`。其余尚未收到完整的 Windows 证据，逐项保持 `BLOCKED`；不会由此推测为失败或通过。
 
 | 必需项 | 状态 | 必需的 Windows 实机证据 | 当前证据 |
 | --- | --- | --- | --- |
-| 托盘、关闭与单实例 | BLOCKED | 关闭后托盘常驻、托盘恢复、第二实例不独立运行。 | 尚未收到。 |
+| 托盘、关闭与单实例 | FAIL | 关闭后托盘常驻、托盘恢复、第二实例不独立运行且可将第二次启动交给首实例。 | 实机：第二实例 `exit=0`，启动前后各一个宿主；`second_instance_activated=False`。锁有效，但首实例激活回调未送达。 |
 | 置顶小窗 | BLOCKED | 显示、隐藏、保持置顶，且不改变测试替身状态。 | 尚未收到。 |
 | 开机启动 | BLOCKED | 启用、真实注销/登录启动、单实例、禁用。 | 尚未收到。 |
 | 可交互通知与上下文返回 | BLOCKED | 通知操作、正确窗口激活、上下文标识转交到测试替身。 | 尚未收到。 |

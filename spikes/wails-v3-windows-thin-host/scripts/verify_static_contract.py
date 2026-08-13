@@ -112,6 +112,17 @@ def main() -> int:
         "hostsAfter.Count -eq 1",
     ):
         require(token in single_instance, f"single-instance check must verify process count and activation event: {token}")
+    evidence_summary = (ROOT / "scripts" / "Test-ValidationEvidence.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "hostBuildCommit",
+        "verificationCommit",
+        "singleInstanceReportPath",
+        "'FAIL'",
+    ):
+        require(token in evidence_summary, f"evidence summary must preserve host/verifier identity and explicit failures: {token}")
+    evidence_collection = (ROOT / "scripts" / "Collect-Evidence.ps1").read_text(encoding="utf-8-sig")
+    for token in ("hostBuildCommit", "verificationCommit", "$runDir"):
+        require(token in evidence_collection, f"evidence collection must select the active run and preserve identity: {token}")
     print("static contract: OK")
     return 0
 

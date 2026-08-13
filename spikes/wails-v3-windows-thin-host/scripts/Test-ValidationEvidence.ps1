@@ -3,26 +3,30 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$commit = (& git -C $root rev-parse HEAD).Trim()
-$runsRoot = Join-Path $root '.evidence\runs'
-if (-not (Test-Path $runsRoot)) { throw '未找到任何证据运行目录。' }
+$verificationCommit = (& git -C $root rev-parse HEAD).Trim()
+$configPath = Join-Path $root '.spike-run.json'
+if (-not (Test-Path $configPath)) { throw '未找到运行配置；无法确定要汇总的证据运行。' }
+$runDir = (Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json).evidenceDirectory
+$runFile = Join-Path $runDir 'run.json'
+if (-not (Test-Path $runFile)) { throw "当前运行目录缺少 run.json：$runDir" }
 
-$runs = Get-ChildItem -Path $runsRoot -Directory | Where-Object {
-    $runFile = Join-Path $_.FullName 'run.json'
-    (Test-Path $runFile) -and ((Get-Content $runFile -Raw | ConvertFrom-Json).commit -eq $commit)
-}
-if ($runs.Count -eq 0) { throw "未找到当前 commit $commit 的证据运行。" }
+# The host binary is built before manual checks begin. Evidence-only script
+# checkpoints may be newer, so select the active run directory rather than
+# requiring its build commit to equal the verifier script commit.
+$runs = @(Get-Item -LiteralPath $runDir)
+$runMetadata = Get-Content $runFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$hostBuildCommit = $runMetadata.commit
 
 $events = @()
 $coreEvents = @()
 $manual = @()
 foreach ($run in $runs) {
     $hostLog = Join-Path $run.FullName 'host-events.jsonl'
-    if (Test-Path $hostLog) { $events += Get-Content $hostLog | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
+    if (Test-Path $hostLog) { $events += Get-Content $hostLog -Encoding UTF8 | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
     $coreLog = Join-Path $run.FullName 'agent-core-events.jsonl'
-    if (Test-Path $coreLog) { $coreEvents += Get-Content $coreLog | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
+    if (Test-Path $coreLog) { $coreEvents += Get-Content $coreLog -Encoding UTF8 | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
     $manualFile = Join-Path $run.FullName 'manual-observations.json'
-    if (Test-Path $manualFile) { $manual += Get-Content $manualFile -Raw | ConvertFrom-Json }
+    if (Test-Path $manualFile) { $manual += Get-Content $manualFile -Raw -Encoding UTF8 | ConvertFrom-Json }
 }
 
 function Has-Event([string]$kind) { return @($events | Where-Object { $_.kind -eq $kind }).Count -gt 0 }
@@ -54,7 +58,18 @@ $notificationSent = if ((Has-Event 'notification_sent')) { 'PASS' } else { 'BLOC
 $notificationResponse = if ((Has-Event 'notification_response_received')) { 'PASS' } else { 'BLOCKED' }
 $notificationRoute = if ((Has-Event 'notification_context_routed') -and $notificationCore) { 'PASS' } else { 'BLOCKED' }
 $notification = Combined @((Manual-Result 'notification_action_activates_context'), $notificationSent, $notificationResponse, $notificationRoute)
-$singleInstance = if ((Has-Event 'second_instance_activated')) { 'PASS' } else { 'BLOCKED' }
+$singleInstanceReportPath = Join-Path $runDir 'single-instance-check.json'
+$singleInstanceReport = $null
+if (Test-Path $singleInstanceReportPath) {
+    $singleInstanceReport = Get-Content $singleInstanceReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
+}
+$singleInstance = if ($null -eq $singleInstanceReport) {
+    'BLOCKED'
+} elseif ($singleInstanceReport.passed -eq $true) {
+    'PASS'
+} else {
+    'FAIL'
+}
 $supervisorLifecycle = if (
     (Has-Event 'supervisor_health_check_passed') -and
     (Has-Event 'supervisor_unexpected_exit') -and
@@ -68,7 +83,8 @@ $processSupervisor = Combined @($supervisorLifecycle, $supervisorExplicitExit, $
 
 $result = [ordered]@{
     generatedAt = (Get-Date).ToUniversalTime().ToString('o')
-    commit = $commit
+    hostBuildCommit = $hostBuildCommit
+    verificationCommit = $verificationCommit
     includedRuns = @($runs.FullName)
     candidateResults = [ordered]@{
         tray = $tray
@@ -86,10 +102,12 @@ $result = [ordered]@{
         currentHostProcessCount = $hostProcesses.Count
         currentCoreProcessCount = $coreProcesses.Count
         orphanCheck = $orphan
+        singleInstanceReport = $singleInstanceReport
     }
-    note = '该脚本只汇总 Windows 证据候选；最终 PASS/FAIL/BLOCKED 由 Linux 技术 session 依据返回的证据写入结果文档。'
+    note = '该脚本只汇总 Windows 证据候选；hostBuildCommit 是运行宿主的构建 commit，verificationCommit 是证据脚本 commit。最终 PASS/FAIL/BLOCKED 由 Linux 技术 session 依据返回的证据写入结果文档。'
 }
-$path = Join-Path $runsRoot ("candidate-results-{0}.json" -f $commit.Substring(0, 12))
+$runsRoot = Join-Path $root '.evidence\runs'
+$path = Join-Path $runsRoot ("candidate-results-{0}-{1}.json" -f $hostBuildCommit.Substring(0, 12), $verificationCommit.Substring(0, 12))
 $result | ConvertTo-Json -Depth 8 | Set-Content -Path $path -Encoding UTF8
 Write-Host "候选证据汇总：$path"
 Get-Content $path
