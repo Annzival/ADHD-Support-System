@@ -4,32 +4,33 @@ param()
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $verificationCommit = (& git -C $root rev-parse HEAD).Trim()
-$configPath = Join-Path $root '.spike-run.json'
-if (-not (Test-Path $configPath)) { throw '未找到运行配置；无法确定要汇总的证据运行。' }
-$runDir = (Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json).evidenceDirectory
-$runFile = Join-Path $runDir 'run.json'
-if (-not (Test-Path $runFile)) { throw "当前运行目录缺少 run.json：$runDir" }
+$runsRoot = Join-Path $root '.evidence\runs'
+if (-not (Test-Path $runsRoot)) { throw '未找到任何证据运行目录。' }
 
-# The host binary is built before manual checks begin. Evidence-only script
-# checkpoints may be newer, so select the active run directory rather than
-# requiring its build commit to equal the verifier script commit.
-$runs = @(Get-Item -LiteralPath $runDir)
-$runMetadata = Get-Content $runFile -Raw -Encoding UTF8 | ConvertFrom-Json
-$hostBuildCommit = $runMetadata.commit
-$hostStderr = Join-Path $runDir 'host-stderr.log'
-$runConfigurationLoaded = $true
-$runConfigurationError = ''
-if (Test-Path $hostStderr) {
-    $hostStderrContents = Get-Content $hostStderr -Raw -Encoding UTF8
-    if ($hostStderrContents -match 'read \.spike-run\.json:|parse required \.spike-run\.json:') {
-        $runConfigurationLoaded = $false
-        $runConfigurationError = '宿主未成功加载 .spike-run.json；锁定的 Python、WebView2 和证据目录配置均未被该运行采用。'
+# A and B deliberately use separate host runs. Select every run that proves
+# the host wrote into its configured directory, while excluding old diagnostic
+# runs whose host stderr proves that .spike-run.json was not loaded.
+$runs = @()
+$excludedRuns = @()
+foreach ($candidate in @(Get-ChildItem -LiteralPath $runsRoot -Directory | Sort-Object Name)) {
+    $runFile = Join-Path $candidate.FullName 'run.json'
+    $hostLog = Join-Path $candidate.FullName 'host-events.jsonl'
+    $hostStderr = Join-Path $candidate.FullName 'host-stderr.log'
+    if (-not (Test-Path $runFile) -or -not (Test-Path $hostLog)) { continue }
+    $stderrText = if (Test-Path $hostStderr) { Get-Content $hostStderr -Raw -Encoding UTF8 } else { '' }
+    if ($stderrText -match 'read \.spike-run\.json:|parse required \.spike-run\.json:') {
+        $excludedRuns += [ordered]@{ path = $candidate.FullName; reason = '宿主未加载 .spike-run.json' }
+    } else {
+        $runs += $candidate
     }
 }
+if ($runs.Count -eq 0) { throw '没有配置加载成功且包含宿主事件日志的运行；无法汇总 Windows 证据。' }
+$hostBuildCommits = @($runs | ForEach-Object { (Get-Content (Join-Path $_.FullName 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json).commit } | Sort-Object -Unique)
 
 $events = @()
 $coreEvents = @()
 $manual = @()
+$singleInstanceReports = @()
 foreach ($run in $runs) {
     $hostLog = Join-Path $run.FullName 'host-events.jsonl'
     if (Test-Path $hostLog) { $events += Get-Content $hostLog -Encoding UTF8 | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
@@ -37,6 +38,13 @@ foreach ($run in $runs) {
     if (Test-Path $coreLog) { $coreEvents += Get-Content $coreLog -Encoding UTF8 | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json } }
     $manualFile = Join-Path $run.FullName 'manual-observations.json'
     if (Test-Path $manualFile) { $manual += Get-Content $manualFile -Raw -Encoding UTF8 | ConvertFrom-Json }
+    $singleInstanceReportPath = Join-Path $run.FullName 'single-instance-check.json'
+    if (Test-Path $singleInstanceReportPath) {
+        $singleInstanceReports += [ordered]@{
+            run = $run.FullName
+            report = Get-Content $singleInstanceReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        }
+    }
 }
 
 function Has-Event([string]$kind) { return @($events | Where-Object { $_.kind -eq $kind }).Count -gt 0 }
@@ -68,11 +76,7 @@ $notificationSent = if ((Has-Event 'notification_sent')) { 'PASS' } else { 'BLOC
 $notificationResponse = if ((Has-Event 'notification_response_received')) { 'PASS' } else { 'BLOCKED' }
 $notificationRoute = if ((Has-Event 'notification_context_routed') -and $notificationCore) { 'PASS' } else { 'BLOCKED' }
 $notification = Combined @((Manual-Result 'notification_action_activates_context'), $notificationSent, $notificationResponse, $notificationRoute)
-$singleInstanceReportPath = Join-Path $runDir 'single-instance-check.json'
-$singleInstanceReport = $null
-if (Test-Path $singleInstanceReportPath) {
-    $singleInstanceReport = Get-Content $singleInstanceReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
-}
+$singleInstanceReport = if ($singleInstanceReports.Count -gt 0) { $singleInstanceReports[-1].report } else { $null }
 $singleInstance = if ($null -eq $singleInstanceReport) {
     'BLOCKED'
 } elseif ($singleInstanceReport.passed -eq $true) {
@@ -91,20 +95,9 @@ $supervisorLifecycle = if (
 $supervisorExplicitExit = if ((Has-Event 'supervisor_explicit_stop_completed')) { 'PASS' } else { 'BLOCKED' }
 $processSupervisor = Combined @($supervisorLifecycle, $supervisorExplicitExit, $orphan)
 
-if (-not $runConfigurationLoaded) {
-    # Preserve the raw report for diagnosis, but never turn a fallback-config
-    # run into a Windows capability result.
-    $tray = 'BLOCKED'
-    $overlay = 'BLOCKED'
-    $autostart = 'BLOCKED'
-    $notification = 'BLOCKED'
-    $singleInstance = 'BLOCKED'
-    $processSupervisor = 'BLOCKED'
-}
-
 $result = [ordered]@{
     generatedAt = (Get-Date).ToUniversalTime().ToString('o')
-    hostBuildCommit = $hostBuildCommit
+    hostBuildCommits = $hostBuildCommits
     verificationCommit = $verificationCommit
     includedRuns = @($runs.FullName)
     candidateResults = [ordered]@{
@@ -124,16 +117,12 @@ $result = [ordered]@{
         currentCoreProcessCount = $coreProcesses.Count
         orphanCheck = $orphan
         singleInstanceReport = $singleInstanceReport
-        runConfigurationLoaded = $runConfigurationLoaded
-        runConfigurationError = $runConfigurationError
+        singleInstanceReports = $singleInstanceReports
+        excludedRuns = $excludedRuns
     }
-    note = '该脚本只汇总 Windows 证据候选；hostBuildCommit 是运行宿主的构建 commit，verificationCommit 是证据脚本 commit。最终 PASS/FAIL/BLOCKED 由 Linux 技术 session 依据返回的证据写入结果文档。'
+    note = '该脚本汇总所有配置已成功加载的 A/B 运行；hostBuildCommits 是各运行宿主的构建 commit，verificationCommit 是证据脚本 commit。最终 PASS/FAIL/BLOCKED 由 Linux 技术 session 依据返回的证据写入结果文档。'
 }
-$runsRoot = Join-Path $root '.evidence\runs'
-$path = Join-Path $runsRoot ("candidate-results-{0}-{1}.json" -f $hostBuildCommit.Substring(0, 12), $verificationCommit.Substring(0, 12))
+$path = Join-Path $runsRoot ("candidate-results-{0}.json" -f $verificationCommit.Substring(0, 12))
 $result | ConvertTo-Json -Depth 8 | Set-Content -Path $path -Encoding UTF8
 Write-Host "候选证据汇总：$path"
 Get-Content $path
-if (-not $runConfigurationLoaded) {
-    throw $runConfigurationError
-}

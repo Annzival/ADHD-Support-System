@@ -138,15 +138,15 @@ def main() -> int:
         require(token in supervisor_scenario, f"supervisor scenario must expect a single crash restart and preserve a failure report: {token}")
     evidence_summary = (ROOT / "scripts" / "Test-ValidationEvidence.ps1").read_text(encoding="utf-8-sig")
     for token in (
-        "hostBuildCommit",
+        "hostBuildCommits",
         "verificationCommit",
-        "singleInstanceReportPath",
-        "runConfigurationLoaded",
+        "excludedRuns",
+        "singleInstanceReports",
         "'FAIL'",
     ):
         require(token in evidence_summary, f"evidence summary must preserve host/verifier identity and explicit failures: {token}")
     evidence_collection = (ROOT / "scripts" / "Collect-Evidence.ps1").read_text(encoding="utf-8-sig")
-    for token in ("hostBuildCommit", "verificationCommit", "$runDir"):
+    for token in ("hostBuildCommits", "verificationCommit", "excludedRuns"):
         require(token in evidence_collection, f"evidence collection must select the active run and preserve identity: {token}")
     print("static contract: OK")
     return 0
