@@ -22,6 +22,7 @@ REQUIRED_SCRIPTS = {
     "Start-Spike.ps1",
     "Invoke-ProcessSupervisorScenario.ps1",
     "Record-ManualObservations.ps1",
+    "Test-PowerShellScriptParsing.ps1",
     "Test-ValidationEvidence.ps1",
     "Collect-Evidence.ps1",
     "Cleanup-Spike.ps1",
@@ -63,8 +64,13 @@ def main() -> int:
     missing = REQUIRED_SCRIPTS - actual_scripts
     require(not missing, f"missing required PowerShell scripts: {sorted(missing)}")
     for script in (ROOT / "scripts").glob("*.ps1"):
+        raw = script.read_bytes()
         require(
-            "Join-Path ((&" not in script.read_text(encoding="utf-8"),
+            raw.startswith(b"\xef\xbb\xbf"),
+            f"{script.name} must be UTF-8 with BOM for Windows PowerShell 5.1",
+        )
+        require(
+            "Join-Path ((&" not in raw.decode("utf-8-sig"),
             f"{script.name} must not nest a command invocation inside Join-Path; bind it before joining",
         )
     print("static contract: OK")

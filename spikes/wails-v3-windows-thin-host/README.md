@@ -26,13 +26,14 @@ WebView2 选择 Fixed Version，是为了不让 Evergreen 自动更新改变这�
 
    ```powershell
    Set-ExecutionPolicy -Scope Process Bypass
+   .\scripts\Test-PowerShellScriptParsing.ps1
    .\scripts\Install-WailsCli.ps1
    .\scripts\Install-WebView2FixedRuntime.ps1
    .\scripts\Check-WindowsEnvironment.ps1
    .\scripts\Build-Spike.ps1
    ```
 
-   任一脚本非零退出时停止，不要手工修改代码追求通过；保留 `.evidence\preparation\` 的文件。
+   任一脚本非零退出时停止，不要手工修改代码追求通过；保留 `.evidence\preparation\` 的文件。`Test-PowerShellScriptParsing.ps1` 必须先通过；验证包中的 `.ps1` 文件以 UTF-8 with BOM 保存，以兼容 Windows PowerShell 5.1 对含中文源文件的读取。
 
 4. 运行 A：
 

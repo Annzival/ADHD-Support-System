@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet('SingleCrash', 'RestartLimit')]
     [string]$Scenario = 'SingleCrash'
