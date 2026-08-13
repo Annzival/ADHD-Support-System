@@ -78,7 +78,10 @@ def main() -> int:
         )
     wails_install = WAILS_INSTALL.read_text(encoding="utf-8-sig")
     for token in (
-        "& $wails version 2>&1 | Out-String",
+        "System.Diagnostics.Process",
+        "RedirectStandardOutput = $true",
+        "RedirectStandardError = $true",
+        "$versionProcess.ExitCode",
         "[string]::IsNullOrWhiteSpace($actual)",
         "wails3 version 失败",
     ):

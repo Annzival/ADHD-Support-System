@@ -22,12 +22,22 @@ $wails = Join-Path -Path $goPath -ChildPath 'bin\wails3.exe'
 if (-not (Test-Path $wails)) {
     throw "未找到刚安装的 wails3：$wails"
 }
-$actual = (& $wails version 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) {
-    throw "wails3 version 失败，退出码：$LASTEXITCODE"
+$versionProcess = New-Object System.Diagnostics.Process
+$versionProcess.StartInfo.FileName = $wails
+$versionProcess.StartInfo.Arguments = 'version'
+$versionProcess.StartInfo.UseShellExecute = $false
+$versionProcess.StartInfo.RedirectStandardOutput = $true
+$versionProcess.StartInfo.RedirectStandardError = $true
+[void]$versionProcess.Start()
+$versionStandardOutput = $versionProcess.StandardOutput.ReadToEnd()
+$versionStandardError = $versionProcess.StandardError.ReadToEnd()
+$versionProcess.WaitForExit()
+$actual = "$versionStandardOutput`n$versionStandardError".Trim()
+if ($versionProcess.ExitCode -ne 0) {
+    throw "wails3 version 失败，退出码：$($versionProcess.ExitCode)，输出：$actual"
 }
 if ([string]::IsNullOrWhiteSpace($actual)) {
-    throw 'wails3 version 没有返回版本文本；请保留上述输出。'
+    throw 'wails3 version 没有返回版本文本；请保留该命令的标准输出和标准错误。'
 }
 if ($actual -notmatch [regex]::Escape($expected)) {
     throw "wails3 版本不符：期望 $expected，实际 $actual"
