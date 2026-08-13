@@ -110,10 +110,17 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 ### 证据包与目标环境
 
 - 返回包：`v01-windows-evidence-505cc712c788-20260813T175900Z.zip`，SHA-256 为 `4a94d998d753c5c8c4f00d5ba65c8d11bc48e33762851762d58bbf2bfc0949e0`；已验证 ZIP 完整性。原始 ZIP 不提交仓库，以避免提交本机绝对路径和潜在私人桌面材料。
+- 可复核的脱敏机器可读摘录见 [证据摘要](wails-v3-windows-thin-host.evidence-summary.json)，其中按能力列出状态、运行标识、构建/验证 commit、来源文件 SHA-256 与结论；[小窗原生关闭观察](wails-v3-windows-thin-host.overlay-observation.json) 是不含私人路径或桌面材料的补充人工记录。
 - 目标机：Microsoft Windows 10 家庭中文版，`10.0.19045` / Build `19045` / DisplayVersion `22H2` / UBR `7548` / x64。
 - 工具实测：Go `go1.25.0 windows/amd64`、Python `3.12.3 amd64`、Wails `v3.0.0-beta.8`、WebView2 Fixed Version Runtime `151.0.4129.78` x64。
 - 最终验证脚本 commit：`505cc712c7887dd4e4c3277716d4b340e11297ab`。最终 B 运行 `run-20260813T172503Z-505cc712c788` 的宿主二进制构建 commit 为 `05a964966865ca0ad008eb47d6aa58493a34a2fb`、SHA-256 为 `B3616DC4E0B000BA6530D2CF2824365B73AE7587E6FE080D44E4AC3AE2480F08`。该二进制与验证脚本 commit 之间未变更 `main_windows.go` 或 `agent_core/`。
 - 有效运行：A 为 `run-20260813T162942Z-ebe507d8ad38`；B 的最终重启上限运行是 `run-20260813T172503Z-505cc712c788`。包内保留较早的 B 运行作为验证脚本诊断记录，不将其假阴性视为守护失败。
+
+#### 原始 ZIP 的受控位置、访问与保留
+
+- 受控位置：证据提供者的 Windows 工作副本中 `spikes/wails-v3-windows-thin-host/.evidence/packages/` 下的同名 ZIP；为避免暴露本机目录，绝对路径不进入仓库。原件不在 Git、PR 文件或公开对象存储中。
+- 访问方式：产品治理审查者可在 PR #13 或 Issue #11 请求原件；证据提供者通过同一技术 session 或仓库所有者指定的私有传输方式提供，接收者必须以本节 SHA-256 校验。该 ZIP 曾通过本技术 session 的受控附件通道返回，但该通道不是仓库归档，也不对其服务端保留期作出声明。
+- 保留：证据提供者至少保留至 PR #13 的产品治理复审完成、Issue #11 关闭且 #14 的基线决定已经记录。仓库当前没有获批的私有制品库；此后是否受控归档或删除，由证据提供者和仓库所有者明确确认。不得将原件复制进仓库。
 
 | 必需项 | 状态 | Windows 实机证据与结论 |
 | --- | --- | --- |

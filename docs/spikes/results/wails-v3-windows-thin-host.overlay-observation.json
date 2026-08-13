@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "supplemental-manual-windows-observation",
+  "sanitized": true,
+  "recordedBy": "技术验证 session，根据 Windows 交互式桌面执行者回传的观察记录",
+  "target": {
+    "os": "Windows 10",
+    "release": "22H2",
+    "architecture": "x64"
+  },
+  "runIds": [
+    "run-20260813T162942Z-ebe507d8ad38",
+    "run-20260813T172503Z-505cc712c788"
+  ],
+  "hostBuildCommit": "05a964966865ca0ad008eb47d6aa58493a34a2fb",
+  "verificationCommit": "505cc712c7887dd4e4c3277716d4b340e11297ab",
+  "procedure": [
+    "从宿主菜单选择显示置顶演示小窗。",
+    "在小窗原生标题栏选择关闭按钮。",
+    "再次从宿主菜单选择显示置顶演示小窗。"
+  ],
+  "observed": "首次显示成功；原生关闭后再次选择显示不再出现小窗；重启宿主后可再次首次显示，重复上述步骤后现象再次出现。",
+  "status": "FAIL",
+  "repeatable": true,
+  "evidenceLimit": "这是脱敏的人工观察摘录。未提交截图、录屏、绝对路径、进程标识或原始桌面日志；需要时按证据摘要记录的受控访问方式取得原始证据并在目标环境复现。"
+}
