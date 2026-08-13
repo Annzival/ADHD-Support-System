@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化和 Wails CLI 安装/版本校验，但环境检查将中文系统本地化的架构文本误判为非 x64。修正 checkpoint 必须在 Windows 上通过环境检查，才可重新开始阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验和干净的环境检查；验证可继续构建并执行阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -61,6 +61,8 @@ Wails 版本读取修正实机验证（checkpoint `20d17b47fb28d5090cec7d663500c
 Windows 环境检查失败诊断：目标机报告 `Version=10.0.19045`、`BuildNumber=19045`、`DisplayVersion=22H2`、`UBR=7548`，但 `OSArchitecture` 在中文系统中本地化为 `64 位`。原脚本将该展示文本与英文 `64-bit` 比较，产生误报；后续 checkpoint 改用语言无关的 `[Environment]::Is64BitOperatingSystem`，并以 `BuildNumber=19045` 验证基线。
 
 环境报告实机检查（checkpoint `24a82008b51b64485adb268c4d3d0975cb92edb2`）：Windows、Go、Python、Wails 和 WebView2 的五项检查均返回 `passed=true`，但 Wails 的 `actual.version` 混入 PowerShell `NativeCommandError` 文本。该记录路径仍使用原生命令管道，未复用安装脚本的安全版本读取；后续 checkpoint 必须重新生成无污染的环境报告，才作为阶段 A 的锁定版本证据。
+
+干净环境报告实机验证（checkpoint `51adb5f97d1206a03150536de990ca034edfb424`）：全部检查 `passed=true`，`errors=[]`。实际环境为 Windows 10 22H2 x64、`Version=10.0.19045`、`BuildNumber=19045`、`UBR=7548`；Go `go1.25.0`；Python `3.12.3` x64；Wails `v3.0.0-beta.8` 且 `exitCode=0`；WebView2 Fixed Version Runtime `151.0.4129.78` x64。此证据仅覆盖阶段 A 环境准备，不代表构建或 Windows 宿主能力通过。
 
 ### Linux 已完成检查
 
