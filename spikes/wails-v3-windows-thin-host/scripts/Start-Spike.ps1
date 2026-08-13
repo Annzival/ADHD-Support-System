@@ -56,5 +56,15 @@ do {
 if ($health.status -ne 'ok') {
     throw "宿主已启动（PID $($process.Id)），但测试替身未在 15 秒内通过健康检查；请保留 $runDir。"
 }
+$hostEventPath = Join-Path $runDir 'host-events.jsonl'
+$hostStarted = (Test-Path $hostEventPath) -and @(
+    Get-Content -LiteralPath $hostEventPath -Encoding UTF8 |
+        Where-Object { $_ } |
+        ForEach-Object { $_ | ConvertFrom-Json } |
+        Where-Object { $_.kind -eq 'host_starting' }
+).Count -gt 0
+if (-not $hostStarted) {
+    throw "宿主健康检查通过，但没有在指定证据目录记录 host_starting；配置未被证实已加载。请保留 $runDir 并停止本次验证。"
+}
 Write-Host "验证宿主已启动：PID $($process.Id)"
 Write-Host "本次证据目录：$runDir"
