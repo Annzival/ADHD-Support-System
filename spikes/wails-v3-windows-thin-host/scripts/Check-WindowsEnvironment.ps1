@@ -21,16 +21,18 @@ function Add-Check([string]$name, [bool]$passed, [string]$detail) {
 }
 
 $os = Get-CimInstance Win32_OperatingSystem
+$is64BitOperatingSystem = [Environment]::Is64BitOperatingSystem
 $report.actual.windows = [ordered]@{
     caption = $os.Caption
     version = $os.Version
     buildNumber = $os.BuildNumber
     osArchitecture = $os.OSArchitecture
+    is64BitOperatingSystem = $is64BitOperatingSystem
     displayVersion = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').DisplayVersion
     ubr = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR
 }
-$targetWindows = $report.actual.windows.displayVersion -eq '22H2' -and $report.actual.windows.osArchitecture -eq '64-bit' -and $report.actual.windows.version -like '10.0.19045*'
-Add-Check 'windows_10_22h2_x64' $targetWindows ("{0}; DisplayVersion={1}; UBR={2}" -f $os.Caption, $report.actual.windows.displayVersion, $report.actual.windows.ubr)
+$targetWindows = $report.actual.windows.displayVersion -eq '22H2' -and $report.actual.windows.buildNumber -eq '19045' -and $is64BitOperatingSystem
+Add-Check 'windows_10_22h2_x64' $targetWindows ("{0}; Version={1}; BuildNumber={2}; OSArchitecture={3}; Is64BitOperatingSystem={4}; DisplayVersion={5}; UBR={6}" -f $os.Caption, $report.actual.windows.version, $report.actual.windows.buildNumber, $report.actual.windows.osArchitecture, $is64BitOperatingSystem, $report.actual.windows.displayVersion, $report.actual.windows.ubr)
 
 $goCommand = Get-Command go -ErrorAction SilentlyContinue
 if ($goCommand) {
