@@ -100,6 +100,7 @@ def main() -> int:
         "RedirectStandardError = $true",
         "ReadToEndAsync()",
         "process.ExitCode",
+        "process.StartInfo.WorkingDirectory = $root",
     ):
         require(token in build_script, f"Build-Spike.ps1 must run native tools without PowerShell stderr errors: {token}")
     print("static contract: OK")

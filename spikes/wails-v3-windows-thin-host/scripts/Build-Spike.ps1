@@ -23,6 +23,7 @@ function Invoke-NativeBuildCommand {
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo.FileName = $FileName
     $process.StartInfo.Arguments = $Arguments
+    $process.StartInfo.WorkingDirectory = $root
     $process.StartInfo.UseShellExecute = $false
     $process.StartInfo.RedirectStandardOutput = $true
     $process.StartInfo.RedirectStandardError = $true
