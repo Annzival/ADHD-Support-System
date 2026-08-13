@@ -2,6 +2,7 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [object[]]$Events,
         [Parameter(Mandatory)]
         [int]$PreviousPid,

@@ -8,6 +8,11 @@ function Assert-Passed([string]$name, [hashtable]$result) {
     if (-not $result.passed) { throw "$name 失败：$($result.reason)" }
 }
 
+$emptyEvents = Test-SupervisorAttemptEvidence -Events @() -PreviousPid 28324 -ShouldRestart $true -ExpectedBackoff '1s'
+if ($emptyEvents.passed -or $emptyEvents.reason -notmatch 'supervisor_unexpected_exit') {
+    throw 'empty event tail must be an incomplete lifecycle result, not a PowerShell parameter-binding failure'
+}
+
 # Replays the Windows 10 captured fast-restart trace: the HTTP poll missed the
 # 0.15s crash window, but the host lifecycle evidence proves the child exited,
 # backed off for 1s, started with a new PID, and passed health checking.
