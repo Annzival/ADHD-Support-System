@@ -72,7 +72,7 @@ WebView2 选择 Fixed Version，是为了不让 Evergreen 自动更新改变这�
 
 ## 证据与清理
 
-- `.evidence\runs\`：每次运行的 JSON、JSONL 和宿主/测试替身日志；ZIP 仅打包当前 commit 的运行。
+- `.evidence\runs\`：每次运行的 JSON、JSONL 和宿主/测试替身日志；ZIP 打包 `.spike-run.json` 指向的实际运行，并在清单中分别记录宿主构建 `hostBuildCommit` 与证据脚本 `verificationCommit`，避免仅升级脚本时丢失已运行宿主的证据关联。
 - `.evidence\preparation\`：环境与构建预检日志。
 - `.tools\webview2-fixed-*`：仅用于这次验证的 Fixed Version Runtime。如需删除该大文件，最后运行：
 
