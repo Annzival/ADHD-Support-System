@@ -72,6 +72,7 @@ WebView2 选择 Fixed Version，是为了不让 Evergreen 自动更新改变这�
 
 ## 证据与清理
 
+- `.spike-build.json`：由 `Build-Spike.ps1` 写入的宿主二进制 SHA-256 与构建 commit；`Start-Spike.ps1` 会校验它，拒绝将未知来源二进制写入证据运行。
 - `.evidence\runs\`：每次运行的 JSON、JSONL 和宿主/测试替身日志；ZIP 打包所有成功加载运行配置的 A/B 运行，并在清单中分别记录各宿主构建 `hostBuildCommits` 与证据脚本 `verificationCommit`；已知配置加载失败的诊断运行会明确排除，避免与有效证据混合。
 - `.evidence\preparation\`：环境与构建预检日志。
 - `.tools\webview2-fixed-*`：仅用于这次验证的 Fixed Version Runtime。如需删除该大文件，最后运行：

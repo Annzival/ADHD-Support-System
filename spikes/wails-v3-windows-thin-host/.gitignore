@@ -1,5 +1,6 @@
 bin/
 .evidence/
 .spike-run.json
+.spike-build.json
 .tools/
 agent_core/__pycache__/

@@ -25,7 +25,10 @@ foreach ($candidate in @(Get-ChildItem -LiteralPath $runsRoot -Directory | Sort-
     }
 }
 if ($runs.Count -eq 0) { throw '没有配置加载成功且包含宿主事件日志的运行；无法汇总 Windows 证据。' }
-$hostBuildCommits = @($runs | ForEach-Object { (Get-Content (Join-Path $_.FullName 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json).commit } | Sort-Object -Unique)
+$hostBuildCommits = @($runs | ForEach-Object {
+    $metadata = Get-Content (Join-Path $_.FullName 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($null -ne $metadata.hostBuildCommit) { $metadata.hostBuildCommit } else { $metadata.commit }
+} | Sort-Object -Unique)
 
 $events = @()
 $coreEvents = @()

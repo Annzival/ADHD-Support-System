@@ -21,7 +21,10 @@ foreach ($candidate in @(Get-ChildItem -LiteralPath $runsRoot -Directory | Sort-
     }
 }
 if ($selected.Count -eq 0) { throw '没有配置加载成功且包含宿主事件日志的运行可打包。' }
-$hostBuildCommits = @($selected | ForEach-Object { (Get-Content (Join-Path $_.FullName 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json).commit } | Sort-Object -Unique)
+$hostBuildCommits = @($selected | ForEach-Object {
+    $metadata = Get-Content (Join-Path $_.FullName 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($null -ne $metadata.hostBuildCommit) { $metadata.hostBuildCommit } else { $metadata.commit }
+} | Sort-Object -Unique)
 
 $packageRoot = Join-Path $root '.evidence\packages'
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null

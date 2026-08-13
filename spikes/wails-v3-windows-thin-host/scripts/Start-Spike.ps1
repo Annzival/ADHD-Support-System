@@ -5,6 +5,13 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $binary = Join-Path $root 'bin\wails-v3-windows-thin-host.exe'
 if (-not (Test-Path $binary)) { throw '未找到已构建宿主；先运行 .\scripts\Build-Spike.ps1' }
+$buildMarkerPath = Join-Path $root '.spike-build.json'
+if (-not (Test-Path $buildMarkerPath)) { throw '未找到构建标记；先运行 .\scripts\Build-Spike.ps1，不能将未知来源二进制用于证据运行。' }
+$buildMarker = Get-Content -LiteralPath $buildMarkerPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$actualBinarySha256 = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash
+if ($buildMarker.binary -ne $binary -or $buildMarker.binarySha256 -ne $actualBinarySha256 -or [string]::IsNullOrWhiteSpace($buildMarker.buildCommit)) {
+    throw '构建标记与当前宿主二进制不一致；先运行 .\scripts\Build-Spike.ps1，不能将未知来源二进制用于证据运行。'
+}
 & (Join-Path $PSScriptRoot 'Check-WindowsEnvironment.ps1')
 if ($LASTEXITCODE -ne 0) { throw '环境检查未通过；未启动宿主。' }
 
@@ -18,8 +25,8 @@ $versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | 
 $runtimeRoot = Join-Path $root ".tools\webview2-fixed-$($versions.candidates.webview2.version)-$($versions.candidates.webview2.architecture)"
 $browser = Get-ChildItem -Path $runtimeRoot -Filter 'msedgewebview2.exe' -Recurse | Select-Object -First 1
 $pythonExe = (& py -3.12 -c 'import sys; print(sys.executable)').Trim()
-$commit = (& git -C $root rev-parse HEAD).Trim()
-$runId = "run-{0}-{1}" -f (Get-Date -Format 'yyyyMMddTHHmmssZ'), $commit.Substring(0, 12)
+$startupScriptCommit = (& git -C $root rev-parse HEAD).Trim()
+$runId = "run-{0}-{1}" -f (Get-Date -Format 'yyyyMMddTHHmmssZ'), $startupScriptCommit.Substring(0, 12)
 $runDir = Join-Path $root ".evidence\runs\$runId"
 New-Item -ItemType Directory -Force -Path $runDir | Out-Null
 
@@ -39,8 +46,10 @@ $configJson = $config | ConvertTo-Json -Depth 4
 $process = Start-Process -FilePath $binary -WorkingDirectory $root -PassThru -RedirectStandardOutput (Join-Path $runDir 'host-stdout.log') -RedirectStandardError (Join-Path $runDir 'host-stderr.log')
 $run = [ordered]@{
     startedAt = (Get-Date).ToUniversalTime().ToString('o')
-    commit = $commit
+    hostBuildCommit = $buildMarker.buildCommit
+    startupScriptCommit = $startupScriptCommit
     hostExecutable = $binary
+    hostBinarySha256 = $actualBinarySha256
     hostPid = $process.Id
     runConfig = $config
 }
@@ -67,4 +76,6 @@ if (-not $hostStarted) {
     throw "宿主健康检查通过，但没有在指定证据目录记录 host_starting；配置未被证实已加载。请保留 $runDir 并停止本次验证。"
 }
 Write-Host "验证宿主已启动：PID $($process.Id)"
+Write-Host "宿主构建 commit：$($buildMarker.buildCommit)"
+Write-Host "启动脚本 commit：$startupScriptCommit"
 Write-Host "本次证据目录：$runDir"

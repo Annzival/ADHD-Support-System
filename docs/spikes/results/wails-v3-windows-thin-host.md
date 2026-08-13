@@ -84,7 +84,7 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 后续 checkpoint 将同一运行目录中新增的、有序宿主守护事件作为首要断言：每轮必须观察到旧 PID 异常退出；需要重启时还必须有期望退避、新 PID 启动和该 PID 健康通过；达到上限时必须有 `supervisor_restart_limit_reached` 且没有后续启动。HTTP 仅保留为崩溃前的就绪保护。新增的 PowerShell 回放测试使用这次 Windows 现场的快速重启轨迹，避免重新引入“必须捕获瞬时不健康窗口”的错误。
 
-该失败现场已经消耗当前 B 宿主的一次重启计数；为了使新脚本仍能按 `1s`、`2s`、`4s` 验证完整重启上限，修正后必须退出当前 B 宿主并启动新的 B 运行。无需重新构建，因为此次变更只涉及验证脚本和其平台无关回放测试；`Cleanup-Spike.ps1` 会保留失败现场证据。
+该失败现场已经消耗当前 B 宿主的一次重启计数；为了使新脚本仍能按 `1s`、`2s`、`4s` 验证完整重启上限，修正后必须退出当前 B 宿主并启动新的 B 运行。此时还会重新构建一次：构建脚本将记录二进制 SHA-256 与构建 commit，启动脚本会校验该标记并在运行清单分别写入 `hostBuildCommit`、`startupScriptCommit` 与二进制 SHA-256，避免把仅更新脚本后的 Git `HEAD` 误标为宿主二进制的来源。`Cleanup-Spike.ps1` 会保留全部失败现场证据。
 
 证据汇总脚本会同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。
 

@@ -9,6 +9,7 @@ if ($LASTEXITCODE -ne 0) { throw '环境检查未通过；未开始构建。' }
 $go = (Get-Command go -ErrorAction Stop).Source
 $pythonExe = (& py -3.12 -c 'import sys; print(sys.executable)').Trim()
 $binary = Join-Path $root 'bin\wails-v3-windows-thin-host.exe'
+$buildCommit = (& git -C $root rev-parse HEAD).Trim()
 $evidence = Join-Path $root '.evidence\preparation'
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
 $logPath = Join-Path $evidence ("build-{0}.log" -f (Get-Date -Format 'yyyyMMddTHHmmssZ'))
@@ -54,6 +55,7 @@ try {
 
 $report = [ordered]@{
     generatedAt = (Get-Date).ToUniversalTime().ToString('o')
+    buildCommit = $buildCommit
     binary = $binary
     binarySha256 = (Get-FileHash $binary -Algorithm SHA256).Hash
     log = $logPath
@@ -62,5 +64,12 @@ $report = [ordered]@{
 }
 $reportPath = Join-Path $evidence ("build-{0}.json" -f (Get-Date -Format 'yyyyMMddTHHmmssZ'))
 $report | ConvertTo-Json -Depth 6 | Set-Content -Path $reportPath -Encoding UTF8
+$buildMarker = [ordered]@{
+    buildCommit = $buildCommit
+    binary = $binary
+    binarySha256 = $report.binarySha256
+    buildReport = $reportPath
+}
+[System.IO.File]::WriteAllText((Join-Path $root '.spike-build.json'), ($buildMarker | ConvertTo-Json -Depth 5), [System.Text.UTF8Encoding]::new($false))
 Write-Host "构建成功：$binary"
 Write-Host "构建报告：$reportPath"
