@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验和干净的环境检查，但构建进程未显式继承 spike 的工作目录，导致 `go mod download` 在错误目录执行。修正 checkpoint 必须在 Windows 上完成构建，才可继续执行阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验、干净的环境检查和 Windows 宿主构建；可执行阶段 B 的运行 A。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -67,6 +67,8 @@ Windows 环境检查失败诊断：目标机报告 `Version=10.0.19045`、`Build
 构建脚本失败诊断：Windows 已通过 Go 测试与 Python 测试替身（`..`），但 Python `unittest` 将成功摘要写入 stderr，Windows PowerShell 5.1 在 `$ErrorActionPreference = 'Stop'` 下将其作为 `NativeCommandError`。后续 checkpoint 必须以统一的 .NET `Process` 运行器执行 `go mod download`、`go test`、Python 测试与 `go build`，以进程退出码而非 PowerShell stderr 流判定构建成功。
 
 统一进程运行器的后续 Windows 构建失败：`go mod download` 报告未找到模块。原因是 .NET `ProcessStartInfo` 没有显式设置 `WorkingDirectory`；PowerShell 的 `Push-Location` 不保证改变已启动进程的工作目录。后续 checkpoint 必须固定为 spike 根目录，使 `go mod download`、测试和 `go build` 都从包含 `go.mod` 的目录执行。
+
+Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7b`）：Go 测试与两个 Python 测试均通过，生成 `bin\\wails-v3-windows-thin-host.exe`。构建报告记录二进制 SHA-256 为 `A81088882DB593CE0EBCE9E3547584181638F2104576C8FAC702253055BDCCB8`、Go `go1.25.0 windows/amd64` 和 Python `3.12.3`。此证据证明宿主可在目标 Windows 环境构建，不代表任一运行时桌面能力通过。
 
 ### Linux 已完成检查
 
