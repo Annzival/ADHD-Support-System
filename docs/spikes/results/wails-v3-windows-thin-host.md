@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析和配置反序列化预检，但 `Install-WailsCli.ps1` 的 Wails 版本读取受到原生 stderr 的 `NativeCommandError` 行为影响。修正 checkpoint 必须在 Windows 上完成该脚本的版本检查，才可重新开始阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化和 Wails CLI 安装/版本校验；验证可从 README 第 3 步的其余准备命令继续。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -55,6 +55,8 @@ Windows 诊断确认：工作副本与 `HEAD` 的第 21 行 Unicode 码位一致
 配置编码修正实机预检（checkpoint `a071281db522e828ab3e1738a19b2cd70562a34b`）：Windows 工作副本已检出该精确 SHA，`Test-PowerShellScriptParsing.ps1` 通过。该预检覆盖全部 12 个 PowerShell 脚本的 Parser 和 `versions.json` 的默认 Windows PowerShell 5.1 读取/反序列化路径；它不代表安装、构建或任一 Windows 桌面能力通过。
 
 随后 Windows 实机已完成 `go install` 并显示 `v3.0.0-beta.8`，但 `Install-WailsCli.ps1` 在版本检查处对 `$null` 调用 `.Trim()`。Wails v3 的 `version` 命令使用 Go `println` 输出版本，写入标准错误；脚本原先只读取标准输出。将两个流重定向到 PowerShell 管道后，Windows PowerShell 5.1 在 `$ErrorActionPreference = 'Stop'` 下仍将该 stderr 包装为 `NativeCommandError`。后续 checkpoint 改以 .NET `System.Diagnostics.Process` 直接读取两个流，并检查退出码和空版本文本。
+
+Wails 版本读取修正实机验证（checkpoint `20d17b47fb28d5090cec7d663500cabe8e3fe3c3`）：Windows 输出 `已安装并锁定 wails3 v3.0.0-beta.8：E:\Jetsbrain\go\GoPath\bin\wails3.exe`。该证据证明 Wails CLI 安装与锁定版本校验通过；WebView2、环境检查、构建和全部 Windows 宿主能力仍未执行。
 
 ### Linux 已完成检查
 
