@@ -76,6 +76,10 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 该误报已被实际日志证伪：`.evidence\unconfigured\host-events.jsonl` 在 `2026-08-13T08:06:06Z` 记录 `second_instance_activated`，同一检查的脚本报告也记录第二实例 `exit=0` 且启动前后均为同一宿主 PID。故不能将 Wails 单实例能力写为失败，也不能把这份回退配置运行写为通过。后续 checkpoint 会使 `Start-Spike.ps1` 写 BOM-free JSON、宿主显式去除 BOM 并在无法加载配置时失败退出；汇总脚本会将此类运行统一标为 `BLOCKED`。修正后必须重新构建并重跑受影响的运行，旧运行只保留为诊断证据。
 
+有效配置运行的单实例实机验证（运行目录 `run-20260813T162942Z-ebe507d8ad38`）：`Invoke-SingleInstanceCheck.ps1` 已成功写出 `single-instance-check.json`。该结果属于新宿主构建和由启动脚本确认的证据目录，待最终 ZIP 回传时与环境/构建报告一并核对。
+
+同一有效运行中，`Invoke-ProcessSupervisorScenario.ps1 -Scenario SingleCrash` 首次报“预期生命周期未出现”。根因在验证脚本：该脚本把单次崩溃同时当作“最后一次崩溃”，错误预期测试替身不重启；而单次异常验收本应验证一次按 `1s` 退避的重启。后续 checkpoint 修正预期并保证失败时仍写出部分 JSON 报告；不改变守护器、Python 测试替身或宿主行为。必须只重跑 `SingleCrash`，旧错误输出不作为守护失败证据。
+
 证据汇总脚本会同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。
 
 ### Linux 已完成检查

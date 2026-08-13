@@ -129,6 +129,13 @@ def main() -> int:
         "当前宿主未成功加载 .spike-run.json",
     ):
         require(token in single_instance, f"single-instance check must verify process count and activation event: {token}")
+    supervisor_scenario = (ROOT / "scripts" / "Invoke-ProcessSupervisorScenario.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "$Scenario -eq 'SingleCrash') -or ($number -lt $crashCount)",
+        "passed = [string]::IsNullOrEmpty($failure)",
+        "process-supervisor-$Scenario.json",
+    ):
+        require(token in supervisor_scenario, f"supervisor scenario must expect a single crash restart and preserve a failure report: {token}")
     evidence_summary = (ROOT / "scripts" / "Test-ValidationEvidence.ps1").read_text(encoding="utf-8-sig")
     for token in (
         "hostBuildCommit",

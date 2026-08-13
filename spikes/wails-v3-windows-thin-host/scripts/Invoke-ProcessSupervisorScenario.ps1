@@ -36,11 +36,14 @@ function Request-ControlledCrash([string]$label) {
 if (-not (Wait-CoreState $true 5)) { throw '开始前测试替身不健康。' }
 $crashCount = if ($Scenario -eq 'SingleCrash') { 1 } else { 4 }
 $attempts = @()
+$failure = ''
 for ($number = 1; $number -le $crashCount; $number++) {
     if (-not (Wait-CoreState $true 15)) { throw "第 $number 次受控异常前，测试替身没有恢复健康。" }
     Request-ControlledCrash "$Scenario-$number"
     $becameUnhealthy = Wait-CoreState $false 8
-    $shouldRestart = $number -lt $crashCount
+    # A single controlled crash is specifically the restart case. In the
+    # restart-limit scenario only the fourth crash must remain stopped.
+    $shouldRestart = ($Scenario -eq 'SingleCrash') -or ($number -lt $crashCount)
     $becameHealthy = if ($shouldRestart) { Wait-CoreState $true 20 } else { -not (Wait-CoreState $true 10) }
     $attempts += [ordered]@{
         number = $number
@@ -49,7 +52,8 @@ for ($number = 1; $number -le $crashCount; $number++) {
         expectedOutcomeObserved = $becameHealthy
     }
     if (-not $becameUnhealthy -or -not $becameHealthy) {
-        throw "第 $number 次受控异常的预期生命周期未出现。请保留日志后停止。"
+        $failure = "第 $number 次受控异常的预期生命周期未出现。"
+        break
     }
 }
 
@@ -58,7 +62,12 @@ $report = [ordered]@{
     scenario = $Scenario
     attempts = $attempts
     expectedBackoff = if ($Scenario -eq 'RestartLimit') { @('1s', '2s', '4s') } else { @('1s') }
+    passed = [string]::IsNullOrEmpty($failure)
+    failure = $failure
 }
 $path = Join-Path $runDir ("process-supervisor-$Scenario.json")
 $report | ConvertTo-Json -Depth 6 | Set-Content -Path $path -Encoding UTF8
+if (-not [string]::IsNullOrEmpty($failure)) {
+    throw "$failure 请保留日志和 $path 后停止。"
+}
 Write-Host "进程守护场景已完成：$path"
