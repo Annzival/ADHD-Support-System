@@ -72,9 +72,11 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 运行 A 后的单实例检查失败诊断：第二实例退出码为 `0`，但脚本按 `Win32_Process.ExecutablePath` 匹配的宿主计数为空，因此不能判断是 WMI 路径可见性问题还是单实例机制未激活。后续 checkpoint 改为在启动前后按验证二进制的进程名计数，并且必须在当前运行的 `host-events.jsonl` 中观察到 `second_instance_activated`，才将单实例写为通过。
 
-单实例实机结果（验证脚本 checkpoint `5064278c3cace3adfe2f14276ad70b012f2dcb49`）：第二实例退出码为 `0`，启动前后均恰有一个宿主进程，但五秒内没有 `second_instance_activated` 事件。因此这不是 WMI 计数误报，锁阻止了重复进程却没有把第二次启动送达首实例的回调。最小根因已由锁定 Wails `v3.0.0-beta.8` 的 Windows 实现与 Windows 文档交叉确认：该实现把接收端创建为 message-only window，却以 `FindWindowW` 查找；Windows 对此窗口类型要求经 `FindWindowEx(HWND_MESSAGE, ...)` 查找。Wails 在通知失败时只记内部错误、随后按配置以退出码 `0` 退出，符合实机观察。该结论针对锁定候选版本，不把 Linux 源码检查当作 Windows 能力 `PASS`。
+配置加载失效诊断（Windows 实机，宿主构建 checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7b`）：`host-stderr.log` 记录 `read .spike-run.json: invalid character 'ï' looking for beginning of value`。Windows PowerShell 5.1 用 `Set-Content -Encoding UTF8` 写入了 BOM，而 Go JSON 解码未去除 BOM；宿主因此回退到 `.evidence\unconfigured`，没有采用锁定的 Python、WebView2 路径和计划证据目录。先前汇总脚本读取计划目录，导致 `eventKinds=[]`，并将单实例误报为 `FAIL`。
 
-证据汇总脚本随后改为绑定 `.spike-run.json` 指向的实际运行目录，并同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。该修正不会改变宿主行为；Windows 端只需重跑汇总和打包步骤，不需重跑已完成的人工观察。
+该误报已被实际日志证伪：`.evidence\unconfigured\host-events.jsonl` 在 `2026-08-13T08:06:06Z` 记录 `second_instance_activated`，同一检查的脚本报告也记录第二实例 `exit=0` 且启动前后均为同一宿主 PID。故不能将 Wails 单实例能力写为失败，也不能把这份回退配置运行写为通过。后续 checkpoint 会使 `Start-Spike.ps1` 写 BOM-free JSON、宿主显式去除 BOM 并在无法加载配置时失败退出；汇总脚本会将此类运行统一标为 `BLOCKED`。修正后必须重新构建并重跑受影响的运行，旧运行只保留为诊断证据。
+
+证据汇总脚本会同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。
 
 ### Linux 已完成检查
 
@@ -91,11 +93,11 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 ## 阶段 B：Windows 10 22H2 x64 实机证据
 
-**总体状态：FAIL（锁定 Wails `v3.0.0-beta.8` 的单实例回调在目标 Windows 实机失败）。** 根据计划，任一必需能力 `FAIL` 即整体为 `FAIL`。其余尚未收到完整的 Windows 证据，逐项保持 `BLOCKED`；不会由此推测为失败或通过。
+**总体状态：BLOCKED。** 现有 Windows 运行没有成功加载 `.spike-run.json`，因此锁定的 Python、WebView2 和计划证据目录未生效。实际 fallback 日志证明 Wails 单实例回调曾送达，但该回退配置运行不用于最终 `PASS`。修正后需重新构建并执行受影响的 Windows 运行；不得从 Linux、源码或该无效运行外推最终结论。
 
 | 必需项 | 状态 | 必需的 Windows 实机证据 | 当前证据 |
 | --- | --- | --- | --- |
-| 托盘、关闭与单实例 | FAIL | 关闭后托盘常驻、托盘恢复、第二实例不独立运行且可将第二次启动交给首实例。 | 实机：第二实例 `exit=0`，启动前后各一个宿主；`second_instance_activated=False`。锁有效，但首实例激活回调未送达。 |
+| 托盘、关闭与单实例 | BLOCKED | 关闭后托盘常驻、托盘恢复、第二实例不独立运行且可将第二次启动交给首实例。 | 回退目录日志已记录 `second_instance_activated`，但该运行未加载锁定运行配置；重跑后再判定。 |
 | 置顶小窗 | BLOCKED | 显示、隐藏、保持置顶，且不改变测试替身状态。 | 尚未收到。 |
 | 开机启动 | BLOCKED | 启用、真实注销/登录启动、单实例、禁用。 | 尚未收到。 |
 | 可交互通知与上下文返回 | BLOCKED | 通知操作、正确窗口激活、上下文标识转交到测试替身。 | 尚未收到。 |

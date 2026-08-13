@@ -16,6 +16,16 @@ if (-not (Test-Path $runFile)) { throw "当前运行目录缺少 run.json：$run
 $runs = @(Get-Item -LiteralPath $runDir)
 $runMetadata = Get-Content $runFile -Raw -Encoding UTF8 | ConvertFrom-Json
 $hostBuildCommit = $runMetadata.commit
+$hostStderr = Join-Path $runDir 'host-stderr.log'
+$runConfigurationLoaded = $true
+$runConfigurationError = ''
+if (Test-Path $hostStderr) {
+    $hostStderrContents = Get-Content $hostStderr -Raw -Encoding UTF8
+    if ($hostStderrContents -match 'read \.spike-run\.json:|parse required \.spike-run\.json:') {
+        $runConfigurationLoaded = $false
+        $runConfigurationError = '宿主未成功加载 .spike-run.json；锁定的 Python、WebView2 和证据目录配置均未被该运行采用。'
+    }
+}
 
 $events = @()
 $coreEvents = @()
@@ -81,6 +91,17 @@ $supervisorLifecycle = if (
 $supervisorExplicitExit = if ((Has-Event 'supervisor_explicit_stop_completed')) { 'PASS' } else { 'BLOCKED' }
 $processSupervisor = Combined @($supervisorLifecycle, $supervisorExplicitExit, $orphan)
 
+if (-not $runConfigurationLoaded) {
+    # Preserve the raw report for diagnosis, but never turn a fallback-config
+    # run into a Windows capability result.
+    $tray = 'BLOCKED'
+    $overlay = 'BLOCKED'
+    $autostart = 'BLOCKED'
+    $notification = 'BLOCKED'
+    $singleInstance = 'BLOCKED'
+    $processSupervisor = 'BLOCKED'
+}
+
 $result = [ordered]@{
     generatedAt = (Get-Date).ToUniversalTime().ToString('o')
     hostBuildCommit = $hostBuildCommit
@@ -103,6 +124,8 @@ $result = [ordered]@{
         currentCoreProcessCount = $coreProcesses.Count
         orphanCheck = $orphan
         singleInstanceReport = $singleInstanceReport
+        runConfigurationLoaded = $runConfigurationLoaded
+        runConfigurationError = $runConfigurationError
     }
     note = '该脚本只汇总 Windows 证据候选；hostBuildCommit 是运行宿主的构建 commit，verificationCommit 是证据脚本 commit。最终 PASS/FAIL/BLOCKED 由 Linux 技术 session 依据返回的证据写入结果文档。'
 }
@@ -111,3 +134,6 @@ $path = Join-Path $runsRoot ("candidate-results-{0}-{1}.json" -f $hostBuildCommi
 $result | ConvertTo-Json -Depth 8 | Set-Content -Path $path -Encoding UTF8
 Write-Host "候选证据汇总：$path"
 Get-Content $path
+if (-not $runConfigurationLoaded) {
+    throw $runConfigurationError
+}

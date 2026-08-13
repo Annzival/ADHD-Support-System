@@ -28,7 +28,12 @@ $config = [ordered]@{
     evidenceDirectory = $runDir
     corePort = 18765
 }
-$config | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $root '.spike-run.json') -Encoding UTF8
+$configPath = Join-Path $root '.spike-run.json'
+$configJson = $config | ConvertTo-Json -Depth 4
+# Windows PowerShell 5.1's Set-Content -Encoding UTF8 emits a BOM. The host
+# tolerates that defensively, but this is deliberately BOM-free JSON so its
+# on-disk validation configuration is portable to Go and other JSON readers.
+[System.IO.File]::WriteAllText($configPath, $configJson, [System.Text.UTF8Encoding]::new($false))
 
 $process = Start-Process -FilePath $binary -WorkingDirectory $root -PassThru -RedirectStandardOutput (Join-Path $runDir 'host-stdout.log') -RedirectStandardError (Join-Path $runDir 'host-stderr.log')
 $run = [ordered]@{

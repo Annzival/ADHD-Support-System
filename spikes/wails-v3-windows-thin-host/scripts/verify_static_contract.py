@@ -55,6 +55,8 @@ def main() -> int:
         "supervisor.New",
     ):
         require(token in source, f"host is missing {token}")
+    for token in ("bytes.TrimPrefix", "read required .spike-run.json", "parse required .spike-run.json"):
+        require(token in source, f"host must fail closed and accept a BOM in its run configuration: {token}")
     for prohibited in ("sqlite", "pydantic", "openai", "anthropic", "schedule"):
         require(prohibited not in source.lower(), f"host source must not contain {prohibited!r}")
 
@@ -103,6 +105,9 @@ def main() -> int:
         "process.StartInfo.WorkingDirectory = $root",
     ):
         require(token in build_script, f"Build-Spike.ps1 must run native tools without PowerShell stderr errors: {token}")
+    start_script = (ROOT / "scripts" / "Start-Spike.ps1").read_text(encoding="utf-8-sig")
+    for token in ("WriteAllText", "UTF8Encoding]::new($false)"):
+        require(token in start_script, f"Start-Spike.ps1 must write portable run configuration JSON: {token}")
     single_instance = (ROOT / "scripts" / "Invoke-SingleInstanceCheck.ps1").read_text(encoding="utf-8-sig")
     for token in (
         "Get-SpikeHostProcesses",
@@ -110,6 +115,7 @@ def main() -> int:
         "Test-SecondInstanceEvent",
         "second_instance_activated",
         "hostsAfter.Count -eq 1",
+        "当前宿主未成功加载 .spike-run.json",
     ):
         require(token in single_instance, f"single-instance check must verify process count and activation event: {token}")
     evidence_summary = (ROOT / "scripts" / "Test-ValidationEvidence.ps1").read_text(encoding="utf-8-sig")
@@ -117,6 +123,7 @@ def main() -> int:
         "hostBuildCommit",
         "verificationCommit",
         "singleInstanceReportPath",
+        "runConfigurationLoaded",
         "'FAIL'",
     ):
         require(token in evidence_summary, f"evidence summary must preserve host/verifier identity and explicit failures: {token}")

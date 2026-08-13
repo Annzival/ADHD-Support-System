@@ -111,7 +111,10 @@ type host struct {
 
 func main() {
 	root := resolveRoot()
-	config := loadRunConfig(root)
+	config, err := loadRunConfig(root)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if config.CorePort == 0 {
 		config.CorePort = defaultCorePort
 	}
@@ -442,7 +445,7 @@ func resolveRoot() string {
 	return workingDirectory
 }
 
-func loadRunConfig(root string) runConfig {
+func loadRunConfig(root string) (runConfig, error) {
 	config := runConfig{
 		PythonExecutable:    os.Getenv("SPIKE_PYTHON_EXE"),
 		WebView2BrowserPath: os.Getenv("SPIKE_WEBVIEW2_BROWSER_PATH"),
@@ -451,12 +454,17 @@ func loadRunConfig(root string) runConfig {
 	}
 	contents, err := os.ReadFile(filepath.Join(root, ".spike-run.json"))
 	if err != nil {
-		return config
+		return config, fmt.Errorf("read required .spike-run.json: %w", err)
 	}
+	// Windows PowerShell 5.1 writes a UTF-8 BOM for -Encoding UTF8. Accept
+	// it here as a defensive boundary, even though Start-Spike.ps1 writes the
+	// file without a BOM, so the running host never silently loses its pinned
+	// runtime paths or evidence directory.
+	contents = bytes.TrimPrefix(contents, []byte{0xef, 0xbb, 0xbf})
 	if err := json.Unmarshal(contents, &config); err != nil {
-		log.Printf("read .spike-run.json: %v", err)
+		return config, fmt.Errorf("parse required .spike-run.json: %w", err)
 	}
-	return config
+	return config, nil
 }
 
 func errorString(err error) string {

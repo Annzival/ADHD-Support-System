@@ -9,6 +9,10 @@ if (-not (Test-Path $configPath)) { throw '未找到运行配置；先运行 .\s
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 $runDir = $config.evidenceDirectory
 $hostProcessName = [System.IO.Path]::GetFileNameWithoutExtension($binary)
+$hostStderr = Join-Path $runDir 'host-stderr.log'
+if ((Test-Path $hostStderr) -and ((Get-Content $hostStderr -Raw -Encoding UTF8) -match 'read \.spike-run\.json:|parse required \.spike-run\.json:')) {
+    throw '当前宿主未成功加载 .spike-run.json；不得将其作为单实例证据。请保留日志、更新 checkpoint 后重新构建并启动运行 A。'
+}
 
 function Get-SpikeHostProcesses {
     return @(Get-Process -Name $hostProcessName -ErrorAction SilentlyContinue)
