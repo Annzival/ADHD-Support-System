@@ -2,7 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$scripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File
+$scripts = Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File -Recurse
 $failures = @()
 $root = Split-Path -Parent $PSScriptRoot
 $versionsPath = Join-Path $root 'versions.json'

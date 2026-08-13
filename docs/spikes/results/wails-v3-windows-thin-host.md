@@ -78,7 +78,13 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 有效配置运行的单实例实机验证（运行目录 `run-20260813T162942Z-ebe507d8ad38`）：`Invoke-SingleInstanceCheck.ps1` 已成功写出 `single-instance-check.json`。该结果属于新宿主构建和由启动脚本确认的证据目录，待最终 ZIP 回传时与环境/构建报告一并核对。
 
-同一有效运行中，`Invoke-ProcessSupervisorScenario.ps1 -Scenario SingleCrash` 首次报“预期生命周期未出现”。根因在验证脚本：该脚本把单次崩溃同时当作“最后一次崩溃”，错误预期测试替身不重启；而单次异常验收本应验证一次按 `1s` 退避的重启。后续 checkpoint 修正预期并保证失败时仍写出部分 JSON 报告；不改变守护器、Python 测试替身或宿主行为。必须只重跑 `SingleCrash`，旧错误输出不作为守护失败证据。
+同一有效运行中，`Invoke-ProcessSupervisorScenario.ps1 -Scenario SingleCrash` 首次报“预期生命周期未出现”。根因在验证脚本：该脚本把单次崩溃同时当作“最后一次崩溃”，错误预期测试替身不重启；而单次异常验收本应验证一次按 `1s` 退避的重启。后续 checkpoint 修正预期并保证失败时仍写出部分 JSON 报告；不改变守护器、Python 测试替身或宿主行为。重跑已通过，旧错误输出不作为守护失败证据。
+
+`RestartLimit` 的第一轮随后又出现同类观察假阴性。现场事件显示 `controlled_crash_requested` 后依次出现 `supervisor_unexpected_exit`（退出码 `71`）、`supervisor_restart_backoff`（`1s`）、新 PID 的 `supervisor_agent_started` 与 `supervisor_health_check_passed`，但原脚本把每 `200ms` 一次、单次可等待 `2s` 的 HTTP 健康轮询观察到“不健康”当作必需条件。短暂端口中断会被单次请求跨越，故报告可出现 `observedUnhealthy=false` 与“已重启且健康”同时为真的组合。
+
+后续 checkpoint 将同一运行目录中新增的、有序宿主守护事件作为首要断言：每轮必须观察到旧 PID 异常退出；需要重启时还必须有期望退避、新 PID 启动和该 PID 健康通过；达到上限时必须有 `supervisor_restart_limit_reached` 且没有后续启动。HTTP 仅保留为崩溃前的就绪保护。新增的 PowerShell 回放测试使用这次 Windows 现场的快速重启轨迹，避免重新引入“必须捕获瞬时不健康窗口”的错误。
+
+该失败现场已经消耗当前 B 宿主的一次重启计数；为了使新脚本仍能按 `1s`、`2s`、`4s` 验证完整重启上限，修正后必须退出当前 B 宿主并启动新的 B 运行。无需重新构建，因为此次变更只涉及验证脚本和其平台无关回放测试；`Cleanup-Spike.ps1` 会保留失败现场证据。
 
 证据汇总脚本会同时记录 `hostBuildCommit` 与 `verificationCommit`；这允许仅升级证据脚本时保留已经构建、运行的宿主证据，不把两者混为同一 commit。
 

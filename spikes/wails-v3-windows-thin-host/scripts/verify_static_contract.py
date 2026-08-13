@@ -68,7 +68,7 @@ def main() -> int:
     actual_scripts = {path.name for path in (ROOT / "scripts").glob("*.ps1")}
     missing = REQUIRED_SCRIPTS - actual_scripts
     require(not missing, f"missing required PowerShell scripts: {sorted(missing)}")
-    for script in (ROOT / "scripts").glob("*.ps1"):
+    for script in (ROOT / "scripts").rglob("*.ps1"):
         raw = script.read_bytes()
         require(
             raw.startswith(b"\xef\xbb\xbf"),
@@ -131,11 +131,19 @@ def main() -> int:
         require(token in single_instance, f"single-instance check must verify process count and activation event: {token}")
     supervisor_scenario = (ROOT / "scripts" / "Invoke-ProcessSupervisorScenario.ps1").read_text(encoding="utf-8-sig")
     for token in (
-        "$Scenario -eq 'SingleCrash') -or ($number -lt $crashCount)",
+        "SupervisorEvidence.ps1",
+        "Wait-SupervisorAttemptEvidence",
+        "eventEvidence.passed",
         "passed = [string]::IsNullOrEmpty($failure)",
         "process-supervisor-$Scenario.json",
     ):
         require(token in supervisor_scenario, f"supervisor scenario must expect a single crash restart and preserve a failure report: {token}")
+    require(
+        "$becameUnhealthy" not in supervisor_scenario,
+        "supervisor scenario must not require a transient HTTP-unhealthy observation",
+    )
+    supervisor_replay = ROOT / "scripts" / "tests" / "Test-SupervisorEvidence.ps1"
+    require(supervisor_replay.exists(), "captured supervisor trace replay test is missing")
     evidence_summary = (ROOT / "scripts" / "Test-ValidationEvidence.ps1").read_text(encoding="utf-8-sig")
     for token in (
         "hostBuildCommits",
