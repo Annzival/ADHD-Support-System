@@ -103,6 +103,15 @@ def main() -> int:
         "process.StartInfo.WorkingDirectory = $root",
     ):
         require(token in build_script, f"Build-Spike.ps1 must run native tools without PowerShell stderr errors: {token}")
+    single_instance = (ROOT / "scripts" / "Invoke-SingleInstanceCheck.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "Get-SpikeHostProcesses",
+        "Get-Process -Name $hostProcessName",
+        "Test-SecondInstanceEvent",
+        "second_instance_activated",
+        "hostsAfter.Count -eq 1",
+    ):
+        require(token in single_instance, f"single-instance check must verify process count and activation event: {token}")
     print("static contract: OK")
     return 0
 
