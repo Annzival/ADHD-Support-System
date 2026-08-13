@@ -8,9 +8,10 @@ if (-not (Test-Path $binary)) { throw '未找到已构建宿主；先运行 .\sc
 & (Join-Path $PSScriptRoot 'Check-WindowsEnvironment.ps1')
 if ($LASTEXITCODE -ne 0) { throw '环境检查未通过；未启动宿主。' }
 
-$existing = Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $binary }
-if ($existing) {
-    throw "验证宿主已在运行（PID: $($existing.ProcessId -join ', ')）。先按清理脚本处理，避免混合证据。"
+$hostProcessName = [System.IO.Path]::GetFileNameWithoutExtension($binary)
+$existing = @(Get-Process -Name $hostProcessName -ErrorAction SilentlyContinue)
+if ($existing.Count -gt 0) {
+    throw "验证宿主已在运行（PID: $($existing.Id -join ', ')）。先按清理脚本处理，避免混合证据。"
 }
 
 $versions = Get-Content (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json

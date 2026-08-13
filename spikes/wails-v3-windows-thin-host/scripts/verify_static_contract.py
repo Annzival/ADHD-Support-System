@@ -106,8 +106,13 @@ def main() -> int:
     ):
         require(token in build_script, f"Build-Spike.ps1 must run native tools without PowerShell stderr errors: {token}")
     start_script = (ROOT / "scripts" / "Start-Spike.ps1").read_text(encoding="utf-8-sig")
-    for token in ("WriteAllText", "UTF8Encoding]::new($false)"):
+    for token in ("WriteAllText", "UTF8Encoding]::new($false)", "Get-Process -Name $hostProcessName"):
         require(token in start_script, f"Start-Spike.ps1 must write portable run configuration JSON: {token}")
+    cleanup_script = (ROOT / "scripts" / "Cleanup-Spike.ps1").read_text(encoding="utf-8-sig")
+    require(
+        "Get-Process -Name $hostProcessName" in cleanup_script,
+        "Cleanup-Spike.ps1 must find the host without WMI executable-path visibility",
+    )
     single_instance = (ROOT / "scripts" / "Invoke-SingleInstanceCheck.ps1").read_text(encoding="utf-8-sig")
     for token in (
         "Get-SpikeHostProcesses",

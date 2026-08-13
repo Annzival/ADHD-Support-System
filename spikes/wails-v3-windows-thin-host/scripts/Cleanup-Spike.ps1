@@ -8,11 +8,12 @@ $root = Split-Path -Parent $PSScriptRoot
 $binary = Join-Path $root 'bin\wails-v3-windows-thin-host.exe'
 $coreScript = Join-Path $root 'agent_core\agent_core_stub.py'
 $runValueName = 'ADHDSupportSystemV01Spike'
+$hostProcessName = [System.IO.Path]::GetFileNameWithoutExtension($binary)
 
-$hosts = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $binary })
+$hosts = @(Get-Process -Name $hostProcessName -ErrorAction SilentlyContinue)
 foreach ($process in $hosts) {
-    Stop-Process -Id $process.ProcessId -Force
-    Write-Host "已停止验证宿主 PID $($process.ProcessId)"
+    Stop-Process -Id $process.Id -Force
+    Write-Host "已停止验证宿主 PID $($process.Id)"
 }
 $cores = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*$coreScript*" })
 foreach ($process in $cores) {
