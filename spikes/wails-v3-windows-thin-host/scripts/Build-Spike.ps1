@@ -13,17 +13,40 @@ $evidence = Join-Path $root '.evidence\preparation'
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
 $logPath = Join-Path $evidence ("build-{0}.log" -f (Get-Date -Format 'yyyyMMddTHHmmssZ'))
 
+function Invoke-NativeBuildCommand {
+    param(
+        [string]$FileName,
+        [string]$Arguments,
+        [string]$Description
+    )
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo.FileName = $FileName
+    $process.StartInfo.Arguments = $Arguments
+    $process.StartInfo.UseShellExecute = $false
+    $process.StartInfo.RedirectStandardOutput = $true
+    $process.StartInfo.RedirectStandardError = $true
+    [void]$process.Start()
+    $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
+    $standardErrorTask = $process.StandardError.ReadToEndAsync()
+    $process.WaitForExit()
+    [System.Threading.Tasks.Task]::WaitAll(@($standardOutputTask, $standardErrorTask))
+    $output = "$($standardOutputTask.Result)$($standardErrorTask.Result)"
+    if (-not [string]::IsNullOrWhiteSpace($output)) {
+        $output | Tee-Object -FilePath $logPath -Append
+    }
+    if ($process.ExitCode -ne 0) {
+        throw "$Description 失败，退出码：$($process.ExitCode)。"
+    }
+}
+
 Push-Location $root
 try {
-    & $go mod download 2>&1 | Tee-Object -FilePath $logPath
-    if ($LASTEXITCODE -ne 0) { throw 'go mod download 失败。' }
-    & $go test ./... 2>&1 | Tee-Object -FilePath $logPath -Append
-    if ($LASTEXITCODE -ne 0) { throw 'go test 失败。' }
-    & $pythonExe -m unittest discover -s agent_core -p 'test_*.py' 2>&1 | Tee-Object -FilePath $logPath -Append
-    if ($LASTEXITCODE -ne 0) { throw 'Python 测试替身检查失败。' }
+    Invoke-NativeBuildCommand -FileName $go -Arguments 'mod download' -Description 'go mod download'
+    Invoke-NativeBuildCommand -FileName $go -Arguments 'test ./...' -Description 'go test'
+    Invoke-NativeBuildCommand -FileName $pythonExe -Arguments '-m unittest discover -s agent_core -p test_*.py' -Description 'Python 测试替身检查'
     New-Item -ItemType Directory -Force -Path (Split-Path $binary) | Out-Null
-    & $go build -buildvcs=false -o $binary . 2>&1 | Tee-Object -FilePath $logPath -Append
-    if ($LASTEXITCODE -ne 0) { throw 'Windows Wails 宿主构建失败。' }
+    Invoke-NativeBuildCommand -FileName $go -Arguments ("build -buildvcs=false -o `"$binary`" .") -Description 'Windows Wails 宿主构建'
 } finally {
     Pop-Location
 }

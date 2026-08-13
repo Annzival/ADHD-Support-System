@@ -93,6 +93,15 @@ def main() -> int:
         "wailsVersionProcess.ExitCode",
     ):
         require(token in environment_check, f"Check-WindowsEnvironment.ps1 must record Wails safely: {token}")
+    build_script = (ROOT / "scripts" / "Build-Spike.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "function Invoke-NativeBuildCommand",
+        "RedirectStandardOutput = $true",
+        "RedirectStandardError = $true",
+        "ReadToEndAsync()",
+        "process.ExitCode",
+    ):
+        require(token in build_script, f"Build-Spike.ps1 must run native tools without PowerShell stderr errors: {token}")
     print("static contract: OK")
     return 0
 

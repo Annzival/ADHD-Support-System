@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验和干净的环境检查；验证可继续构建并执行阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析、配置反序列化、Wails CLI 安装/版本校验和干净的环境检查，但构建脚本仍让 Python `unittest` 的成功 stderr 输出触发 `NativeCommandError`。修正 checkpoint 必须在 Windows 上完成构建，才可继续执行阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -63,6 +63,8 @@ Windows 环境检查失败诊断：目标机报告 `Version=10.0.19045`、`Build
 环境报告实机检查（checkpoint `24a82008b51b64485adb268c4d3d0975cb92edb2`）：Windows、Go、Python、Wails 和 WebView2 的五项检查均返回 `passed=true`，但 Wails 的 `actual.version` 混入 PowerShell `NativeCommandError` 文本。该记录路径仍使用原生命令管道，未复用安装脚本的安全版本读取；后续 checkpoint 必须重新生成无污染的环境报告，才作为阶段 A 的锁定版本证据。
 
 干净环境报告实机验证（checkpoint `51adb5f97d1206a03150536de990ca034edfb424`）：全部检查 `passed=true`，`errors=[]`。实际环境为 Windows 10 22H2 x64、`Version=10.0.19045`、`BuildNumber=19045`、`UBR=7548`；Go `go1.25.0`；Python `3.12.3` x64；Wails `v3.0.0-beta.8` 且 `exitCode=0`；WebView2 Fixed Version Runtime `151.0.4129.78` x64。此证据仅覆盖阶段 A 环境准备，不代表构建或 Windows 宿主能力通过。
+
+构建脚本失败诊断：Windows 已通过 Go 测试与 Python 测试替身（`..`），但 Python `unittest` 将成功摘要写入 stderr，Windows PowerShell 5.1 在 `$ErrorActionPreference = 'Stop'` 下将其作为 `NativeCommandError`。后续 checkpoint 必须以统一的 .NET `Process` 运行器执行 `go mod download`、`go test`、Python 测试与 `go build`，以进程退出码而非 PowerShell stderr 流判定构建成功。
 
 ### Linux 已完成检查
 
