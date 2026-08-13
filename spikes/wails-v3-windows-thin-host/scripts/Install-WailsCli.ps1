@@ -17,7 +17,8 @@ if ($LASTEXITCODE -ne 0) {
     throw 'wails3 安装失败。请保留上述输出。'
 }
 
-$wails = Join-Path ((& $go.Source env GOPATH).Trim()) 'bin\wails3.exe'
+$goPath = (& $go.Source env GOPATH).Trim()
+$wails = Join-Path -Path $goPath -ChildPath 'bin\wails3.exe'
 if (-not (Test-Path $wails)) {
     throw "未找到刚安装的 wails3：$wails"
 }

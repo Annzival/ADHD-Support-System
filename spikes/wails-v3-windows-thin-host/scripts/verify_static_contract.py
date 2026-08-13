@@ -62,6 +62,11 @@ def main() -> int:
     actual_scripts = {path.name for path in (ROOT / "scripts").glob("*.ps1")}
     missing = REQUIRED_SCRIPTS - actual_scripts
     require(not missing, f"missing required PowerShell scripts: {sorted(missing)}")
+    for script in (ROOT / "scripts").glob("*.ps1"):
+        require(
+            "Join-Path ((&" not in script.read_text(encoding="utf-8"),
+            f"{script.name} must not nest a command invocation inside Join-Path; bind it before joining",
+        )
     print("static contract: OK")
     return 0
 

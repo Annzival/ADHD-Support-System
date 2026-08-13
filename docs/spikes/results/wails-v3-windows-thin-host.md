@@ -34,6 +34,14 @@
 
 阶段 A 绝不把任一 Windows 桌面能力写成 `PASS`。
 
+### 准备脚本修正记录（2026-08-13）
+
+Windows 实机在执行 `Install-WailsCli.ps1` 时报告第 20 行的 PowerShell 字符串终止符解析错误。原 checkpoint 的同一文件在 Linux PowerShell AST 解析中未复现，因而不能将该 Linux 结果外推为 Windows 通过。
+
+为消除实机错误所涉的嵌套 `Join-Path ((& ...).Trim())` 调用形式，后续 checkpoint 将先获取 `GOPATH`，再以具名 `-Path` 和 `-ChildPath` 参数构造 `wails3.exe` 路径；同一风险形式也从 `Check-WindowsEnvironment.ps1` 移除。静态契约检查禁止重新引入该形式。
+
+根因目前记录为 `UNCONFIRMED`：目标 commit 在 Linux PowerShell AST 中可解析，但 Windows 实机得到的解析错误与该行相关。新的 checkpoint 必须从 README 的第 3 步重新执行，且不得把原 checkpoint 的 Windows 结果与新 checkpoint 混合。
+
 ### Linux 已完成检查
 
 | 检查 | 结果 | 说明 |

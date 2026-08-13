@@ -53,7 +53,8 @@ if ($pythonCommand) {
 }
 
 if ($goCommand) {
-    $wailsPath = Join-Path ((& $goCommand.Source env GOPATH).Trim()) 'bin\wails3.exe'
+    $goPath = (& $goCommand.Source env GOPATH).Trim()
+    $wailsPath = Join-Path -Path $goPath -ChildPath 'bin\wails3.exe'
     if (Test-Path $wailsPath) {
         $wailsVersion = (& $wailsPath version 2>&1 | Out-String).Trim()
         $report.actual.wails = [ordered]@{ command = $wailsPath; version = $wailsVersion }
