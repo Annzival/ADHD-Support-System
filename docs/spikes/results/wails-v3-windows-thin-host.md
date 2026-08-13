@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** Windows PowerShell 5.1 已证实将 UTF-8 无 BOM 的含中文脚本按遗留 ANSI 代码页误读，导致 `Install-WailsCli.ps1` 解析失败。修正 checkpoint 必须先在 Windows 上通过全部准备脚本的解析验证，才可重新开始阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 的解析阻塞已在修正 checkpoint 上通过实机预检。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -47,6 +47,8 @@ Windows 实机在执行 `Install-WailsCli.ps1` 时报告第 20 行的 PowerShell
 修正 checkpoint `6e914ade164d2799b4ab81209e9953e503287d96` 在 Windows 实机仍于新第 21 行报告同样的单引号字符串终止符错误。该行的 `'bin\wails3.exe'` 是 PowerShell 的有效单引号字符串，反斜杠不转义单引号。
 
 Windows 诊断确认：工作副本与 `HEAD` 的第 21 行 Unicode 码位一致，最小字符串可由 Parser 解析；完整脚本的 Parser 输出中文乱码。全部 `.ps1` 文件原先均为 UTF-8 无 BOM 且包含中文。后续 checkpoint 已将它们统一改为 UTF-8 with BOM，并用静态契约检查强制该格式。Windows PowerShell 官方文档说明：无 BOM 时，Windows PowerShell 将源文件按遗留 ANSI 代码页读取；含非 ASCII 字符的 UTF-8 无 BOM 脚本可能失败。
+
+编码修正实机预检（checkpoint `bdcebf45836fa25effa309799cf21f30653cfbd1`）：Windows 工作副本已检出该精确 SHA，执行 `Test-PowerShellScriptParsing.ps1` 返回 `PowerShell parser: OK (12 scripts)`。该证据仅证明 PowerShell 源文件可解析；安装、构建、Windows 宿主行为和阶段 B 各项仍未执行。
 
 ### Linux 已完成检查
 
