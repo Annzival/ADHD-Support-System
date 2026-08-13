@@ -87,10 +87,12 @@ def main() -> int:
     ):
         require(token in wails_install, f"Install-WailsCli.ps1 must handle Wails version output: {token}")
     environment_check = (ROOT / "scripts" / "Check-WindowsEnvironment.ps1").read_text(encoding="utf-8-sig")
-    require(
-        "[Environment]::Is64BitOperatingSystem" in environment_check,
-        "Check-WindowsEnvironment.ps1 must use a locale-independent x64 check",
-    )
+    for token in (
+        "[Environment]::Is64BitOperatingSystem",
+        "System.Diagnostics.Process",
+        "wailsVersionProcess.ExitCode",
+    ):
+        require(token in environment_check, f"Check-WindowsEnvironment.ps1 must record Wails safely: {token}")
     print("static contract: OK")
     return 0
 

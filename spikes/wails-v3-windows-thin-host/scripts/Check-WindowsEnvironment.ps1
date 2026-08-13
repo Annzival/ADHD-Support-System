@@ -58,9 +58,20 @@ if ($goCommand) {
     $goPath = (& $goCommand.Source env GOPATH).Trim()
     $wailsPath = Join-Path -Path $goPath -ChildPath 'bin\wails3.exe'
     if (Test-Path $wailsPath) {
-        $wailsVersion = (& $wailsPath version 2>&1 | Out-String).Trim()
-        $report.actual.wails = [ordered]@{ command = $wailsPath; version = $wailsVersion }
-        Add-Check 'wails_v3_beta_8' ($wailsVersion -match [regex]::Escape($versions.candidates.wails.version)) $wailsVersion
+        $wailsVersionProcess = New-Object System.Diagnostics.Process
+        $wailsVersionProcess.StartInfo.FileName = $wailsPath
+        $wailsVersionProcess.StartInfo.Arguments = 'version'
+        $wailsVersionProcess.StartInfo.UseShellExecute = $false
+        $wailsVersionProcess.StartInfo.RedirectStandardOutput = $true
+        $wailsVersionProcess.StartInfo.RedirectStandardError = $true
+        [void]$wailsVersionProcess.Start()
+        $wailsVersionStandardOutput = $wailsVersionProcess.StandardOutput.ReadToEnd()
+        $wailsVersionStandardError = $wailsVersionProcess.StandardError.ReadToEnd()
+        $wailsVersionProcess.WaitForExit()
+        $wailsVersion = "$wailsVersionStandardOutput`n$wailsVersionStandardError".Trim()
+        $wailsVersionDetail = "exitCode=$($wailsVersionProcess.ExitCode); version=$wailsVersion"
+        $report.actual.wails = [ordered]@{ command = $wailsPath; version = $wailsVersion; exitCode = $wailsVersionProcess.ExitCode }
+        Add-Check 'wails_v3_beta_8' ($wailsVersionProcess.ExitCode -eq 0 -and $wailsVersion -match [regex]::Escape($versions.candidates.wails.version)) $wailsVersionDetail
     } else {
         Add-Check 'wails_v3_beta_8' $false "未找到 $wailsPath；运行 .\scripts\Install-WailsCli.ps1"
     }

@@ -60,6 +60,8 @@ Wails 版本读取修正实机验证（checkpoint `20d17b47fb28d5090cec7d663500c
 
 Windows 环境检查失败诊断：目标机报告 `Version=10.0.19045`、`BuildNumber=19045`、`DisplayVersion=22H2`、`UBR=7548`，但 `OSArchitecture` 在中文系统中本地化为 `64 位`。原脚本将该展示文本与英文 `64-bit` 比较，产生误报；后续 checkpoint 改用语言无关的 `[Environment]::Is64BitOperatingSystem`，并以 `BuildNumber=19045` 验证基线。
 
+环境报告实机检查（checkpoint `24a82008b51b64485adb268c4d3d0975cb92edb2`）：Windows、Go、Python、Wails 和 WebView2 的五项检查均返回 `passed=true`，但 Wails 的 `actual.version` 混入 PowerShell `NativeCommandError` 文本。该记录路径仍使用原生命令管道，未复用安装脚本的安全版本读取；后续 checkpoint 必须重新生成无污染的环境报告，才作为阶段 A 的锁定版本证据。
+
 ### Linux 已完成检查
 
 | 检查 | 结果 | 说明 |
