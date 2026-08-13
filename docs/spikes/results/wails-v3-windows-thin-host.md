@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：BLOCKED。** PowerShell 源文件的编码预检已通过，但 Windows PowerShell 5.1 随后发现 `versions.json` 的 UTF-8 无 BOM 配置读取失败。修正 checkpoint 必须在 Windows 上同时通过脚本解析和配置反序列化预检，才可重新开始阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已在修正 checkpoint 上通过脚本解析和配置反序列化预检；验证可从 README 第 3 步继续。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -51,6 +51,8 @@ Windows 诊断确认：工作副本与 `HEAD` 的第 21 行 Unicode 码位一致
 编码修正实机预检（checkpoint `bdcebf45836fa25effa309799cf21f30653cfbd1`）：Windows 工作副本已检出该精确 SHA，执行 `Test-PowerShellScriptParsing.ps1` 返回 `PowerShell parser: OK (12 scripts)`。该证据仅证明 PowerShell 源文件可解析；安装、构建、Windows 宿主行为和阶段 B 各项仍未执行。
 
 后续 Windows 实机在 `Install-WailsCli.ps1` 的第 6 行得到 `ConvertFrom-Json` 错误，并显示 `versions.json` 中中文内容被错误解码。该文件原先也是 UTF-8 无 BOM；先前预检没有读取配置，因此未捕获这一相邻失败路径。后续 checkpoint 必须将 `versions.json` 保存为 UTF-8 with BOM、在所有读取该文件的脚本中显式指定 `-Encoding UTF8`，并使预检使用默认 Windows PowerShell 5.1 配置读取路径反序列化该文件。
+
+配置编码修正实机预检（checkpoint `a071281db522e828ab3e1738a19b2cd70562a34b`）：Windows 工作副本已检出该精确 SHA，`Test-PowerShellScriptParsing.ps1` 通过。该预检覆盖全部 12 个 PowerShell 脚本的 Parser 和 `versions.json` 的默认 Windows PowerShell 5.1 读取/反序列化路径；它不代表安装、构建或任一 Windows 桌面能力通过。
 
 ### Linux 已完成检查
 
