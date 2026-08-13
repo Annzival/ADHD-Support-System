@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：READY_FOR_WINDOWS。** 最小验证代码、版本锁定、运行/清理脚本、人工清单、平台无关检查、Draft PR 和 Issue 关联均已经完成；Windows 环境检查与宿主构建也已在目标机通过。此阶段状态只表示准备完整，不表示任何 Windows 桌面能力 `PASS`，也不满足 MVP 构建就绪门槛。阶段 B 的单实例结果见下文。
+**状态：READY_FOR_WINDOWS。** 最小验证代码、版本锁定、运行/清理脚本、人工清单、平台无关检查、Draft PR 和 Issue 关联均已经完成；Windows 环境检查与宿主构建也已在目标机通过。最终验证脚本 checkpoint 为 `505cc712c7887dd4e4c3277716d4b340e11297ab`；它不等同于最终 B 宿主二进制构建 commit，二者的对应关系见下文。此阶段状态只表示准备完整，不表示任何 Windows 桌面能力 `PASS`，也不满足 MVP 构建就绪门槛。阶段 B 的单实例结果见下文。
 
 阶段 A 产物预期包括：
 
@@ -105,25 +105,37 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 ## 阶段 B：Windows 10 22H2 x64 实机证据
 
-**总体状态：BLOCKED。** 现有 Windows 运行没有成功加载 `.spike-run.json`，因此锁定的 Python、WebView2 和计划证据目录未生效。实际 fallback 日志证明 Wails 单实例回调曾送达，但该回退配置运行不用于最终 `PASS`。修正后需重新构建并执行受影响的 Windows 运行；不得从 Linux、源码或该无效运行外推最终结论。
+**总体状态：FAIL。** 除置顶小窗的原生关闭后不可恢复外，其余必需能力与宿主边界均有 Windows 实机或平台无关边界证据支持 `PASS`。根据验证计划，任一必需能力 `FAIL` 即整体为 `FAIL`；本结果不宣告 Wails 正式采用，也不开始正式 implementation。
 
-| 必需项 | 状态 | 必需的 Windows 实机证据 | 当前证据 |
-| --- | --- | --- | --- |
-| 托盘、关闭与单实例 | BLOCKED | 关闭后托盘常驻、托盘恢复、第二实例不独立运行且可将第二次启动交给首实例。 | 回退目录日志已记录 `second_instance_activated`，但该运行未加载锁定运行配置；重跑后再判定。 |
-| 置顶小窗 | BLOCKED | 显示、隐藏、保持置顶，且不改变测试替身状态。 | 尚未收到。 |
-| 开机启动 | BLOCKED | 启用、真实注销/登录启动、单实例、禁用。 | 尚未收到。 |
-| 可交互通知与上下文返回 | BLOCKED | 通知操作、正确窗口激活、上下文标识转交到测试替身。 | 尚未收到。 |
-| Python 进程守护 | BLOCKED | 健康检查、单次异常重启、连续异常、`1s/2s/4s` 退避、重启上限、明确退出、无孤儿进程。 | 尚未收到。 |
-| 宿主边界 | BLOCKED | 代码与运行证据证明没有 SQLite、领域调度、干预规则、LLM 或权威状态。 | Linux 静态检查待阶段 A 完成；不能替代 Windows行为。 |
+### 证据包与目标环境
 
-## 阶段 B 填写区
+- 返回包：`v01-windows-evidence-505cc712c788-20260813T175900Z.zip`，SHA-256 为 `4a94d998d753c5c8c4f00d5ba65c8d11bc48e33762851762d58bbf2bfc0949e0`；已验证 ZIP 完整性。原始 ZIP 不提交仓库，以避免提交本机绝对路径和潜在私人桌面材料。
+- 目标机：Microsoft Windows 10 家庭中文版，`10.0.19045` / Build `19045` / DisplayVersion `22H2` / UBR `7548` / x64。
+- 工具实测：Go `go1.25.0 windows/amd64`、Python `3.12.3 amd64`、Wails `v3.0.0-beta.8`、WebView2 Fixed Version Runtime `151.0.4129.78` x64。
+- 最终验证脚本 commit：`505cc712c7887dd4e4c3277716d4b340e11297ab`。最终 B 运行 `run-20260813T172503Z-505cc712c788` 的宿主二进制构建 commit 为 `05a964966865ca0ad008eb47d6aa58493a34a2fb`、SHA-256 为 `B3616DC4E0B000BA6530D2CF2824365B73AE7587E6FE080D44E4AC3AE2480F08`。该二进制与验证脚本 commit 之间未变更 `main_windows.go` 或 `agent_core/`。
+- 有效运行：A 为 `run-20260813T162942Z-ebe507d8ad38`；B 的最终重启上限运行是 `run-20260813T172503Z-505cc712c788`。包内保留较早的 B 运行作为验证脚本诊断记录，不将其假阴性视为守护失败。
 
-收到证据后补充：
+| 必需项 | 状态 | Windows 实机证据与结论 |
+| --- | --- | --- |
+| 托盘、关闭与单实例 | PASS | `manual-observations.json` 的 `tray_close_keeps_host`、`tray_restores_main` 均为 `PASS`；A 的 `host-events.jsonl` 有 `main_window_hidden_on_close`、`main_window_shown`、明确退出和守护停止。`single-instance-check.json` 记录第二实例 `exit=0`、启动前后为同一 PID `24752`、`second_instance_activated=true`。 |
+| 置顶小窗 | FAIL | 菜单的显示/隐藏和保持置顶（人工 A3/A4）均通过，日志有 `overlay_shown` / `overlay_hidden`。但用户在目标机重复观察到：显示小窗后点击原生标题栏叉号，再选“显示置顶演示小窗”不再显示；重启宿主才可恢复。该正常关闭路径使同一小窗不能再次显示，故能力整体不通过。 |
+| 开机启动 | PASS | 人工 A6 为 `PASS`：真实注销/登录后观察到一个宿主和一个测试替身并已禁用启动项。A 日志记录 `autostart_enabled`、登录后的 `host_starting` / 测试替身健康，以及 `autostart_disabled`。 |
+| 可交互通知与上下文返回 | PASS | 人工 A5 为 `PASS`；A 宿主日志记录 `notification_sent`、`notification_response_received`、`notification_context_routed`，同运行的 `agent-core-events.jsonl` 记录 `notification_context_received`，上下文标识为 `v01-demo-context-001`。 |
+| Python 进程守护 | PASS | A 的 `process-supervisor-SingleCrash.json` 通过一次异常后的重启；最终 B 的 `process-supervisor-RestartLimit.json` 通过四次受控异常：`9264→2620`（`1s`）、`2620→7060`（`2s`）、`7060→12964`（`4s`），第 4 次异常后记录 `supervisor_restart_limit_reached` 且无新 PID。A 日志还记录 `supervisor_explicit_stop_completed`；最终候选汇总在清理后记录宿主与测试替身进程数均为 `0`、`orphanCheck=PASS`。 |
+| 宿主边界 | PASS | 静态边界检查通过：Wails 宿主和测试替身不含 SQLite、LLM、领域调度或权威状态，测试替身只绑定 `127.0.0.1`。Windows 通知上下文也经 localhost 测试替身接收。Windows 宿主二进制对应的 `main_windows.go` / `agent_core/` 与已检查版本未发生后续变更。 |
 
-- Windows 精确版本、DisplayVersion、UBR、架构、WebView2/Go/Wails/Python 实际版本；
-- Windows 执行 commit SHA 与 Issue #11 checkpoint SHA 是否一致；
-- 每项 `PASS`、`FAIL` 或 `BLOCKED` 的脚本日志、人工观察、截图/录屏摘要和受控证据位置；
-- 若有 `FAIL`：最小根因、影响和至少一条不破坏 localhost API、唯一状态源与薄宿主边界的替代路线；
-- 未决风险，以及是否出现与产品范围、领域模型或 ADR-0008～0011 的冲突。
+### 置顶小窗失败根因、影响与替代路线
 
-在全部必需项和边界检查均有 Windows 实机 `PASS` 前，不宣告 Wails 正式采用，也不开始正式 implementation。
+根因是验证宿主创建 overlay 后没有为 `events.Common.WindowClosing` 注册钩子。Windows 原生叉号触发默认关闭监听器，该监听器把窗口标记为已销毁并从 Wails 窗口表移除；随后 `showOverlay()` 虽调用 `Show()`，但销毁窗口仍持有非空实现对象，无法重新运行创建流程。主窗口已有“取消关闭并隐藏”的钩子，overlay 没有，源码与 Windows 实机现象一致。
+
+影响是用户一次常规关闭小窗后，托盘的“显示置顶演示小窗”失效，必须重启宿主，因而不能作为可靠的当前下一步行动/立即开始呈现入口。
+
+不破坏智能体核心边界的最小替代路线是：在同一可替换薄宿主内，为 overlay 注册与主窗口等价的关闭钩子，取消原生关闭并调用 `Hide()`；或禁用/隐藏 overlay 的原生关闭按钮，只保留托盘“隐藏”动作。两者都不访问 SQLite、不保存领域状态，也不改变 localhost API。该 spike 未实现或复测该路线；若产品治理线程决定继续，应以新任务重新验证“显示 → 原生关闭 → 再显示”路径。若该路径在后续 Wails 版本仍不可靠，可在不改变智能体核心协议的前提下评估另一桌面宿主。
+
+### 冲突与未决风险
+
+- 没有发现与产品范围、领域模型或 ADR-0008～0011 的冲突。失败发生在桌面宿主的窗口生命周期适配层；报告的替代路线保持 Wails/未来宿主可替换、智能体核心唯一状态源和 loopback API 边界。
+- 未决风险：本次只能证明锁定 Wails beta.8 在这台 Windows 10 22H2 x64 目标机上的行为；beta 版本升级、其他 Windows 版本、正式安装器/更新路径均不在本次验证范围内。
+- Windows PowerShell 5.1 对 UTF-8 BOM 和原生命令 stderr 的兼容性问题已在验证脚本中处理，但这只是 spike 工具链风险记录，不构成正式产品安装器设计。
+
+后续由产品治理主线程依据本结果决定是否修复后复验、升级/更换宿主或更新 MVP 构建就绪门槛；本技术 session 不作 Wails 正式采用决定。
