@@ -21,7 +21,7 @@
 
 ## 阶段 A：Linux 准备
 
-**状态：READY_FOR_WINDOWS。** Windows PowerShell 5.1 已在修正 checkpoint 上通过脚本解析和配置反序列化预检；验证可从 README 第 3 步继续。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
+**状态：BLOCKED。** Windows PowerShell 5.1 已通过脚本解析和配置反序列化预检，但 `Install-WailsCli.ps1` 的 Wails 版本读取未捕获 CLI 的标准错误输出。修正 checkpoint 必须在 Windows 上完成该脚本的版本检查，才可重新开始阶段 B。该状态不是任何 Windows 能力的 `PASS`，也不满足 MVP 构建就绪门槛。
 
 阶段 A 产物预期包括：
 
@@ -53,6 +53,8 @@ Windows 诊断确认：工作副本与 `HEAD` 的第 21 行 Unicode 码位一致
 后续 Windows 实机在 `Install-WailsCli.ps1` 的第 6 行得到 `ConvertFrom-Json` 错误，并显示 `versions.json` 中中文内容被错误解码。该文件原先也是 UTF-8 无 BOM；先前预检没有读取配置，因此未捕获这一相邻失败路径。后续 checkpoint 必须将 `versions.json` 保存为 UTF-8 with BOM、在所有读取该文件的脚本中显式指定 `-Encoding UTF8`，并使预检使用默认 Windows PowerShell 5.1 配置读取路径反序列化该文件。
 
 配置编码修正实机预检（checkpoint `a071281db522e828ab3e1738a19b2cd70562a34b`）：Windows 工作副本已检出该精确 SHA，`Test-PowerShellScriptParsing.ps1` 通过。该预检覆盖全部 12 个 PowerShell 脚本的 Parser 和 `versions.json` 的默认 Windows PowerShell 5.1 读取/反序列化路径；它不代表安装、构建或任一 Windows 桌面能力通过。
+
+随后 Windows 实机已完成 `go install` 并显示 `v3.0.0-beta.8`，但 `Install-WailsCli.ps1` 在版本检查处对 `$null` 调用 `.Trim()`。Wails v3 的 `version` 命令使用 Go `println` 输出版本，写入标准错误；脚本原先只读取标准输出。后续 checkpoint 必须同时捕获标准输出和标准错误，检查非零退出码和空版本文本。
 
 ### Linux 已完成检查
 

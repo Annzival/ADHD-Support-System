@@ -22,7 +22,13 @@ $wails = Join-Path -Path $goPath -ChildPath 'bin\wails3.exe'
 if (-not (Test-Path $wails)) {
     throw "未找到刚安装的 wails3：$wails"
 }
-$actual = (& $wails version).Trim()
+$actual = (& $wails version 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "wails3 version 失败，退出码：$LASTEXITCODE"
+}
+if ([string]::IsNullOrWhiteSpace($actual)) {
+    throw 'wails3 version 没有返回版本文本；请保留上述输出。'
+}
 if ($actual -notmatch [regex]::Escape($expected)) {
     throw "wails3 版本不符：期望 $expected，实际 $actual"
 }

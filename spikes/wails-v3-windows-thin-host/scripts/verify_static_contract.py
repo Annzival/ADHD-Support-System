@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSIONS = ROOT / "versions.json"
 HOST = ROOT / "main_windows.go"
 CORE = ROOT / "agent_core" / "agent_core_stub.py"
+WAILS_INSTALL = ROOT / "scripts" / "Install-WailsCli.ps1"
 REQUIRED_SCRIPTS = {
     "Check-WindowsEnvironment.ps1",
     "Build-Spike.ps1",
@@ -75,6 +76,13 @@ def main() -> int:
             "Join-Path ((&" not in raw.decode("utf-8-sig"),
             f"{script.name} must not nest a command invocation inside Join-Path; bind it before joining",
         )
+    wails_install = WAILS_INSTALL.read_text(encoding="utf-8-sig")
+    for token in (
+        "& $wails version 2>&1 | Out-String",
+        "[string]::IsNullOrWhiteSpace($actual)",
+        "wails3 version 失败",
+    ):
+        require(token in wails_install, f"Install-WailsCli.ps1 must handle Wails version output: {token}")
     print("static contract: OK")
     return 0
 
