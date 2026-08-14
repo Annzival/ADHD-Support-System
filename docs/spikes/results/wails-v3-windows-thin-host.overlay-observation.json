@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "supplemental-manual-windows-observation",
   "sanitized": true,
   "recordedBy": "技术验证 session，根据 Windows 交互式桌面执行者回传的观察记录",
@@ -8,11 +8,27 @@
     "release": "22H2",
     "architecture": "x64"
   },
-  "runIds": [
-    "run-20260813T162942Z-ebe507d8ad38",
-    "run-20260813T172503Z-505cc712c788"
+  "relatedRunEvidence": [
+    {
+      "runId": "run-20260813T162942Z-ebe507d8ad38",
+      "role": "计划内小窗显示、隐藏与置顶观察的实际发生运行；这些观察在 B 目录的 manual-observations.json 中事后录入。",
+      "recordedRunCommit": "ebe507d8ad3860527b088ebae95a5a315097f70d",
+      "hostBinaryBuildCommit": null,
+      "hostBinaryBuildCommitStatus": "not_recorded_in_early_run_schema",
+      "hostSourceSha256": {
+        "mainWindowsGo": "13137a219b44bd840711a29226c150622d21eb9d3f09c09b8e8f2a1c5a81bd66",
+        "agentCoreStub": "6dbf2fa4d6c98822039ab690a63af71bf76bf755b6492f7fc65d4264346ec4d1"
+      },
+      "sourceHashMatchesFinalBuild": true
+    },
+    {
+      "runId": "run-20260813T172503Z-505cc712c788",
+      "role": "最终 B 进程守护运行；提供已记录的宿主二进制构建身份，不是原生关闭后再显示现象的脚本捕获记录。",
+      "hostBinaryBuildCommit": "05a964966865ca0ad008eb47d6aa58493a34a2fb",
+      "hostBinaryBuildCommitStatus": "recorded",
+      "hostBinarySha256": "B3616DC4E0B000BA6530D2CF2824365B73AE7587E6FE080D44E4AC3AE2480F08"
+    }
   ],
-  "hostBuildCommit": "05a964966865ca0ad008eb47d6aa58493a34a2fb",
   "verificationCommit": "505cc712c7887dd4e4c3277716d4b340e11297ab",
   "procedure": [
     "从宿主菜单选择显示置顶演示小窗。",
@@ -20,6 +36,9 @@
     "再次从宿主菜单选择显示置顶演示小窗。"
   ],
   "observed": "首次显示成功；原生关闭后再次选择显示不再出现小窗；重启宿主后可再次首次显示，重复上述步骤后现象再次出现。",
+  "observedRunId": null,
+  "observedRunIdStatus": "not_recorded_in_script_evidence",
+  "buildAttribution": "该补充人工报告在打包后返回，未携带可归属到单一 A 或 B 运行的 run.json。因此不把 B 的宿主构建 commit 归属给 A，也不把该报告伪装成任一脚本运行的自动证据；仅以两运行源码哈希一致性说明相关窗口生命周期代码未变。",
   "status": "FAIL",
   "repeatable": true,
   "evidenceLimit": "这是脱敏的人工观察摘录。未提交截图、录屏、绝对路径、进程标识或原始桌面日志；需要时按证据摘要记录的受控访问方式取得原始证据并在目标环境复现。"

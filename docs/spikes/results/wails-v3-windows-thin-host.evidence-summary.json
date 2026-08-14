@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "spike": "V-01",
   "phase": "B",
   "finalStatus": "FAIL",
@@ -48,64 +48,168 @@
     "interactiveRunA": {
       "runId": "run-20260813T162942Z-ebe507d8ad38",
       "recordedRunCommit": "ebe507d8ad3860527b088ebae95a5a315097f70d",
-      "hostBinaryBuildCommit": "未由早期 run.json 架构记录",
-      "hostSourceMatchesFinalBuild": true
+      "hostBinaryBuildCommit": null,
+      "hostBinaryBuildCommitStatus": "not_recorded_in_early_run_schema",
+      "hostBinarySha256": null,
+      "sourceHashEquivalence": {
+        "comparedWithBuildRef": "finalSupervisorRunB",
+        "mainWindowsGoSha256": "13137a219b44bd840711a29226c150622d21eb9d3f09c09b8e8f2a1c5a81bd66",
+        "agentCoreStubSha256": "6dbf2fa4d6c98822039ab690a63af71bf76bf755b6492f7fc65d4264346ec4d1",
+        "matchesFinalBuildSources": true,
+        "limit": "源码哈希一致性不等同于 A 的二进制构建 commit 已记录。"
+      }
     },
     "finalSupervisorRunB": {
       "runId": "run-20260813T172503Z-505cc712c788",
       "hostBinaryBuildCommit": "05a964966865ca0ad008eb47d6aa58493a34a2fb",
+      "hostBinaryBuildCommitStatus": "recorded",
       "hostBinarySha256": "B3616DC4E0B000BA6530D2CF2824365B73AE7587E6FE080D44E4AC3AE2480F08"
-    },
-    "unchangedHostSourcesBetweenRunACommitAndFinalBuild": {
-      "mainWindowsGoSha256": "13137a219b44bd840711a29226c150622d21eb9d3f09c09b8e8f2a1c5a81bd66",
-      "agentCoreStubSha256": "6dbf2fa4d6c98822039ab690a63af71bf76bf755b6492f7fc65d4264346ec4d1"
     }
   },
   "sourceArtifacts": [
     {
       "id": "a-host-events",
       "archiveMember": "run-20260813T162942Z-ebe507d8ad38/host-events.jsonl",
-      "sha256": "718d71af90c3d80bf75bfc2eb1959868e318c4fc007f6b77340d63197edbd9ce"
+      "sha256": "718d71af90c3d80bf75bfc2eb1959868e318c4fc007f6b77340d63197edbd9ce",
+      "recordedInRunId": "run-20260813T162942Z-ebe507d8ad38",
+      "observedRunIds": [
+        "run-20260813T162942Z-ebe507d8ad38"
+      ]
     },
     {
       "id": "a-agent-core-events",
       "archiveMember": "run-20260813T162942Z-ebe507d8ad38/agent-core-events.jsonl",
-      "sha256": "dd4281ffa372d85f824b6debf45faa0cc9ea967abf7d6d906eb624732061be1c"
+      "sha256": "dd4281ffa372d85f824b6debf45faa0cc9ea967abf7d6d906eb624732061be1c",
+      "recordedInRunId": "run-20260813T162942Z-ebe507d8ad38",
+      "observedRunIds": [
+        "run-20260813T162942Z-ebe507d8ad38"
+      ]
     },
     {
       "id": "a-single-instance",
       "archiveMember": "run-20260813T162942Z-ebe507d8ad38/single-instance-check.json",
-      "sha256": "53557deb8dc475accd6f1bcb9395a764693a6e4e214fcf69f34aa46f357c90be"
+      "sha256": "53557deb8dc475accd6f1bcb9395a764693a6e4e214fcf69f34aa46f357c90be",
+      "recordedInRunId": "run-20260813T162942Z-ebe507d8ad38",
+      "observedRunIds": [
+        "run-20260813T162942Z-ebe507d8ad38"
+      ]
     },
     {
       "id": "a-single-crash",
       "archiveMember": "run-20260813T162942Z-ebe507d8ad38/process-supervisor-SingleCrash.json",
-      "sha256": "1392c29352fda7ca80bfa20cf8afd557226480e8f22f3d8283a4bafd7f81fe37"
+      "sha256": "1392c29352fda7ca80bfa20cf8afd557226480e8f22f3d8283a4bafd7f81fe37",
+      "recordedInRunId": "run-20260813T162942Z-ebe507d8ad38",
+      "observedRunIds": [
+        "run-20260813T162942Z-ebe507d8ad38"
+      ]
     },
     {
       "id": "b-manual-observations",
       "archiveMember": "run-20260813T172503Z-505cc712c788/manual-observations.json",
-      "sha256": "02cbc3ba9d6464baf5081ccbf263c9f5ea6944076252dc1813f8986f0f1a0ac8"
+      "sha256": "02cbc3ba9d6464baf5081ccbf263c9f5ea6944076252dc1813f8986f0f1a0ac8",
+      "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+      "observedRunIds": [
+        "run-20260813T162942Z-ebe507d8ad38"
+      ],
+      "recordingRelation": "原始 ZIP 中不存在 A 目录的独立 manual-observations.json。此文件物理上位于 B 目录，但每条 evidence 字段都指向 A 的事件文件，故其人工观察发生在 A、事后记录在 B。",
+      "observationEntries": [
+        {
+          "id": "tray_close_keeps_host",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events"
+          ]
+        },
+        {
+          "id": "tray_restores_main",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events"
+          ]
+        },
+        {
+          "id": "overlay_show_hide",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events"
+          ]
+        },
+        {
+          "id": "overlay_stays_on_top",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events"
+          ]
+        },
+        {
+          "id": "notification_action_activates_context",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events",
+            "a-agent-core-events"
+          ]
+        },
+        {
+          "id": "autostart_real_login",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "evidenceArtifactIds": [
+            "a-host-events"
+          ]
+        }
+      ]
     },
     {
       "id": "b-host-events",
       "archiveMember": "run-20260813T172503Z-505cc712c788/host-events.jsonl",
-      "sha256": "af67caddf44b5a7895cafda4e09d1cc85ce162f07f261175225fb2020530d9c4"
+      "sha256": "af67caddf44b5a7895cafda4e09d1cc85ce162f07f261175225fb2020530d9c4",
+      "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+      "observedRunIds": [
+        "run-20260813T172503Z-505cc712c788"
+      ]
     },
     {
       "id": "b-agent-core-events",
       "archiveMember": "run-20260813T172503Z-505cc712c788/agent-core-events.jsonl",
-      "sha256": "c28c91eb0ad503770217632c675680d55d9df49020fe26d86f8274adbebbd095"
+      "sha256": "c28c91eb0ad503770217632c675680d55d9df49020fe26d86f8274adbebbd095",
+      "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+      "observedRunIds": [
+        "run-20260813T172503Z-505cc712c788"
+      ]
     },
     {
       "id": "b-restart-limit",
       "archiveMember": "run-20260813T172503Z-505cc712c788/process-supervisor-RestartLimit.json",
-      "sha256": "0348f883f960eb151f07201e1c89b7f0cf5a952fd63aea2c56d6aced217d3c8d"
+      "sha256": "0348f883f960eb151f07201e1c89b7f0cf5a952fd63aea2c56d6aced217d3c8d",
+      "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+      "observedRunIds": [
+        "run-20260813T172503Z-505cc712c788"
+      ]
     },
     {
       "id": "overlay-close-reopen-observation",
       "repositoryFile": "docs/spikes/results/wails-v3-windows-thin-host.overlay-observation.json",
-      "sha256": "cb00aca5419eb8c8296c6492aacc41dc321c36782d2e1e3405fbb74821fb7afe"
+      "sha256": "fdb3ab5570d0e5d28ca62814ea2e01f7f0878e6f086127b6f08384fbaebeeba2",
+      "recordedInRunId": null,
+      "observedRunIds": [],
+      "recordingRelation": "打包后返回的补充人工观察没有可归属到单一脚本运行的 run.json；A、B 运行的构建归属在该 JSON 中分别列出，不以 B 构建代替 A 构建。"
     },
     {
       "id": "host-boundary-source",
@@ -127,14 +231,30 @@
     {
       "capability": "tray_close_and_single_instance",
       "status": "PASS",
-      "runIds": [
+      "observedRunIds": [
         "run-20260813T162942Z-ebe507d8ad38"
       ],
-      "buildRef": "interactiveRunA",
-      "sourceArtifactIds": [
-        "b-manual-observations",
-        "a-host-events",
-        "a-single-instance"
+      "buildRefs": [
+        "interactiveRunA"
+      ],
+      "sourceReferences": [
+        {
+          "artifactId": "b-manual-observations",
+          "observationEntryIds": [
+            "tray_close_keeps_host",
+            "tray_restores_main"
+          ],
+          "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ]
+        },
+        {
+          "artifactId": "a-host-events"
+        },
+        {
+          "artifactId": "a-single-instance"
+        }
       ],
       "assertions": [
         "关闭主窗口后宿主保留并可从托盘恢复。",
@@ -144,32 +264,74 @@
     {
       "capability": "always_on_top_overlay",
       "status": "FAIL",
-      "runIds": [
-        "run-20260813T162942Z-ebe507d8ad38",
-        "run-20260813T172503Z-505cc712c788"
-      ],
-      "buildRef": "finalSupervisorRunB",
-      "sourceArtifactIds": [
-        "b-manual-observations",
-        "a-host-events",
-        "overlay-close-reopen-observation",
-        "host-boundary-source"
-      ],
-      "assertions": [
-        "计划内菜单显示、隐藏和置顶观察通过。",
-        "原生关闭小窗后再次选择显示不再出现小窗；重启宿主后可重复该现象。"
+      "claims": [
+        {
+          "id": "planned_menu_show_hide_and_topmost",
+          "status": "PASS",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ],
+          "buildRefs": [
+            "interactiveRunA"
+          ],
+          "sourceReferences": [
+            {
+              "artifactId": "b-manual-observations",
+              "observationEntryIds": [
+                "overlay_show_hide",
+                "overlay_stays_on_top"
+              ],
+              "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+              "observedRunIds": [
+                "run-20260813T162942Z-ebe507d8ad38"
+              ]
+            },
+            {
+              "artifactId": "a-host-events"
+            }
+          ]
+        },
+        {
+          "id": "native_close_then_reopen",
+          "status": "FAIL",
+          "observedRunIds": [],
+          "observedRunIdStatus": "not_recorded_in_script_evidence",
+          "buildRefs": [],
+          "sourceReferences": [
+            {
+              "artifactId": "overlay-close-reopen-observation"
+            },
+            {
+              "artifactId": "host-boundary-source"
+            }
+          ],
+          "assertion": "原生关闭后再次选择显示不再出现小窗；重启宿主后可重复该现象。补充人工报告未记录可归属的 A 或 B runId，构建归属和源码一致性见 overlay-observation.json。"
+        }
       ]
     },
     {
       "capability": "autostart",
       "status": "PASS",
-      "runIds": [
+      "observedRunIds": [
         "run-20260813T162942Z-ebe507d8ad38"
       ],
-      "buildRef": "interactiveRunA",
-      "sourceArtifactIds": [
-        "b-manual-observations",
-        "a-host-events"
+      "buildRefs": [
+        "interactiveRunA"
+      ],
+      "sourceReferences": [
+        {
+          "artifactId": "b-manual-observations",
+          "observationEntryIds": [
+            "autostart_real_login"
+          ],
+          "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ]
+        },
+        {
+          "artifactId": "a-host-events"
+        }
       ],
       "assertions": [
         "真实登录观察到一个宿主和一个测试替身，随后已禁用启动项。"
@@ -178,14 +340,29 @@
     {
       "capability": "interactive_notification_context_routing",
       "status": "PASS",
-      "runIds": [
+      "observedRunIds": [
         "run-20260813T162942Z-ebe507d8ad38"
       ],
-      "buildRef": "interactiveRunA",
-      "sourceArtifactIds": [
-        "b-manual-observations",
-        "a-host-events",
-        "a-agent-core-events"
+      "buildRefs": [
+        "interactiveRunA"
+      ],
+      "sourceReferences": [
+        {
+          "artifactId": "b-manual-observations",
+          "observationEntryIds": [
+            "notification_action_activates_context"
+          ],
+          "recordedInRunId": "run-20260813T172503Z-505cc712c788",
+          "observedRunIds": [
+            "run-20260813T162942Z-ebe507d8ad38"
+          ]
+        },
+        {
+          "artifactId": "a-host-events"
+        },
+        {
+          "artifactId": "a-agent-core-events"
+        }
       ],
       "assertions": [
         "通知操作激活并将演示上下文路由至 localhost 测试替身。"
@@ -194,17 +371,30 @@
     {
       "capability": "python_process_supervision",
       "status": "PASS",
-      "runIds": [
+      "observedRunIds": [
         "run-20260813T162942Z-ebe507d8ad38",
         "run-20260813T172503Z-505cc712c788"
       ],
-      "buildRef": "finalSupervisorRunB",
-      "sourceArtifactIds": [
-        "a-single-crash",
-        "a-host-events",
-        "b-restart-limit",
-        "b-host-events",
-        "b-agent-core-events"
+      "buildRefs": [
+        "interactiveRunA",
+        "finalSupervisorRunB"
+      ],
+      "sourceReferences": [
+        {
+          "artifactId": "a-single-crash"
+        },
+        {
+          "artifactId": "a-host-events"
+        },
+        {
+          "artifactId": "b-restart-limit"
+        },
+        {
+          "artifactId": "b-host-events"
+        },
+        {
+          "artifactId": "b-agent-core-events"
+        }
       ],
       "assertions": [
         "单次异常后按 1s 退避重启。",
@@ -215,15 +405,24 @@
     {
       "capability": "thin_host_boundary",
       "status": "PASS",
-      "runIds": [
+      "observedRunIds": [
         "run-20260813T162942Z-ebe507d8ad38",
         "run-20260813T172503Z-505cc712c788"
       ],
-      "buildRef": "finalSupervisorRunB",
-      "sourceArtifactIds": [
-        "host-boundary-source",
-        "a-host-events",
-        "a-agent-core-events"
+      "buildRefs": [
+        "interactiveRunA",
+        "finalSupervisorRunB"
+      ],
+      "sourceReferences": [
+        {
+          "artifactId": "host-boundary-source"
+        },
+        {
+          "artifactId": "a-host-events"
+        },
+        {
+          "artifactId": "a-agent-core-events"
+        }
       ],
       "assertions": [
         "宿主与测试替身不拥有 SQLite、LLM、领域调度或权威状态；测试替身只监听 loopback。",

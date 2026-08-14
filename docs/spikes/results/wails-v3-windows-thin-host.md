@@ -115,6 +115,8 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 - 工具实测：Go `go1.25.0 windows/amd64`、Python `3.12.3 amd64`、Wails `v3.0.0-beta.8`、WebView2 Fixed Version Runtime `151.0.4129.78` x64。
 - 最终验证脚本 commit：`505cc712c7887dd4e4c3277716d4b340e11297ab`。最终 B 运行 `run-20260813T172503Z-505cc712c788` 的宿主二进制构建 commit 为 `05a964966865ca0ad008eb47d6aa58493a34a2fb`、SHA-256 为 `B3616DC4E0B000BA6530D2CF2824365B73AE7587E6FE080D44E4AC3AE2480F08`。该二进制与验证脚本 commit 之间未变更 `main_windows.go` 或 `agent_core/`。
 - 有效运行：A 为 `run-20260813T162942Z-ebe507d8ad38`；B 的最终重启上限运行是 `run-20260813T172503Z-505cc712c788`。包内保留较早的 B 运行作为验证脚本诊断记录，不将其假阴性视为守护失败。
+- 原始 ZIP 清单中没有 A 的独立 `manual-observations.json`。唯一的人工观察文件物理上位于 B 目录，SHA-256 为 `02cbc3ba9d6464baf5081ccbf263c9f5ea6944076252dc1813f8986f0f1a0ac8`；其中六条 `evidence` 均明确指向 A 的事件文件。因此它记录在 B、观察发生在 A，而不是 A 文件。证据摘要以 `recordedInRunId`、`observedRunIds` 和观察条目逐项表达这一关系。
+- A 的早期 `run.json` 只记录工作副本 commit `ebe507d8ad3860527b088ebae95a5a315097f70d`，没有宿主二进制构建 commit 或二进制 SHA-256；结果将其明确标为“未记录”。已核验 A 工作副本 commit 与 B 已记录构建的 `main_windows.go`、`agent_core_stub.py` SHA-256 一致，但该源码一致性不等同于 A 二进制构建身份已记录。
 
 #### 原始 ZIP 的受控位置、访问与保留
 
@@ -124,10 +126,10 @@ Windows 构建实机验证（checkpoint `e806479c4470d265e6d1ef50e41b03dc7905df7
 
 | 必需项 | 状态 | Windows 实机证据与结论 |
 | --- | --- | --- |
-| 托盘、关闭与单实例 | PASS | `manual-observations.json` 的 `tray_close_keeps_host`、`tray_restores_main` 均为 `PASS`；A 的 `host-events.jsonl` 有 `main_window_hidden_on_close`、`main_window_shown`、明确退出和守护停止。`single-instance-check.json` 记录第二实例 `exit=0`、启动前后为同一 PID `24752`、`second_instance_activated=true`。 |
-| 置顶小窗 | FAIL | 菜单的显示/隐藏和保持置顶（人工 A3/A4）均通过，日志有 `overlay_shown` / `overlay_hidden`。但用户在目标机重复观察到：显示小窗后点击原生标题栏叉号，再选“显示置顶演示小窗”不再显示；重启宿主才可恢复。该正常关闭路径使同一小窗不能再次显示，故能力整体不通过。 |
-| 开机启动 | PASS | 人工 A6 为 `PASS`：真实注销/登录后观察到一个宿主和一个测试替身并已禁用启动项。A 日志记录 `autostart_enabled`、登录后的 `host_starting` / 测试替身健康，以及 `autostart_disabled`。 |
-| 可交互通知与上下文返回 | PASS | 人工 A5 为 `PASS`；A 宿主日志记录 `notification_sent`、`notification_response_received`、`notification_context_routed`，同运行的 `agent-core-events.jsonl` 记录 `notification_context_received`，上下文标识为 `v01-demo-context-001`。 |
+| 托盘、关闭与单实例 | PASS | 唯一的人工观察文件记录在 B 目录，但其 `tray_close_keeps_host`、`tray_restores_main` 两条均指向 A 的 `host-events.jsonl`；A 的日志有 `main_window_hidden_on_close`、`main_window_shown`、明确退出和守护停止。`single-instance-check.json` 记录第二实例 `exit=0`、启动前后为同一 PID `24752`、`second_instance_activated=true`。 |
+| 置顶小窗 | FAIL | 记录在 B 目录、观察发生在 A 的人工 A3/A4 表明菜单显示/隐藏和保持置顶通过，A 日志有 `overlay_shown` / `overlay_hidden`。补充的原生关闭后再显示观察没有可归属的脚本运行 ID：用户在目标机重复观察到原生关闭后无法再次显示、重启宿主才可恢复。A 构建身份未记录；B 构建为 `05a964…`，两者源码哈希一致但不将 B 构建归属给 A。该正常关闭路径使同一小窗不能再次显示，故能力整体不通过。 |
+| 开机启动 | PASS | 记录在 B 目录、观察发生在 A 的人工 A6 为 `PASS`：真实注销/登录后观察到一个宿主和一个测试替身并已禁用启动项。A 日志记录 `autostart_enabled`、登录后的 `host_starting` / 测试替身健康，以及 `autostart_disabled`。 |
+| 可交互通知与上下文返回 | PASS | 记录在 B 目录、观察发生在 A 的人工 A5 为 `PASS`；A 宿主日志记录 `notification_sent`、`notification_response_received`、`notification_context_routed`，同运行的 `agent-core-events.jsonl` 记录 `notification_context_received`，上下文标识为 `v01-demo-context-001`。 |
 | Python 进程守护 | PASS | A 的 `process-supervisor-SingleCrash.json` 通过一次异常后的重启；最终 B 的 `process-supervisor-RestartLimit.json` 通过四次受控异常：`9264→2620`（`1s`）、`2620→7060`（`2s`）、`7060→12964`（`4s`），第 4 次异常后记录 `supervisor_restart_limit_reached` 且无新 PID。A 日志还记录 `supervisor_explicit_stop_completed`；最终候选汇总在清理后记录宿主与测试替身进程数均为 `0`、`orphanCheck=PASS`。 |
 | 宿主边界 | PASS | 静态边界检查通过：Wails 宿主和测试替身不含 SQLite、LLM、领域调度或权威状态，测试替身只绑定 `127.0.0.1`。Windows 通知上下文也经 localhost 测试替身接收。Windows 宿主二进制对应的 `main_windows.go` / `agent_core/` 与已检查版本未发生后续变更。 |
 
