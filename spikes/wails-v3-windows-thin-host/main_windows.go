@@ -193,6 +193,15 @@ func main() {
 		BackgroundColour: application.NewRGB(255, 255, 255),
 		URL:              "/overlay.html",
 	})
+	// Keep the overlay object alive after its native title-bar close button is
+	// used. Its contents are only a non-authoritative presentation, so hiding
+	// it is the equivalent tray lifecycle transition; it must not destroy the
+	// window or affect the Agent Core test double.
+	h.overlay.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		event.Cancel()
+		h.overlay.Hide()
+		h.logger.record("overlay_hidden_on_close", map[string]any{"closeCancelled": true})
+	})
 
 	h.configureTray()
 	h.notifications.OnNotificationResponse(h.routeNotificationResponse)
@@ -294,6 +303,13 @@ func (h *host) showMainWindow() {
 }
 
 func (h *host) showOverlay() {
+	if _, exists := h.app.Window.GetByName("overlay"); !exists {
+		// In beta.8, the default close path removes a destroyed window from the
+		// manager. Preserve a mechanically diagnosable failure rather than
+		// silently claiming that a Show call restored it.
+		h.logger.record("overlay_destroyed_before_show", nil)
+		return
+	}
 	h.overlay.SetAlwaysOnTop(true)
 	h.overlay.Show().Focus()
 	h.logger.record("overlay_shown", map[string]any{"alwaysOnTop": true})
