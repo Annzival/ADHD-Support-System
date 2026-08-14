@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-01R",
+  "finalStatusCandidate": "PASS",
+  "sanitization": {
+    "contains": [
+      "能力状态",
+      "逐轮观察",
+      "运行标识",
+      "提交标识",
+      "版本",
+      "SHA-256",
+      "事件种类和进程数量"
+    ],
+    "excluded": [
+      "absolute paths",
+      "Windows account names",
+      "process IDs",
+      "raw log bodies",
+      "screenshots and recordings"
+    ],
+    "rawArchiveCommitted": false
+  },
+  "targetEnvironment": {
+    "windows": {
+      "caption": "Microsoft Windows 10 家庭中文版",
+      "version": "10.0.19045",
+      "buildNumber": "19045",
+      "displayVersion": "22H2",
+      "ubr": 7663,
+      "architecture": "x64"
+    },
+    "tools": {
+      "go": "go version go1.25.0 windows/amd64",
+      "python": "3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]",
+      "wails": "v3.0.0-beta.8",
+      "webview2": "151.0.4129.78"
+    }
+  },
+  "build": {
+    "implementationCommit": "f5a3a22887d31d49f3434bdcd6b142116d8ac0b2",
+    "verificationScriptCommit": "f5a3a22887d31d49f3434bdcd6b142116d8ac0b2",
+    "collectionCommit": "f5a3a22887d31d49f3434bdcd6b142116d8ac0b2",
+    "hostBinarySha256": "29ED44E540819D96C3BCA95161AC56F9C709DFBC02E6184A84F073C35AC4F5D3"
+  },
+  "validation": {
+    "runId": "run-20260814T235712Z-f5a3a22887d3",
+    "rounds": [
+      {
+        "round": 1,
+        "observedAt": "2026-08-14T15:58:49.5130501Z",
+        "manual": {
+          "shownBeforeNativeClose": "PASS",
+          "hiddenOnNativeClose": "PASS",
+          "shownAfterNativeClose": "PASS"
+        },
+        "automatic": {
+          "overlayShownBeforeCloseLogged": true,
+          "overlayHiddenOnCloseLogged": true,
+          "overlayShownAfterCloseLogged": true,
+          "unexpectedDestructionLogged": false,
+          "postCloseProcessSnapshot": {
+            "hostCount": 1,
+            "coreCount": 1,
+            "coreHealth": true
+          }
+        },
+        "status": "PASS"
+      },
+      {
+        "round": 2,
+        "observedAt": "2026-08-14T15:59:32.2693261Z",
+        "manual": {
+          "shownBeforeNativeClose": "PASS",
+          "hiddenOnNativeClose": "PASS",
+          "shownAfterNativeClose": "PASS"
+        },
+        "automatic": {
+          "overlayShownBeforeCloseLogged": true,
+          "overlayHiddenOnCloseLogged": true,
+          "overlayShownAfterCloseLogged": true,
+          "unexpectedDestructionLogged": false,
+          "postCloseProcessSnapshot": {
+            "hostCount": 1,
+            "coreCount": 1,
+            "coreHealth": true
+          }
+        },
+        "status": "PASS"
+      },
+      {
+        "round": 3,
+        "observedAt": "2026-08-14T16:00:10.840028Z",
+        "manual": {
+          "shownBeforeNativeClose": "PASS",
+          "hiddenOnNativeClose": "PASS",
+          "shownAfterNativeClose": "PASS"
+        },
+        "automatic": {
+          "overlayShownBeforeCloseLogged": true,
+          "overlayHiddenOnCloseLogged": true,
+          "overlayShownAfterCloseLogged": true,
+          "unexpectedDestructionLogged": false,
+          "postCloseProcessSnapshot": {
+            "hostCount": 1,
+            "coreCount": 1,
+            "coreHealth": true
+          }
+        },
+        "status": "PASS"
+      }
+    ],
+    "trayHideShowAfterRounds": {
+      "manual": {
+        "hidden": "PASS",
+        "shownAndTopmost": "PASS"
+      },
+      "automatic": {
+        "overlayHiddenLogged": true,
+        "overlayShownLogged": true,
+        "unexpectedDestructionCount": 0,
+        "processSnapshot": {
+          "hostCount": 1,
+          "coreCount": 1,
+          "coreHealth": true
+        }
+      },
+      "status": "PASS"
+    },
+    "candidateStatus": "PASS"
+  },
+  "sourceArtifacts": [
+    {
+      "id": "run-metadata",
+      "fileName": "run-20260814T235712Z-f5a3a22887d3/run.json",
+      "sha256": "4a2d294cc69035da86672cb9d4e368acfb134b9b3ebdcdbebf99b78fca40e361"
+    },
+    {
+      "id": "host-events",
+      "fileName": "run-20260814T235712Z-f5a3a22887d3/host-events.jsonl",
+      "sha256": "86968fb89af762b3679ba4440c1b2414699cca5ab07e06e1225be313e28d5a26"
+    },
+    {
+      "id": "overlay-close-recovery",
+      "fileName": "run-20260814T235712Z-f5a3a22887d3/overlay-close-recovery.json",
+      "sha256": "cab60b641fbca1a490a56365dc1c3ddbc4409a22433670553ea1821362dc64ba"
+    },
+    {
+      "id": "environment",
+      "fileName": "preparation/environment-20260814T235712Z.json",
+      "sha256": "d3efb27f64c4c6ee57a2c7574c73d1f2d1305b951424c1f260aae0b24b74d570"
+    },
+    {
+      "id": "build-report",
+      "fileName": "preparation/build-20260814T235658Z.json",
+      "sha256": "891c2787fc70b63e2e573e00d2c17aa325e5b6a25916cfdcc6c48130317f2f47"
+    }
+  ],
+  "rawEvidenceArchive": {
+    "fileName": "v01r-windows-overlay-close-recovery-f5a3a22887d3-20260815T000125Z.zip",
+    "sha256": "5124e91a7c2c6a299dc42744d8176961c7f7f31da97cbaa30158721cbf9cd421",
+    "controlledLocation": "证据提供者 Windows 工作副本的 spikes/wails-v3-windows-thin-host/.evidence/packages/；绝对路径不写入摘要。",
+    "accessProcedure": "审查者在 Issue #14 或对应 Draft PR 请求原件；证据提供者通过本技术 session 或仓库所有者指定的私有传输方式提供，再以此 SHA-256 校验。",
+    "retention": "证据提供者应至少保留至 Issue #14 的 Draft PR 复审完成且 V-01R 结论已记录；原始 ZIP 不提交 Git 或公开对象存储。"
+  }
+}

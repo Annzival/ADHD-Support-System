@@ -23,6 +23,8 @@ REQUIRED_SCRIPTS = {
     "Start-Spike.ps1",
     "Invoke-ProcessSupervisorScenario.ps1",
     "Record-ManualObservations.ps1",
+    "Invoke-OverlayCloseRecovery.ps1",
+    "Collect-OverlayCloseRecoveryEvidence.ps1",
     "Test-PowerShellScriptParsing.ps1",
     "Test-ValidationEvidence.ps1",
     "Collect-Evidence.ps1",
@@ -57,6 +59,20 @@ def main() -> int:
         require(token in source, f"host is missing {token}")
     for token in ("bytes.TrimPrefix", "read required .spike-run.json", "parse required .spike-run.json"):
         require(token in source, f"host must fail closed and accept a BOM in its run configuration: {token}")
+    overlay_close_hook = re.compile(
+        r'h\.overlay\.RegisterHook\(events\.Common\.WindowClosing,\s*'
+        r'func\(event \*application\.WindowEvent\) \{\s*'
+        r'event\.Cancel\(\)\s*'
+        r'h\.overlay\.Hide\(\)\s*'
+        r'h\.logger\.record\("overlay_hidden_on_close",',
+        re.DOTALL,
+    )
+    require(
+        overlay_close_hook.search(source) is not None,
+        "overlay native close must cancel destruction, hide the existing window, and record overlay_hidden_on_close",
+    )
+    for token in ("overlay_shown", 'h.app.Window.GetByName("overlay")', "overlay_destroyed_before_show"):
+        require(token in source, f"overlay close-recovery diagnostics are missing {token}")
     for prohibited in ("sqlite", "pydantic", "openai", "anthropic", "schedule"):
         require(prohibited not in source.lower(), f"host source must not contain {prohibited!r}")
 
@@ -161,6 +177,24 @@ def main() -> int:
     evidence_collection = (ROOT / "scripts" / "Collect-Evidence.ps1").read_text(encoding="utf-8-sig")
     for token in ("hostBuildCommits", "verificationCommit", "excludedRuns"):
         require(token in evidence_collection, f"evidence collection must select the active run and preserve identity: {token}")
+    overlay_recovery = (ROOT / "scripts" / "Invoke-OverlayCloseRecovery.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "overlay_hidden_on_close",
+        "overlay_shown",
+        "overlay_destroyed_before_show",
+        "for ($round = 1; $round -le 3; $round++)",
+        "overlay-close-recovery.json",
+    ):
+        require(token in overlay_recovery, f"overlay close-recovery script must collect three-round evidence: {token}")
+    overlay_collection = (ROOT / "scripts" / "Collect-OverlayCloseRecoveryEvidence.ps1").read_text(encoding="utf-8-sig")
+    for token in (
+        "rawEvidenceArchive",
+        "controlledLocation",
+        "retention",
+        "absolute paths",
+        "overlay-close-recovery-summary",
+    ):
+        require(token in overlay_collection, f"overlay evidence collector is missing sanitized-summary metadata: {token}")
     print("static contract: OK")
     return 0
 
