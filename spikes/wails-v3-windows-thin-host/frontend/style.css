@@ -1,0 +1,16 @@
+:root {
+  color: #172033;
+  background: #f7f8fb;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body { margin: 0; }
+main { max-width: 680px; margin: 0 auto; padding: 2rem; }
+h1 { font-size: 1.55rem; margin: 0.25rem 0 1rem; }
+h2 { font-size: 1rem; margin: 0; }
+section { background: #fff; border: 1px solid #dce1eb; border-radius: 10px; margin: 1rem 0; padding: 1rem; }
+.eyebrow { color: #375d9b; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.hint { color: #4d5c72; font-size: 0.9rem; }
+.overlay main { padding: 1rem 1.25rem; }
+.overlay h1 { font-size: 1.15rem; }
+code { background: #edf0f6; border-radius: 3px; padding: 0.1rem 0.25rem; }
