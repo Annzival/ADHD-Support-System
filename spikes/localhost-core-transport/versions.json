@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "candidates": {
+    "windows": {
+      "product": "Windows 10",
+      "release": "22H2",
+      "architecture": "x64",
+      "baseBuild": "19045"
+    },
+    "wails": {
+      "version": "v3.0.0-beta.8",
+      "releaseCommit": "81a149919f91f2149d3fe9be5a27472ae7617b8e",
+      "cliInstall": "go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.8"
+    },
+    "go": {
+      "version": "go1.25.0",
+      "windowsInstaller": "https://go.dev/dl/go1.25.0.windows-amd64.msi"
+    },
+    "python": {
+      "version": "3.12.3",
+      "architecture": "amd64",
+      "windowsInstaller": "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe"
+    },
+    "webview2": {
+      "mode": "Fixed Version Runtime",
+      "version": "151.0.4129.78",
+      "architecture": "x64",
+      "cabUrl": "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/355004fc-ebbc-42d3-b319-d43be39f8d39/Microsoft.WebView2.FixedVersionRuntime.151.0.4129.78.x64.cab"
+    }
+  }
+}

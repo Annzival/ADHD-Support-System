@@ -23,3 +23,11 @@ coverage/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# V-02 localhost Core transport spike: generated Windows evidence and run config.
+spikes/localhost-core-transport/.evidence/
+spikes/localhost-core-transport/.tools/
+spikes/localhost-core-transport/bin/
+spikes/localhost-core-transport/.spike-build.json
+spikes/localhost-core-transport/.spike-run.json
+spikes/localhost-core-transport/**/__pycache__/
