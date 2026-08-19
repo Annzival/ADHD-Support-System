@@ -1,13 +1,25 @@
 # V-03：SQLite、Core 重启与 PC 重启恢复验证
 
-> 当前阶段结论：**READY_FOR_WINDOWS**（2026-08-19）。Linux 自动检查与 Windows x64 交叉编译预检均通过；随后仍须等待 Windows 10 22H2 x64 的一次真实 PC 重启证据。本文件只记录 Issue #18 的合成恢复机制验证；不表示 MVP 构建就绪，不定义 B-03/B-04 的正式领域语义，也不将 spike 代码认定为产品实现。
+> 最终结论：**PASS**（2026-08-19）。本结论只证明 Issue #18 中明确标记的合成状态与合成调度恢复机制，在指定 Windows PC 的一次真实重启中可行；不表示 MVP 构建就绪，不定义 B-03/B-04 的正式领域语义，也不将 spike 代码认定为产品实现。
 
 ## 任务边界
 
 - 任务类型：`technical spike`；对应 [Issue #18](https://github.com/Annzival/ADHD-Support-System/issues/18)。
 - SQLite 只由 Python Core 访问。Wails 仅进行机械进程守护、V-02 bootstrap 端点发现、令牌内存桥接和证据采集；它不读取数据库、不执行调度/失效判断、不持有权威状态，也不调用 LLM。
 - 所有表、稳定 ID、版本、时间、状态、已处理标记和可观察记录均以 `synthetic_` 明确标记，只用于本 spike。
-- Linux、WSL、源码阅读、mock、交叉编译或 Core 进程重启都不能单独证明真实 PC 重启后的 `PASS`。
+- Linux、WSL、源码阅读、mock、交叉编译或 Core 进程重启都不能单独证明真实 PC 重启后的 `PASS`；本次结论以阶段 B 的实机证据为准。
+
+## 最终结果概览
+
+| 项目 | 已核验结果 |
+| --- | --- |
+| 最小机制与尝试次数 | `python_sqlite_synthetic_recovery_with_one_time_bootstrap`；第 1 种最小机制通过，未启动第二次尝试。 |
+| checkpoint、实现与验证 commit | `1ca7d92af59e78d749624b7788af15b0d7ee7874`。 |
+| Windows 运行 ID | `run-20260819T215308Z-1ca7d92af59e`。 |
+| 目标实机 | Windows 10 22H2 x64；Python 3.12.3（64 位进程）、Go 1.25.0 windows/amd64、Wails v3.0.0-beta.8、固定版 WebView2 151.0.4129.78。 |
+| 真实重启与进程计数 | 启动标识已变化；恢复时 Wails 宿主 `1`、Python Core `1`。 |
+| 合成恢复结果 | 同一合成 SQLite 身份与 checkpoint 一致；4 项准备检查、5 项宿主检查、6 项 Core 检查均为 `PASS`，验证失败数为 `0`。 |
+| 结果摘要 | 见 [最终脱敏机器可读摘要](sqlite-restart-recovery.evidence-summary.json)。 |
 
 ## 首个最小机制
 
@@ -17,46 +29,57 @@ Python 标准库 `sqlite3` 使用 `BEGIN IMMEDIATE` 事务与 WAL journal：先�
 
 ## 阶段 A：Linux 准备
 
-阶段 A 仅在下列平台无关检查都通过后才可标记 `READY_FOR_WINDOWS`：
+阶段 A 的平台无关检查为：
 
 ```bash
 python3 -m unittest discover -s spikes/sqlite-restart-recovery/agent_core -p 'test_*.py'
 python3 spikes/sqlite-restart-recovery/scripts/verify_static_contract.py
 ```
 
-若隔离的锁定 Go `1.25.0` 工具链可用，还需用它运行 Windows x64 `go test ./...` 与 `go build -buildvcs=false`。它们只验证源代码/API，不替代目标 PC 的 Wails/WebView2/重启证据。
+隔离的锁定 Go `1.25.0` 工具链还完成了 Windows x64 `go test ./...` 与 `go build -buildvcs=false`；它们只验证源代码/API，不替代目标 PC 的 Wails/WebView2/重启证据。
 
-本次阶段 A 已通过：Python `unittest` 5/5（提交状态、受控异常、CLI 摘要、重复扫描、bootstrap/Core 重启）；静态契约检查；以及隔离 Go `1.25.0` 的 Windows x64 `go test ./...`、`go build -buildvcs=false`。交叉构建二进制 SHA-256 为 `8a057e52ef133bc2fa99e8ba08ca77925f0c91ef1cd3e00c22bdbf79bd908cdf`。脱敏阶段 A 摘要见 `sqlite-restart-recovery.phase-a-summary.json`。
-
-本次只实现并验证了 1 种最小机制，没有启动第二次尝试。阶段 A 结束后会在 Issue #18 写入 Windows checkpoint 和 Draft PR 地址。这个结论只有 `READY_FOR_WINDOWS` 或 `BLOCKED` 两种可能；在收到并核验 Windows 原始证据前，不写 `PASS`。
+阶段 A 已通过：Python `unittest` 5/5（提交状态、受控异常、CLI 摘要、重复扫描、bootstrap/Core 重启）、静态契约检查，以及隔离 Go `1.25.0` 的 Windows x64 `go test ./...`、`go build -buildvcs=false`。交叉构建二进制 SHA-256 为 `8a057e52ef133bc2fa99e8ba08ca77925f0c91ef1cd3e00c22bdbf79bd908cdf`。脱敏阶段 A 摘要见 [sqlite-restart-recovery.phase-a-summary.json](sqlite-restart-recovery.phase-a-summary.json)。
 
 ## 阶段 B：Windows 10 22H2 x64 真实 PC 重启
 
-Windows 执行者先运行准备脚本，再完成一次真实 PC 重启；重新登录后运行恢复验证。脚本会要求：
+Windows 执行者在指定 checkpoint 完成准备后执行了一次真实 PC 重启并重新登录；重启后脚本确认启动标识不同，随后才启动薄 Wails 宿主和 Python Core。核验结果如下：
 
-1. 重启后的 Windows 启动标识与检查点不同；
-2. 恢复时只有一个 Wails 宿主和一个 Python Core；
-3. Core 通过一次性 bootstrap 重新可达；
-4. Core 返回同一合成数据库身份、提交权威状态、未来一次性动作、过期不补发、一次合并恢复信号和重复扫描幂等的脱敏摘要；
-5. run、检查点、摘要、返回清单和 ZIP 的 SHA-256 可以交叉核验。
+- checkpoint 中的合成 SQLite 身份与第一次恢复、正常 Core 退出后的第二次恢复一致；已提交合成权威状态的稳定 ID、版本和内容保持一致。
+- 初次恢复扫描恰好产生：未来一次性动作 `1`、已过期记录处理 `1`、合并恢复信号 `1`。
+- Core 正常退出后的恢复扫描与重复扫描均为 `0/0/0`，最终可观察记录总数为未来动作 `1`、合并恢复信号 `1`；没有重复动作。
+- 运行期使用 V-02 的 `one_time_bootstrap_file`，端点族仅为 `127.0.0.1`；普通日志不含敏感材料的检查为 `PASS`。
 
-详细步骤见 [最小复现 README](../../../spikes/sqlite-restart-recovery/README.md) 和 [Windows 清单](../../../spikes/sqlite-restart-recovery/MANUAL-CHECKLIST.md)。原始 ZIP、SQLite 文件和临时 bootstrap 材料不提交 Git；仅在 Windows 工作副本的受控 `.evidence` 位置保留，并通过约定私有渠道提供。
+## 原始证据、完整性与脱敏
 
-## 验收映射与待补证据
+原始证据 ZIP 不提交 Git，也不在本文公开其内容。它由 Windows 工作副本的受控位置经约定私有渠道回传，并应保留至 Issue #18 与 Draft PR 审阅完成。
 
-| Issue #18 验收项 | 阶段 A 自动证据 | 阶段 B 必需证据 |
-| --- | --- | --- |
-| 已提交状态经正常/受控异常退出可恢复 | Python 子进程和 SQLite 测试 | 同一机制的 Windows 准备摘要。 |
-| 未提交写入无半更新 | 受控异常子进程后重新打开数据库 | Windows 准备摘要。 |
-| 未来合成调度只产生一次 | 固定时钟、唯一可观察键和重复扫描测试 | 重启后 Core 摘要。 |
-| 已过期合成干预不补发、仅一次合并恢复 | 固定时钟与唯一合并键测试 | 重启后 Core 摘要。 |
-| 重复扫描/Core 重启不重复 | 同一文件的多轮扫描与 bootstrap 重连测试 | 重启后 Wails/Core run。 |
-| 真实 PC 重启、单一宿主/Core、同一文件恢复 | 不可由 Linux 替代 | 启动标识变化、进程计数、检查点与恢复 run。 |
-| SQLite/Core 边界 | 静态契约检查 | 同一 host/Core 源码哈希与运行证据。 |
-| 身份链与证据完整性 | 阶段 A 源码/脚本检查 | checkpoint、摘要、manifest、ZIP SHA-256。 |
+| 项目 | 已核验值 |
+| --- | --- |
+| 原始 ZIP 文件名 | `v03-windows-pc-restart-evidence-1ca7d92af59e-20260819T215324Z.zip` |
+| 原始 ZIP SHA-256 | `1a8a28e07c687839614490adad67e8877ad153376e6eb718038cac4be0ec6398` |
+| 回传摘要 SHA-256 | `3ba3f11ac75a41fea430e79d4574993c1a7f424d36629f5ce28bf21b16dcbda2` |
+| ZIP CRC | `PASS` |
+| 证据包内运行文件哈希 | 10 个运行文件的 SHA-256 多重集合与返回清单一致；checkpoint 及 4 个受控保留报告均有清单哈希。 |
+| 实现身份 | checkpoint、运行、返回清单和摘要中的 commit、Core 源码 SHA-256、宿主二进制 SHA-256 相互一致；Core 源码哈希按 Windows CRLF checkout 形式复算通过。 |
 
-## 当前限制与冲突检查
+提交的机器可读摘要只保留版本、commit、运行 ID、布尔结果、计数和 SHA-256；不包含绝对路径、Windows 账户名、进程 ID、临时令牌、Authorization header、原始日志、SQLite 字节、截图或录屏。证据中启动时间的 `Z` 与等价时区偏移表示已按同一时刻比较，不作为不同启动事件。
 
-- Windows 真实重启尚未执行，因此当前不是最终通过或失败结论。
-- 本机制只覆盖单台 PC、同一用户会话、锁定版本和合成数据；不覆盖异常断电、数据库加密、备份恢复、恶意同权限进程、其他 Windows 版本或多设备同步。
-- 未发现与 ADR-0008、ADR-0009、ADR-0010、ADR-0012、ADR-0016、ADR-0017、产品范围或领域模型的冲突。该结论只描述技术边界，不改变任何 ADR 或产品决策。
+## Issue #18 验收映射
+
+| Issue #18 验收项 | 本次直接证据 |
+| --- | --- |
+| 1. 已提交权威状态经正常/受控异常退出可恢复 | 准备与 Core 检查均为 `PASS`；第一次恢复和正常 Core 重启后的合成权威状态稳定 ID、版本、内容一致。 |
+| 2. 中断写入不会形成半更新 | `synthetic_uncommitted_write_rolled_back` 与 `synthetic_interrupted_write_absent` 均为 `PASS`。 |
+| 3. 未来合成调度只产生一次 | 首次恢复产生未来动作 `1`；正常 Core 重启与重复扫描均为 `0`；最终总数为 `1`。 |
+| 4. 过期干预不补发、只形成一次合并恢复 | 首次恢复产生合并恢复信号 `1`；后续扫描均为 `0`；最终总数为 `1`。 |
+| 5. 连续扫描与 Core 重启不重复 | 6 项 Core 检查全为 `PASS`，第二次恢复和重复扫描均无新增动作。 |
+| 6. Windows 真实重启、单一宿主/Core、同一文件恢复 | 启动标识变化、进程计数 `1/1`、同一合成 SQLite 身份、回环一次性 bootstrap 均已核验。 |
+| 7. SQLite/Core 与 Wails 边界 | 阶段 A 静态契约为 `PASS`；阶段 B 运行期只复用 V-02 一次性 bootstrap/回环边界，未发现 Wails 直接访问 SQLite 或执行调度、失效判断、LLM 的证据。 |
+| 8. commit、摘要、环境、运行 ID 与脱敏证据对应 | checkpoint/实现/验证 commit 均为 `1ca7d92…`；环境、运行 ID、摘要、清单、ZIP CRC 与 SHA-256 均已交叉核验。 |
+
+## 限制、风险与冲突检查
+
+- 此 `PASS` 仅覆盖一次 Windows 10 22H2 x64 实机重启、单一用户会话、锁定版本和明确标记的合成数据；不覆盖异常断电、数据库加密、备份恢复、恶意同权限进程、其他 Windows 版本或多设备同步。
+- 受控保留的 4 个准备报告以 SHA-256 纳入清单，但其原文未随回传 ZIP 发布；最终机制结论以 ZIP 中的 checkpoint、run、候选结果、验证报告、进程快照和脱敏摘要的交叉核验为依据。
+- 未发现与 ADR-0008、ADR-0009、ADR-0010、ADR-0012、ADR-0016、ADR-0017、产品范围或领域模型的冲突。该技术结论不改变任何 ADR 或产品决策。
+- 不标记 Ready，不合并 Draft PR，不修改 B-03/B-04，也不开始 MVP implementation。
