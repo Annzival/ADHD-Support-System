@@ -49,7 +49,7 @@ PowerShell 脚本刻意保持 ASCII。V-01 的实机证据表明，含中文的 
 
 只在 Issue #17 更新中指定的 checkpoint、交互式 Windows 10 22H2 x64 桌面会话执行。不要用 WSL、Windows 11、远程无桌面会话或其他 checkpoint 代替。
 
-前置条件是锁定的 Go 1.25.0 x64、Python 3.12.3 x64（含 Python Launcher）、Wails v3.0.0-beta.8 与 WebView2 Fixed Version Runtime 151.0.4129.78 x64。不要升级这些版本。
+前置条件是锁定的 Go 1.25.0 x64、Python 3.12.3 x64（含 Python Launcher）、Wails v3.0.0-beta.8 与 WebView2 Fixed Version Runtime 151.0.4129.78 x64。Python x64 是锁定约束：`versions.json` 固定 `architecture=amd64` 与 `processBits=64`，`Check-WindowsEnvironment.ps1` 必须记录实际 Python 进程的 `processBits=64`；仅版本相同的 32 位 Python 不通过。不要升级这些版本。
 
 在仓库根目录确认 checkpoint 后执行：
 

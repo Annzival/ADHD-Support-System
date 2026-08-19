@@ -64,10 +64,26 @@ if ($go) {
 
 $py = Get-Command py -ErrorAction SilentlyContinue
 if ($py) {
-    $pythonVersion = (& $py.Source '-3.12' '--version' 2>&1 | Out-String).Trim()
-    $pythonExecutable = (& $py.Source '-3.12' '-c' 'import sys; print(sys.executable)').Trim()
-    $report.actual.python = [ordered]@{ version = $pythonVersion; executable = $pythonExecutable }
-    Add-Check 'python_3_12_3_x64' ($pythonVersion -match '3\.12\.3') $pythonVersion
+    $pythonProbeCode = 'import json, struct, sys; print(json.dumps({"version":".".join(map(str, sys.version_info[:3])),"executable":sys.executable,"processBits":struct.calcsize("P") * 8}))'
+    $pythonProbeOutput = (& $py.Source '-3.12' '-c' $pythonProbeCode 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        Add-Check 'python_3_12_3_x64' $false "Python probe failed: $pythonProbeOutput"
+    } else {
+        try {
+            $pythonProbe = $pythonProbeOutput | ConvertFrom-Json -ErrorAction Stop
+            $pythonProcessBits = [int]$pythonProbe.processBits
+            $pythonVersion = "Python $($pythonProbe.version)"
+            $report.actual.python = [ordered]@{
+                version = $pythonVersion
+                executable = [string]$pythonProbe.executable
+                processBits = $pythonProcessBits
+            }
+            $pythonPassed = $pythonProbe.version -eq $versions.candidates.python.version -and $pythonProcessBits -eq ([int]$versions.candidates.python.processBits)
+            Add-Check 'python_3_12_3_x64' $pythonPassed "version=$pythonVersion; processBits=$pythonProcessBits"
+        } catch {
+            Add-Check 'python_3_12_3_x64' $false "Python probe did not return valid JSON: $($_.Exception.Message)"
+        }
+    }
 } else {
     Add-Check 'python_3_12_3_x64' $false 'py launcher not found'
 }

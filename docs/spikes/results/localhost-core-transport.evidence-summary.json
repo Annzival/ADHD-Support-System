@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
   "spike": "V-02",
-  "phase": "windows_evidence_verified",
-  "finalStatus": "PASS",
+  "phase": "windows_evidence_superseded_pending_python_x64_refresh",
+  "finalStatus": "BLOCKED",
+  "priorWindowsCandidateStatus": "PASS",
   "receivedSummarySha256": "cbc6cea4738ad82641dafb6385e2b31864b012c3ed3ddc8c494eab7c298a3bd8",
   "evidenceRun": {
     "runId": "run-20260819T181213Z-5cc2c4f5c9da",
@@ -40,7 +41,11 @@
     },
     "tools": {
       "go": "go version go1.25.0 windows/amd64",
-      "python": "Python 3.12.3",
+      "python": {
+        "version": "Python 3.12.3",
+        "processBits": null,
+        "processBitsEvidence": "missing_in_prior_environment_report"
+      },
       "wails": "v3.0.0-beta.8",
       "webview2": "151.0.4129.78"
     }
@@ -146,6 +151,15 @@
     "validationReportFailureCount": 0,
     "sensitiveCredentialShapedJsonFieldsFound": false,
     "remainingHandoffFilesFound": false,
-    "secondHandshakeAttempted": false
+    "secondHandshakeAttempted": false,
+    "pythonProcessBitsRecorded": false
+  },
+  "requiredRevalidation": {
+    "status": "PENDING_WINDOWS",
+    "reason": "Python 3.12.3 x64 is a locked V-02 constraint, but the prior environment report recorded only the version.",
+    "requiredProcessBits": 64,
+    "requiredCheck": "python_3_12_3_x64",
+    "requiredSummaryPath": "targetEnvironment.tools.python.processBits",
+    "scope": "Refresh environment, build, static-contract, run, validation, sanitized summary, and raw evidence archive on one new checkpoint."
   }
 }

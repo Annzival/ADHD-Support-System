@@ -58,6 +58,8 @@ def main() -> int:
     require(candidates["wails"]["version"] == "v3.0.0-beta.8", "Wails version changed")
     require(candidates["go"]["version"] == "go1.25.0", "Go version changed")
     require(candidates["python"]["version"] == "3.12.3", "Python version changed")
+    require(candidates["python"]["architecture"] == "amd64", "Python architecture changed")
+    require(candidates["python"]["processBits"] == 64, "Python process bitness changed")
     require(candidates["webview2"]["version"] == "151.0.4129.78", "WebView2 version changed")
 
     host = HOST.read_text(encoding="utf-8")
@@ -122,6 +124,23 @@ def main() -> int:
     for script in scripts_dir.glob("*.ps1"):
         require_ascii(script)
 
+    environment_check = (scripts_dir / "Check-WindowsEnvironment.ps1").read_text(encoding="ascii")
+    for marker in (
+        '"processBits"',
+        'struct.calcsize("P") * 8',
+        "python_3_12_3_x64",
+        "versions.candidates.python.processBits",
+    ):
+        require(marker in environment_check, f"Python x64 environment check is missing {marker!r}")
+
+    collector = (scripts_dir / "Collect-Evidence.ps1").read_text(encoding="ascii")
+    for marker in (
+        "Python x64 environment evidence is missing.",
+        "processBits = $pythonProcessBits",
+        "versions.candidates.python.processBits",
+    ):
+        require(marker in collector, f"evidence collector is missing Python x64 marker: {marker!r}")
+
     gitignore = (ROOT.parents[1] / ".gitignore").read_text(encoding="utf-8")
     for marker in (
         "spikes/localhost-core-transport/.evidence/",
@@ -138,6 +157,7 @@ def main() -> int:
         "coreSourceSha256": sha256(CORE),
         "checks": [
             "locked Windows and Wails candidate",
+            "locked Python 3.12.3 amd64 process bitness and evidence capture",
             "Wails host and one-time bootstrap source shape",
             "loopback-only dynamic Core source shape",
             "HTTP and WebSocket authentication paths",

@@ -13,6 +13,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $run = Get-Content -LiteralPath (Join-Path $RunDirectory 'run.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $candidate = Get-Content -LiteralPath (Join-Path $RunDirectory 'candidate-results.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$versions = Get-Content -LiteralPath (Join-Path $root 'versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $preparation = Join-Path $root '.evidence\preparation'
 $environmentFile = Get-ChildItem -LiteralPath $preparation -Filter 'environment-*.json' | Sort-Object LastWriteTime | Select-Object -Last 1
 $buildFile = Get-ChildItem -LiteralPath $preparation -Filter 'build-*.json' | Sort-Object LastWriteTime | Select-Object -Last 1
@@ -22,6 +23,14 @@ if (-not $environmentFile -or -not $buildFile -or -not $staticFile) {
 }
 $environment = Get-Content -LiteralPath $environmentFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
 $build = Get-Content -LiteralPath $buildFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+$pythonCheck = $environment.checks.python_3_12_3_x64
+if ($null -eq $pythonCheck -or $null -eq $environment.actual.python -or $null -eq $environment.actual.python.processBits) {
+    throw 'Python x64 environment evidence is missing.'
+}
+$pythonProcessBits = [int]$environment.actual.python.processBits
+if (-not [bool]$pythonCheck.passed -or $pythonProcessBits -ne ([int]$versions.candidates.python.processBits)) {
+    throw "Python process bitness did not satisfy the locked requirement: expected $($versions.candidates.python.processBits), actual $pythonProcessBits."
+}
 
 $packageRoot = Join-Path $root '.evidence\packages'
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
@@ -68,7 +77,10 @@ $summary = [ordered]@{
         windows = $environment.actual.windows
         tools = [ordered]@{
             go = $environment.actual.go.version
-            python = $environment.actual.python.version
+            python = [ordered]@{
+                version = $environment.actual.python.version
+                processBits = $pythonProcessBits
+            }
             wails = $environment.actual.wails.version
             webview2 = $environment.actual.webview2.version
         }

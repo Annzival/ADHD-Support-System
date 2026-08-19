@@ -29,6 +29,7 @@
     "hostBinarySha256": "PENDING_WINDOWS",
     "coreSourceSha256": "PENDING_WINDOWS",
     "verificationScriptCommit": "PENDING_WINDOWS",
+    "pythonProcessBits": "PENDING_WINDOWS_64",
     "rawEvidenceArchiveSha256": "PENDING_WINDOWS"
   },
   "validation": {
