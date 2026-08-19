@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-03",
+  "phase": "windows_pc_restart_template",
+  "finalStatusCandidate": "BLOCKED",
+  "sanitization": {
+    "contains": [
+      "synthetic record identifiers",
+      "capability status",
+      "version strings",
+      "commit IDs",
+      "boot-time comparison result",
+      "process counts",
+      "SHA-256"
+    ],
+    "excluded": [
+      "absolute paths",
+      "Windows account names",
+      "process IDs",
+      "temporary token values",
+      "Authorization headers",
+      "raw log bodies",
+      "SQLite database bytes",
+      "screenshots and recordings"
+    ],
+    "rawArchiveCommitted": false
+  },
+  "requiredEvidence": {
+    "checkpoint": "PENDING_WINDOWS",
+    "targetEnvironment": "PENDING_WINDOWS",
+    "preRestartBootMarker": "PENDING_WINDOWS",
+    "postRestartBootMarkerChanged": "PENDING_WINDOWS",
+    "hostAndCoreCounts": "PENDING_WINDOWS",
+    "syntheticDatabaseIdentity": "PENDING_WINDOWS",
+    "candidateChecks": "PENDING_WINDOWS",
+    "rawEvidenceArchiveSha256": "PENDING_WINDOWS"
+  }
+}

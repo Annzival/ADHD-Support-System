@@ -31,3 +31,11 @@ spikes/localhost-core-transport/bin/
 spikes/localhost-core-transport/.spike-build.json
 spikes/localhost-core-transport/.spike-run.json
 spikes/localhost-core-transport/**/__pycache__/
+
+# V-03 SQLite restart-recovery spike: generated Windows evidence, state and build output.
+spikes/sqlite-restart-recovery/.evidence/
+spikes/sqlite-restart-recovery/.tools/
+spikes/sqlite-restart-recovery/bin/
+spikes/sqlite-restart-recovery/.spike-build.json
+spikes/sqlite-restart-recovery/.spike-run.json
+spikes/sqlite-restart-recovery/**/__pycache__/
