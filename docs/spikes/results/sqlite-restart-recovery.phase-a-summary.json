@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-03",
+  "phase": "linux_preparation",
+  "status": "READY_FOR_WINDOWS",
+  "attemptCount": 1,
+  "mechanism": "python_sqlite_synthetic_recovery_with_one_time_bootstrap",
+  "sanitization": {
+    "contains": [
+      "source SHA-256",
+      "locked tool versions",
+      "test statuses",
+      "cross-build SHA-256"
+    ],
+    "excluded": [
+      "absolute paths",
+      "temporary token values",
+      "SQLite database bytes",
+      "raw log bodies"
+    ]
+  },
+  "targetCandidate": {
+    "windows": "Windows 10 22H2 x64",
+    "go": "go1.25.0",
+    "python": "3.12.3 amd64 processBits=64",
+    "wails": "v3.0.0-beta.8",
+    "webview2": "151.0.4129.78"
+  },
+  "linuxChecks": {
+    "pythonUnitTests": "PASS (5/5)",
+    "staticContract": "PASS",
+    "windowsX64GoTest": "PASS",
+    "windowsX64GoBuild": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "sourceArtifacts": {
+    "hostSourceSha256": "218517dc7333dda248505b09fac9972fd46c18b7070cecb738912ca02b2dfcb1",
+    "coreSourceSha256": "02ddb2fa2e4abefe6c167f8834a8242349b8dafc0e9e7012543c069d4e6460b2",
+    "staticContractSourceSha256": "8e14b12c04e8fc9032c6347e51da78534f7ed26b6680b107f7b9bb405810f327",
+    "windowsX64CrossBuildSha256": "8a057e52ef133bc2fa99e8ba08ca77925f0c91ef1cd3e00c22bdbf79bd908cdf"
+  },
+  "windowsEvidence": {
+    "status": "PENDING",
+    "required": [
+      "one real PC restart",
+      "changed Windows boot marker",
+      "one host and one Core at recovery",
+      "same synthetic database identity",
+      "sanitized summary and raw evidence ZIP SHA-256"
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-03",
+  "phase": "windows_pc_restart_verified",
+  "finalStatus": "PASS",
+  "attemptCount": 1,
+  "mechanism": "python_sqlite_synthetic_recovery_with_one_time_bootstrap",
+  "identity": {
+    "checkpointCommit": "1ca7d92af59e78d749624b7788af15b0d7ee7874",
+    "implementationCommit": "1ca7d92af59e78d749624b7788af15b0d7ee7874",
+    "verificationScriptCommit": "1ca7d92af59e78d749624b7788af15b0d7ee7874",
+    "runId": "run-20260819T215308Z-1ca7d92af59e",
+    "hostBinarySha256": "d185cf8ece3bceb6ec862e4f2bb43da553c08641f6ba36193b2a52e68ea731e8",
+    "coreSourceSha256": "364e4e972caf424db99ff26fb152967f47612b9a57ce61c449904829fadf7bc5",
+    "coreSourceHashForm": "Windows CRLF checkout"
+  },
+  "targetEnvironment": {
+    "platform": "Windows 10 22H2 x64",
+    "python": "Python 3.12.3, 64-bit process",
+    "go": "go1.25.0 windows/amd64",
+    "wails": "v3.0.0-beta.8",
+    "webview2": "151.0.4129.78"
+  },
+  "pcRestart": {
+    "bootMarkerChanged": true,
+    "hostCount": 1,
+    "coreCount": 1,
+    "syntheticDatabaseIdentityMatchesCheckpoint": true,
+    "bootstrapHandshake": "one_time_bootstrap_file",
+    "endpointFamily": "127.0.0.1"
+  },
+  "recovery": {
+    "preparationChecksPassed": 4,
+    "hostChecksPassed": 5,
+    "coreChecksPassed": 6,
+    "validationFailureCount": 0,
+    "initialRecoveryScan": {
+      "futureObservableInserted": 1,
+      "expiredRecordsHandled": 1,
+      "mergedRecoveryInserted": 1
+    },
+    "afterNormalCoreRestartScan": {
+      "futureObservableInserted": 0,
+      "expiredRecordsHandled": 0,
+      "mergedRecoveryInserted": 0
+    },
+    "repeatRecoveryScan": {
+      "futureObservableInserted": 0,
+      "expiredRecordsHandled": 0,
+      "mergedRecoveryInserted": 0
+    },
+    "finalObservableCounts": {
+      "futureAction": 1,
+      "mergedRecoverySignal": 1
+    },
+    "committedSyntheticAuthorityPreserved": true,
+    "interruptedSyntheticWriteAbsent": true,
+    "ordinaryLogsExcludeMaterial": true
+  },
+  "evidenceIntegrity": {
+    "rawEvidenceArchiveFileName": "v03-windows-pc-restart-evidence-1ca7d92af59e-20260819T215324Z.zip",
+    "rawEvidenceArchiveSha256": "1a8a28e07c687839614490adad67e8877ad153376e6eb718038cac4be0ec6398",
+    "returnedSummarySha256": "3ba3f11ac75a41fea430e79d4574993c1a7f424d36629f5ce28bf21b16dcbda2",
+    "zipCrc": "PASS",
+    "packagedRunFileHashVerification": "PASS",
+    "packagedRunFileCount": 10,
+    "controlledOnlyReportHashCount": 4
+  },
+  "sanitization": {
+    "rawArchiveCommitted": false,
+    "excluded": [
+      "absolute paths",
+      "Windows account names",
+      "process IDs",
+      "temporary token values",
+      "Authorization headers",
+      "raw log bodies",
+      "SQLite database bytes",
+      "screenshots and recordings"
+    ],
+    "retention": "Keep the raw archive through Issue #18 and Draft PR review; do not commit or publish it."
+  },
+  "scopeNote": "PASS only validates the V-03 synthetic SQLite/Core/one-PC-restart recovery mechanism. It does not define product domain semantics, mark MVP readiness, or authorize MVP implementation."
+}
