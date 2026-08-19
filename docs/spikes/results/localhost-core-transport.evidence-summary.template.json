@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-02",
+  "phase": "windows_evidence_template",
+  "finalStatusCandidate": "BLOCKED",
+  "sanitization": {
+    "contains": [
+      "capability status",
+      "fake context ID",
+      "version strings",
+      "commit IDs",
+      "SHA-256",
+      "diagnostic categories"
+    ],
+    "excluded": [
+      "absolute paths",
+      "Windows account names",
+      "process IDs",
+      "temporary token values",
+      "Authorization headers",
+      "raw log bodies",
+      "screenshots and recordings"
+    ],
+    "rawArchiveCommitted": false
+  },
+  "requiredEvidence": {
+    "checkpoint": "PENDING_WINDOWS",
+    "targetEnvironment": "PENDING_WINDOWS",
+    "hostBinarySha256": "PENDING_WINDOWS",
+    "coreSourceSha256": "PENDING_WINDOWS",
+    "verificationScriptCommit": "PENDING_WINDOWS",
+    "pythonProcessBits": "PENDING_WINDOWS_64",
+    "rawEvidenceArchiveSha256": "PENDING_WINDOWS"
+  },
+  "validation": {
+    "candidateStatus": "PENDING_WINDOWS",
+    "checks": {}
+  }
+}
