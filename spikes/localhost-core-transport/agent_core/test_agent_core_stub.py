@@ -203,14 +203,16 @@ class AgentCoreStubTest(unittest.TestCase):
         old_websocket = self.assert_websocket_echo(self.core, old_credential)
         self.core.restart()
         try:
-            send_text_frame(
-                old_websocket,
-                json.dumps(
-                    {"kind": FAKE_CONTEXT_KIND, "context_id": FAKE_CONTEXT_ID},
-                    separators=(",", ":"),
-                ).encode("utf-8"),
-            )
+            # A terminated peer can report its reset on the next write (Windows)
+            # or on the following read (Linux).  Both prove the old socket is invalid.
             with self.assertRaises((ConnectionError, OSError, socket.timeout)):
+                send_text_frame(
+                    old_websocket,
+                    json.dumps(
+                        {"kind": FAKE_CONTEXT_KIND, "context_id": FAKE_CONTEXT_ID},
+                        separators=(",", ":"),
+                    ).encode("utf-8"),
+                )
                 read_text_frame(old_websocket)
         finally:
             old_websocket.close()
