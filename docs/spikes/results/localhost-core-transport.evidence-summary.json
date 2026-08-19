@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "spike": "V-02",
+  "phase": "windows_evidence_verified",
+  "finalStatus": "PASS",
+  "receivedSummarySha256": "807e9f06b572d31a611403d61c9215346320f5f748d76ed6342f98afac75d02b",
+  "evidenceRun": {
+    "runId": "run-20260819T184518Z-73345e0ef94d",
+    "candidateGeneratedAt": "2026-08-19T10:45:19.8272484Z",
+    "returnManifest": "v02-return-manifest-73345e0ef94d.json"
+  },
+  "sanitization": {
+    "contains": [
+      "capability status",
+      "fake context ID",
+      "version strings",
+      "commit IDs",
+      "SHA-256",
+      "diagnostic categories"
+    ],
+    "excluded": [
+      "absolute paths",
+      "Windows account names",
+      "process IDs",
+      "temporary token values",
+      "Authorization headers",
+      "raw log bodies",
+      "screenshots and recordings"
+    ],
+    "rawArchiveCommitted": false
+  },
+  "targetEnvironment": {
+    "windows": {
+      "caption": "Microsoft Windows 10 家庭中文版",
+      "version": "10.0.19045",
+      "buildNumber": "19045",
+      "displayVersion": "22H2",
+      "ubr": 7663,
+      "is64BitOperatingSystem": true
+    },
+    "tools": {
+      "go": "go version go1.25.0 windows/amd64",
+      "python": {
+        "version": "Python 3.12.3",
+        "processBits": 64
+      },
+      "wails": "v3.0.0-beta.8",
+      "webview2": "151.0.4129.78"
+    }
+  },
+  "build": {
+    "implementationCommit": "73345e0ef94d76233a34128f7c3db77b9e857632",
+    "verificationScriptCommit": "73345e0ef94d76233a34128f7c3db77b9e857632",
+    "hostBinarySha256": "E2C628C663D23178EF922A93381E68CB4C1B3EC5598673DE9079E55EFA525F35",
+    "coreSourceSha256": "BDEB7C0442E8F25BD017764B96C1E237DE3C16ECE1F81A11A51358EEA5F13D32",
+    "buildReportHostBinarySha256": "E2C628C663D23178EF922A93381E68CB4C1B3EC5598673DE9079E55EFA525F35",
+    "buildReportCoreSourceSha256": "BDEB7C0442E8F25BD017764B96C1E237DE3C16ECE1F81A11A51358EEA5F13D32",
+    "coreSourceSha256LineEnding": "CRLF Windows working tree",
+    "gitBlobCoreSourceSha256LF": "D8312A35CA2BF6C07DF5F6885F1B5BFC6357417A5960D733976EA204D1EE4AF8"
+  },
+  "validation": {
+    "schemaVersion": 1,
+    "spike": "V-02",
+    "generatedAt": "2026-08-19T10:45:19.8272484Z",
+    "candidateStatus": "PASS",
+    "checkCount": 17,
+    "checks": {
+      "authenticated_http_round_trip": "PASS",
+      "authenticated_websocket_round_trip": "PASS",
+      "bootstrap_deleted_after_read": "PASS",
+      "bootstrap_timeout_is_not_ready": "PASS",
+      "core_unavailable_is_not_ready": "PASS",
+      "http_incorrect_rejected": "PASS",
+      "http_missing_rejected": "PASS",
+      "http_previous_run_rejected": "PASS",
+      "loopback_dynamic_endpoint": "PASS",
+      "new_run_material_changed": "PASS",
+      "old_websocket_invalid_after_restart": "PASS",
+      "ordinary_logs_exclude_material": "PASS",
+      "reconnected_http_round_trip": "PASS",
+      "reconnected_websocket_round_trip": "PASS",
+      "websocket_incorrect_rejected": "PASS",
+      "websocket_missing_rejected": "PASS",
+      "websocket_previous_run_rejected": "PASS"
+    },
+    "diagnosticCodes": [
+      "bootstrap_timeout_not_ready",
+      "core_unavailable_not_ready"
+    ],
+    "handshakeMethod": "one_time_bootstrap_file",
+    "fakeContextId": "v02-fake-context-0001",
+    "endpointFamilies": [
+      "127.0.0.1"
+    ]
+  },
+  "sourceArtifacts": [
+    {
+      "fileName": "run.json",
+      "sha256": "D7083C3BBE09F39BA9291C7EBBFD31288C1691A3CF9167E428283FC528BFBE72",
+      "archiveInclusion": "included_and_recomputed"
+    },
+    {
+      "fileName": "candidate-results.json",
+      "sha256": "675338DDFBA12A7B3988BD14C33A7BF858196EA8F63951B9F4C2DA08A62D4D58",
+      "archiveInclusion": "included_and_recomputed"
+    },
+    {
+      "fileName": "validation-report.json",
+      "sha256": "6CF316F3D81E4DCE4A815D150C1E186C25283F6CC61B4265EDDC5ABDB752D996",
+      "archiveInclusion": "included_and_recomputed"
+    },
+    {
+      "fileName": "host-events.jsonl",
+      "sha256": "DB9D8B61351669B3443E6BD30BCA0C03DC08C511D4BB9F46CFCDB3A35F00305D",
+      "archiveInclusion": "included_and_recomputed"
+    },
+    {
+      "fileName": "core-events.jsonl",
+      "sha256": "FEC3F92B56FC81BE2136A0A009FB804DBFA06A08EFF2B393E2C7C3EEC8EA5AB9",
+      "archiveInclusion": "included_and_recomputed"
+    },
+    {
+      "fileName": "environment-20260819T184518Z.json",
+      "sha256": "CC11D8AA11C3BB95D519F10F22318BA21571C3E10B24FE20F9A11284553BB915",
+      "archiveInclusion": "controlled_only"
+    },
+    {
+      "fileName": "build-20260819T184510Z.json",
+      "sha256": "63F287153C9A8A35838037DDEF51C61E144E107A30C9F5EFDA4753F48EFB9D57",
+      "archiveInclusion": "controlled_only"
+    },
+    {
+      "fileName": "static-contract-73345e0ef94d.json",
+      "sha256": "64E7D88691463BD7779FEA67EB15ED0F9A89880261F90CBFADE74CFAEF4CABDC",
+      "archiveInclusion": "controlled_only"
+    }
+  ],
+  "rawEvidenceArchive": {
+    "fileName": "v02-windows-evidence-73345e0ef94d-20260819T184532Z.zip",
+    "sha256": "f512a83f925921379e8b4b282d0e56a96d44fee1c8b83a51ca7419ba9767131a",
+    "integrity": "SHA-256 and ZIP CRC verified by this session",
+    "controlledLocation": "Windows working copy under spikes/localhost-core-transport/.evidence/packages; absolute path omitted.",
+    "accessProcedure": "Return the archive through the agreed private channel, then verify this SHA-256 before review.",
+    "retention": "Retain until Issue #17 and its Draft PR have completed review; do not commit the raw archive or publish it."
+  },
+  "evidenceReview": {
+    "summaryManifestSourceArtifactsMatch": true,
+    "archivedRunArtifactHashesMatch": true,
+    "validationReportFailureCount": 0,
+    "sensitiveCredentialShapedJsonFieldsFound": false,
+    "remainingHandoffFilesFound": false,
+    "secondHandshakeAttempted": false,
+    "pythonProcessBitsRecorded": true,
+    "pythonX64RefreshPassed": true
+  }
+}
