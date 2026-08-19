@@ -32,8 +32,6 @@ const applicationName = "ADHD Support System V-03 restart recovery spike"
 //go:embed all:frontend
 var assets embed.FS
 
-var errBootstrapTimeout = errors.New("bootstrap was not published before timeout")
-
 type runConfig struct {
 	PythonExecutable       string `json:"pythonExecutable"`
 	WebView2BrowserPath    string `json:"webView2BrowserPath"`
@@ -42,12 +40,6 @@ type runConfig struct {
 	InjectedClock          string `json:"injectedClock"`
 	ReadyHoldMilliseconds  int    `json:"readyHoldMilliseconds"`
 	HandshakeTimeoutMillis int    `json:"handshakeTimeoutMillis"`
-}
-
-type bootstrapRecord struct {
-	Endpoint string `json:"endpoint"`
-	PortMode string `json:"portMode"`
-	Token    string `json:"token"`
 }
 
 type eventLogger struct {
@@ -92,48 +84,6 @@ func (l *eventLogger) record(kind string, fields map[string]any) {
 	if _, err := handle.Write(append(encoded, '\n')); err != nil {
 		log.Printf("write event log: %v", err)
 	}
-}
-
-type coreProcess struct {
-	cmd      *exec.Cmd
-	details  bootstrapRecord
-	done     chan struct{}
-	mu       sync.Mutex
-	waitErr  error
-	stopOnce sync.Once
-	stopErr  error
-}
-
-func (p *coreProcess) wait(ctx context.Context) error {
-	select {
-	case <-p.done:
-		p.mu.Lock()
-		defer p.mu.Unlock()
-		return p.waitErr
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (p *coreProcess) hasExited() bool {
-	select {
-	case <-p.done:
-		return true
-	default:
-		return false
-	}
-}
-
-func (p *coreProcess) stop() error {
-	p.stopOnce.Do(func() {
-		if !p.hasExited() && p.cmd.Process != nil {
-			_ = p.cmd.Process.Kill()
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		p.stopErr = p.wait(ctx)
-	})
-	return p.stopErr
 }
 
 // coreSummary is returned by the Python Core. The host copies this already
@@ -387,28 +337,15 @@ func (h *host) startCore(ctx context.Context) (*coreProcess, error) {
 	command.Dir = h.root
 	command.Stdout = output
 	command.Stderr = output
-	if err := command.Start(); err != nil {
-		_ = output.Close()
-		_ = os.RemoveAll(handoffDirectory)
-		return nil, err
-	}
-	core := &coreProcess{cmd: command, done: make(chan struct{})}
-	go func() {
-		err := command.Wait()
-		_ = output.Close()
-		core.mu.Lock()
-		core.waitErr = err
-		core.mu.Unlock()
-		close(core.done)
-	}()
-
-	record, err := waitForBootstrap(ctx, bootstrapPath)
+	core, record, err := startCoreCommand(
+		ctx,
+		command,
+		output,
+		bootstrapPath,
+		handoffDirectory,
+		time.Duration(h.config.HandshakeTimeoutMillis)*time.Millisecond,
+	)
 	if err != nil {
-		_ = core.stop()
-		_ = os.RemoveAll(handoffDirectory)
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, errBootstrapTimeout
-		}
 		return nil, err
 	}
 	if !endpointIsLoopback(record.Endpoint) || record.PortMode != "dynamic" || record.Token == "" {
@@ -432,27 +369,6 @@ func (h *host) startCore(ctx context.Context) (*coreProcess, error) {
 	core.details = record
 	h.logger.record("bootstrap_consumed", map[string]any{"endpointFamily": "127.0.0.1", "deleted": true})
 	return core, nil
-}
-
-func waitForBootstrap(ctx context.Context, path string) (bootstrapRecord, error) {
-	for {
-		raw, err := os.ReadFile(path)
-		if err == nil {
-			var record bootstrapRecord
-			if err := json.Unmarshal(raw, &record); err != nil {
-				return bootstrapRecord{}, fmt.Errorf("parse bootstrap: %w", err)
-			}
-			return record, nil
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			return bootstrapRecord{}, err
-		}
-		select {
-		case <-ctx.Done():
-			return bootstrapRecord{}, ctx.Err()
-		case <-time.After(30 * time.Millisecond):
-		}
-	}
 }
 
 func endpointIsLoopback(endpoint string) bool {

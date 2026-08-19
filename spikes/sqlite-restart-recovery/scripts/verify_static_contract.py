@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 HOST = ROOT / "main_windows.go"
 CORE = ROOT / "agent_core" / "synthetic_core.py"
 CORE_TEST = ROOT / "agent_core" / "test_synthetic_core.py"
+BOOTSTRAP_SUPERVISOR = ROOT / "bootstrap_supervisor.go"
+BOOTSTRAP_TIMEOUT_TEST = ROOT / "bootstrap_timeout_test.go"
 FRONTEND = ROOT / "frontend" / "index.html"
 VERSIONS = ROOT / "versions.json"
 REQUIRED_SCRIPTS = {
@@ -70,6 +72,8 @@ def main() -> int:
         "one_time_bootstrap_file",
         "normal-exit",
         "h.startCore(parent)",
+        "startCoreCommand(",
+        "HandshakeTimeoutMillis)*time.Millisecond",
         "record.Token",
     ):
         require(marker in host, f"host is missing required boundary marker: {marker}")
@@ -79,6 +83,25 @@ def main() -> int:
     result_type = host.split("type validationResult", 1)[1].split("type host", 1)[0]
     require("Token" not in result_type, "candidate result must not expose temporary material")
     require("Authorization" not in result_type, "candidate result must not expose temporary material")
+
+    bootstrap_supervisor = BOOTSTRAP_SUPERVISOR.read_text(encoding="utf-8")
+    for marker in (
+        "context.WithTimeout(parent, handshakeTimeout)",
+        "errBootstrapTimeout",
+        "cleanupFailedBootstrap",
+        "core.stop()",
+        "os.RemoveAll(handoffDirectory)",
+    ):
+        require(marker in bootstrap_supervisor, f"bootstrap timeout supervisor is missing {marker}")
+    bootstrap_timeout_test = BOOTSTRAP_TIMEOUT_TEST.read_text(encoding="utf-8")
+    for marker in (
+        "TestStartCoreCommandTimesOutWhenLiveCoreDoesNotPublishBootstrap",
+        "V03_TEST_LIVE_CORE_WITHOUT_BOOTSTRAP",
+        "errBootstrapTimeout",
+        "command.ProcessState.Exited()",
+        "os.ErrNotExist",
+    ):
+        require(marker in bootstrap_timeout_test, f"bootstrap timeout test is missing {marker}")
 
     core = CORE.read_text(encoding="utf-8")
     for marker in (
@@ -148,6 +171,7 @@ def main() -> int:
             "synthetic committed and interrupted-write scenarios",
             "idempotent synthetic future and expired-record recovery",
             "one-time loopback bootstrap and Core restart path",
+            "bounded bootstrap timeout stops and reaps an unbootstrapped Core",
             "thin host has no direct database dependency",
             "Windows reboot, process-count, and evidence scripts",
             "PowerShell ASCII compatibility",

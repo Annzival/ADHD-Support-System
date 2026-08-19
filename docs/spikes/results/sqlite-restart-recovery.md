@@ -77,6 +77,14 @@ Windows 执行者在指定 checkpoint 完成准备后执行了一次真实 PC �
 | 7. SQLite/Core 与 Wails 边界 | 阶段 A 静态契约为 `PASS`；阶段 B 运行期只复用 V-02 一次性 bootstrap/回环边界，未发现 Wails 直接访问 SQLite 或执行调度、失效判断、LLM 的证据。 |
 | 8. commit、摘要、环境、运行 ID 与脱敏证据对应 | checkpoint/实现/验证 commit 均为 `1ca7d92…`；环境、运行 ID、摘要、清单、ZIP CRC 与 SHA-256 均已交叉核验。 |
 
+## 后续审查修复：bootstrap 超时失败路径
+
+原 Windows 成功路径证据、原始 ZIP 和脱敏摘要继续且仅对应 checkpoint `1ca7d92af59e78d749624b7788af15b0d7ee7874`；本节不重写其身份、哈希或 `PASS` 结论。
+
+后续复审发现 `HandshakeTimeoutMillis` 曾只写入配置、但 bootstrap 等待仍继承无截止时间的父 context。当前 Draft PR 的后续 checkpoint 将该值转换为实际 deadline：若 Core 已启动却未发布 bootstrap，宿主会停止并回收 Core、删除临时 handoff，并以 `errBootstrapTimeout` 返回。新增 Go 回归测试实际启动一个不发布 bootstrap 的存活子进程，验证它在配置时限内退出且没有遗留 handoff 或子进程。
+
+该修复只覆盖失败路径；不改变原 Windows 成功路径所使用的 SQLite 状态、调度结果、bootstrap 协议、环境或证据身份。因此按 Issue #18 和本次复审范围，不重新执行完整 PC 重启；后续 checkpoint 的 Go 测试、Windows 目标编译、Python 测试和静态契约检查另行记录在 PR 与 Issue。
+
 ## 限制、风险与冲突检查
 
 - 此 `PASS` 仅覆盖一次 Windows 10 22H2 x64 实机重启、单一用户会话、锁定版本和明确标记的合成数据；不覆盖异常断电、数据库加密、备份恢复、恶意同权限进程、其他 Windows 版本或多设备同步。
