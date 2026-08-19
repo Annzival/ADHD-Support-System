@@ -1,5 +1,7 @@
 # V-02：localhost Core 传输、端口发现与临时令牌验证
 
+> 最终核验结果：**PASS**（2026-08-19）。该结论只覆盖 Issue #17 的 localhost 传输与启动边界验证；不表示 MVP 构建就绪，也不将 spike 代码认定为正式产品实现。
+
 ## 任务边界
 
 - 任务类型：technical spike；对应 [Issue #17](https://github.com/Annzival/ADHD-Support-System/issues/17)。
@@ -23,38 +25,40 @@
 
 最后一项仅验证 Windows 目标源码能够交叉编译，不能替代真实 Windows 的 Wails、WebView2、进程启动或网络集成证据。Windows checkpoint 将在 Issue #17 的阶段 A 更新和 Draft PR 中以提交 SHA 锁定。
 
-## Windows 结果模板
+## 阶段 B：Windows 10 22H2 x64 实机核验
 
-以下每项由 candidate-results.json、validation-report.json、环境/构建报告和脱敏摘要填入；未返回 Windows 证据前保持“待执行”。
+执行 checkpoint：`5cc2c4f5c9dae70f59a0e5c7a0b01febc36d8bee`。回传的脱敏摘要、原始 ZIP 与用户声明的 SHA-256 均已由本 session 核验。目标环境为 Windows 10 家庭中文版 `10.0.19045` / `22H2` x64，Go `1.25.0`、Python `3.12.3`、Wails `v3.0.0-beta.8`、WebView2 Fixed Version Runtime `151.0.4129.78`。
 
 | Issue #17 验收项 | 预期证据 | 当前记录 |
 | --- | --- | --- |
-| 1. 仅回环且动态端口 | loopback_dynamic_endpoint=PASS，环境与运行元数据。 | 待执行 |
-| 2. 受限握手、无端口扫描/固定端口 | one_time_bootstrap_file、bootstrap_deleted_after_read=PASS。 | 待执行 |
-| 3. 认证 HTTP 与 WebSocket 假上下文往返 | 两个 authenticated 轮转检查为 PASS。 | 待执行 |
-| 4. 缺失、错误、上一运行令牌拒绝 | 六个 rejected 检查为 PASS，且不返回假上下文。 | 待执行 |
-| 5. Core 不可用或握手超时不伪造就绪 | bootstrap_timeout_is_not_ready 与 core_unavailable_is_not_ready 为 PASS。 | 待执行 |
-| 6. 一次 Core 重启后重新连接 | old WebSocket、run material 与两个 reconnect 检查为 PASS。 | 待执行 |
-| 7. 无原始令牌与薄宿主边界 | ordinary_logs_exclude_material、静态契约报告、Git 忽略规则。 | 待执行 |
-| 8. 身份链与可复核性 | checkpoint、host 二进制 SHA-256、Core 源码 SHA-256、脚本 commit、环境、源文件哈希、ZIP SHA-256。 | 待执行 |
+| 1. 仅回环且动态端口 | `loopback_dynamic_endpoint=PASS`；候选证据的 endpoint family 为 `127.0.0.1`；Core 事件记录 3 次 `core_bound_loopback`。 | PASS |
+| 2. 受限握手、无端口扫描/固定端口 | `handshakeMethod=one_time_bootstrap_file`；`bootstrap_deleted_after_read=PASS`；宿主事件有 2 次 `bootstrap_consumed`，归档内 handoff 文件数为 0。源码静态契约要求动态回环端点。 | PASS |
+| 3. 认证 HTTP 与 WebSocket 假上下文往返 | `authenticated_http_round_trip=PASS`、`authenticated_websocket_round_trip=PASS`；假上下文 ID 为预生成的 `v02-fake-context-0001`。 | PASS |
+| 4. 缺失、错误、上一运行令牌拒绝 | HTTP / WebSocket 的 missing、incorrect、previous-run 共 6 项拒绝检查均为 PASS；Core 事件有 6 次 `authentication_rejected`。 | PASS |
+| 5. Core 不可用或握手超时不伪造就绪 | `bootstrap_timeout_is_not_ready=PASS`、`core_unavailable_is_not_ready=PASS`；诊断类别为 `bootstrap_timeout_not_ready`、`core_unavailable_not_ready`。 | PASS |
+| 6. 一次 Core 重启后重新连接 | `old_websocket_invalid_after_restart`、`new_run_material_changed`、两项 previous-run 拒绝与两项 reconnected 往返均为 PASS；Core 事件有 1 次 `controlled_restart_requested`。 | PASS |
+| 7. 无原始令牌与薄宿主边界 | `ordinary_logs_exclude_material=PASS`；独立扫描归档 JSON / JSONL / log 未发现 `token`、`authorization` 或 `credential` 的 JSON 字段；静态契约重跑通过，且未发现 SQLite、调度、LLM、前端持久化或正式领域实现。 | PASS |
+| 8. 身份链与可复核性 | 实现与验证脚本 commit 均为 `5cc2c4f5c9dae70f59a0e5c7a0b01febc36d8bee`；摘要、manifest、run.json、validation report 交叉一致，归档内 5 个运行期文件哈希均重算一致。 | PASS |
 
-## 原始证据与脱敏
+`validation-report.json` 的 17 项必需检查均为 PASS，`failureCount=0`；`candidate-results.json` 的 17 项检查也均为 PASS。只使用了一种握手机制，没有尝试第二种机制。
 
-Windows 收集脚本生成：
+## 原始证据、脱敏摘要与完整性核验
 
-- 机器可读脱敏摘要：只含能力状态、假上下文 ID、版本、commit、SHA-256 和诊断类别；
-- 原始 ZIP：保留在 Windows 工作副本的 .evidence\packages 受控位置，不提交 Git 或公开对象存储；
-- 原始 ZIP SHA-256：由 Collect-Evidence.ps1 输出并由本 session 核验；
-- 访问方式：经 Issue #17 / Draft PR 约定的私有渠道传递，接收后先核对 SHA-256；
-- 保留期：至少至 Issue #17 与其 Draft PR 完成审查并记录最终结论。
+已提交的脱敏机器可读摘要见 `localhost-core-transport.evidence-summary.json`。该文件不含原始日志正文、绝对路径、Windows 账户名、PID、临时令牌或 Authorization header。
 
-## 最终结论模板
+- 回传脱敏摘要 SHA-256：`cbc6cea4738ad82641dafb6385e2b31864b012c3ed3ddc8c494eab7c298a3bd8`；
+- 原始 ZIP：`v02-windows-evidence-5cc2c4f5c9da-20260819T181300Z.zip`；其 SHA-256 为 `c267883693792cf4c637d640625e36a5916ae6893e29e6be2f4429b8e1d4cb1a`，与回传值完全一致；ZIP CRC 检查通过；
+- ZIP 内 `run.json`、`candidate-results.json`、`validation-report.json`、`host-events.jsonl`、`core-events.jsonl` 的 SHA-256 均与 return manifest 和摘要重算一致；
+- 环境、构建、静态契约 3 份准备期报告遵循 `Collect-Evidence.ps1` 的既定设计，仅以 SHA-256 记录在 manifest / 摘要中，保留在 Windows 受控位置而不复制入 ZIP；这限制了远程对其原始字节的重算能力，但不影响其与 checkpoint、运行期证据和收集脚本的哈希关联；
+- Windows Core 源码哈希 `BDEB7C0442E8F25BD017764B96C1E237DE3C16ECE1F81A11A51358EEA5F13D32` 精确等于该 checkpoint Git blob 的 CRLF 工作树转换哈希；Linux LF blob 哈希为 `D8312A35CA2BF6C07DF5F6885F1B5BFC6357417A5960D733976EA204D1EE4AF8`。仓库没有 `.gitattributes`，因此这是 Windows 工作树换行差异，不是源码身份冲突；
+- 原始 ZIP 继续保留在 Windows 工作副本 `spikes/localhost-core-transport/.evidence/packages` 的受控位置，经私有渠道访问；不得提交 Git 或发布到公开对象存储。保留至少至 Issue #17 和 Draft PR #20 完成审查。
 
-- 最终状态：待 Windows 证据返回后填写 PASS / FAIL / BLOCKED。
-- 尝试次数：待填写；首次机制通过即停止。
-- checkpoint 与身份链：待填写。
-- 逐项验收结论：待填写。
-- 限制与风险：一次性 bootstrap file 不声称防御拥有同一用户权限的恶意本地进程；结论不能外推到其他 Windows、Wails、Go、Python 或 WebView2 版本。
-- ADR / 产品范围冲突：待填写；如发现，仅记录并回传，不修改 ADR。
+## 最终结论
 
-本结果不会自行宣告 MVP 构建就绪、标记 PR Ready、合并 PR 或启动 V-03。
+- 最终状态：**PASS**。Issue #17 的 8 项验收条件均有对应的 Windows 实机、运行期、摘要与身份链证据；不存在必需行为失败或缺少 Windows 证据的情形。
+- 尝试次数：1 种握手机制（`one_time_bootstrap_file`）、1 次可核验的 Windows 候选运行。旧 checkpoint `a5dabefaac334ae1c40e3c2fee67f509492a10d6` 曾在 Build 阶段暴露 Windows 对旧 WebSocket 写入报告 `ConnectionResetError` 的测试兼容性问题；它在启动宿主前停止，未构成握手失败。随后仅修正测试异常边界，更新为本次 checkpoint。
+- checkpoint 与身份链：实现 / 验证脚本 commit、宿主二进制 SHA-256、Core 源码 SHA-256、运行期文件、return manifest、脱敏摘要与原始 ZIP SHA-256 已按上述记录交叉核验。
+- 限制与风险：一次性 bootstrap file 只用于同一台 PC、同一用户会话的启动交接，不声称防御拥有相同用户权限的恶意本地进程；结论不能外推到其他 Windows、Wails、Go、Python 或 WebView2 版本。准备期报告虽受控保留并按哈希关联，但未包含在回传 ZIP 中。
+- ADR / 产品范围冲突：未发现与 ADR-0008、ADR-0009、ADR-0010、ADR-0011、既有产品范围或领域模型的冲突；未修改这些内容。
+
+本结果不自行宣告 MVP 构建就绪、不将 Draft PR 标记为 Ready、不合并 PR，也不启动 V-03 或 MVP implementation。
