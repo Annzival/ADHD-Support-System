@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>V-05 恢复干预载体原型</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="prototype-banner">
+      <p>PROTOTYPE — 非生产实现 · 仅用于 V-05 交互验证 · 不连接 Wails、Python Core、SQLite 或系统通知</p>
+    </header>
+
+    <main class="app-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">ADHD-Support-System · V-05</p>
+        <h1 id="page-title">恢复后，怎样把“上次”与“现在”放在合适的载体上？</h1>
+        <p>
+          比较三种本机载体映射：恢复干预只会合并成一个当前入口；它不会补发旧干预，也不会把上一项标为放弃或失败。
+          所有按钮只改变本页内存中的模拟状态。
+        </p>
+      </section>
+
+      <section class="control-strip" aria-label="原型控制">
+        <label for="scenario-select">
+          走查场景
+          <select id="scenario-select"></select>
+        </label>
+        <button class="secondary-button" type="button" id="reset-scenario">重置此场景</button>
+        <p id="scenario-summary" class="scenario-summary"></p>
+      </section>
+
+      <section class="walkthrough" aria-labelledby="walkthrough-title">
+        <div>
+          <p class="eyebrow">第一轮走查</p>
+          <h2 id="walkthrough-title">每个方案用相同顺序试一次</h2>
+        </div>
+        <ol>
+          <li>先说出哪一块是上次执行上下文、哪一块是当前计划。</li>
+          <li>判断自己会点哪一个入口；再分别尝试“继续上次”“处理上一项”“按当前计划继续”或“暂不决定”。</li>
+          <li>展开右侧模拟状态，核对上一项仍是未知、旧干预没有被逐条补发。</li>
+          <li>选择“暂不决定”后，尝试从主窗口找到被动入口。</li>
+        </ol>
+      </section>
+
+      <div class="prototype-grid">
+        <section id="prototype-root" aria-live="polite"></section>
+
+        <aside class="evidence-rail" aria-label="模拟状态与体验记录">
+          <section class="state-inspector">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">证据</p>
+                <h2>完整模拟状态</h2>
+              </div>
+              <span class="memory-badge">仅内存</span>
+            </div>
+            <p class="quiet-copy">这是原型的局部状态，不是正式领域模型、命令或状态机。</p>
+            <pre id="state-output" tabindex="0"></pre>
+          </section>
+
+          <section class="observation-form" aria-labelledby="observation-title">
+            <p class="eyebrow">用户观察</p>
+            <h2 id="observation-title">记录这一轮感受</h2>
+            <label for="clarity-select">上次 / 当前是否容易区分？</label>
+            <select id="clarity-select">
+              <option value="未记录">未记录</option>
+              <option value="清楚">清楚</option>
+              <option value="混淆">混淆</option>
+            </select>
+            <label for="pressure-select">压力感</label>
+            <select id="pressure-select">
+              <option value="未记录">未记录</option>
+              <option value="低">低</option>
+              <option value="中">中</option>
+              <option value="高">高</option>
+            </select>
+            <label for="focus-select">抢焦点风险</label>
+            <select id="focus-select">
+              <option value="未记录">未记录</option>
+              <option value="低">低</option>
+              <option value="可能">可能</option>
+              <option value="高">高</option>
+            </select>
+            <label for="discovery-select">“暂不决定”后的入口</label>
+            <select id="discovery-select">
+              <option value="未记录">未记录</option>
+              <option value="已找到">已找到</option>
+              <option value="未找到">未找到</option>
+            </select>
+            <label for="implication-note">错误暗示或困惑（如有）</label>
+            <textarea id="implication-note" rows="3" placeholder="例如：我以为上一项已被跳过"></textarea>
+            <label for="freeform-note">补充观察</label>
+            <textarea id="freeform-note" rows="3" placeholder="可写入口是否容易发现、是否想关闭小窗等"></textarea>
+            <div class="observation-actions">
+              <button type="button" id="record-observation">记录本次观察</button>
+              <button class="secondary-button" type="button" id="copy-observations">复制观察摘要</button>
+            </div>
+            <p id="observation-status" class="quiet-copy">尚未记录观察。</p>
+            <pre id="observation-output" class="observation-output" tabindex="0"></pre>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <nav class="variant-switcher" aria-label="切换原型方案">
+      <button type="button" class="switcher-arrow" data-variant-step="previous" aria-label="上一个方案">←</button>
+      <div>
+        <span class="switcher-kicker">PROTOTYPE 方案</span>
+        <strong id="variant-label"></strong>
+      </div>
+      <button type="button" class="switcher-arrow" data-variant-step="next" aria-label="下一个方案">→</button>
+    </nav>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
