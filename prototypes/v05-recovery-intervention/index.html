@@ -38,7 +38,7 @@
         <ol>
           <li>先说出哪一块是上次执行上下文、哪一块是当前计划。</li>
           <li>判断自己会点哪一个入口；再分别尝试“继续上次”“处理上一项”“按当前计划继续”或“暂不决定”。</li>
-          <li>展开右侧模拟状态，核对上一项仍是未知、旧干预没有被逐条补发。</li>
+          <li>操作后只核对两项：选择“按当前计划继续”时，上一项结果仍为“未知”；在“多个失效干预合并”场景中，旧干预数量为 3 且没有逐条补发。</li>
           <li>选择“暂不决定”后，尝试从主窗口找到被动入口。</li>
         </ol>
       </section>
@@ -61,30 +61,33 @@
 
           <section class="observation-form" aria-labelledby="observation-title">
             <p class="eyebrow">用户观察</p>
-            <h2 id="observation-title">记录这一轮感受</h2>
+            <h2 id="observation-title">记录当前组合的观察</h2>
+            <p id="observation-target" class="observation-scope"></p>
+            <p class="quiet-copy">一条单项观察只对应当前的“方案 × 场景”。尚未体验某项时选“未体验”，不要把多个方案的感受合并在这里。</p>
             <label for="clarity-select">上次 / 当前是否容易区分？</label>
             <select id="clarity-select">
-              <option value="未记录">未记录</option>
+              <option value="未体验">未体验</option>
               <option value="清楚">清楚</option>
               <option value="混淆">混淆</option>
             </select>
             <label for="pressure-select">压力感</label>
             <select id="pressure-select">
-              <option value="未记录">未记录</option>
+              <option value="未体验">未体验</option>
               <option value="低">低</option>
               <option value="中">中</option>
               <option value="高">高</option>
             </select>
             <label for="focus-select">抢焦点风险</label>
             <select id="focus-select">
-              <option value="未记录">未记录</option>
+              <option value="未体验">未体验</option>
               <option value="低">低</option>
               <option value="可能">可能</option>
               <option value="高">高</option>
             </select>
             <label for="discovery-select">“暂不决定”后的入口</label>
             <select id="discovery-select">
-              <option value="未记录">未记录</option>
+              <option value="未体验">未体验</option>
+              <option value="不适用">不适用</option>
               <option value="已找到">已找到</option>
               <option value="未找到">未找到</option>
             </select>
@@ -93,8 +96,30 @@
             <label for="freeform-note">补充观察</label>
             <textarea id="freeform-note" rows="3" placeholder="可写入口是否容易发现、是否想关闭小窗等"></textarea>
             <div class="observation-actions">
-              <button type="button" id="record-observation">记录本次观察</button>
-              <button class="secondary-button" type="button" id="copy-observations">复制观察摘要</button>
+              <button type="button" id="record-observation">记录当前组合观察</button>
+            </div>
+
+            <div class="comparison-form" aria-labelledby="comparison-title">
+              <p class="eyebrow">跨方案比较（可选）</p>
+              <h3 id="comparison-title">记录同一场景下的 A / B / C 比较</h3>
+              <p id="comparison-target" class="observation-scope"></p>
+              <p class="quiet-copy">只在同一场景已经看过至少两个方案后填写。这不是单个方案的评分。</p>
+              <label for="preferred-variant-select">当前偏好</label>
+              <select id="preferred-variant-select">
+                <option value="未形成偏好">未形成偏好</option>
+                <option value="方案 A">方案 A</option>
+                <option value="方案 B">方案 B</option>
+                <option value="方案 C">方案 C</option>
+                <option value="希望混合">希望混合</option>
+                <option value="没有可接受方案">没有可接受方案</option>
+              </select>
+              <label for="comparison-note">比较理由</label>
+              <textarea id="comparison-note" rows="3" placeholder="例如：A 的上下文区分清楚，但希望保留 C 的通知入口"></textarea>
+              <button type="button" id="record-comparison">记录跨方案比较</button>
+            </div>
+
+            <div class="observation-actions">
+              <button class="secondary-button" type="button" id="copy-observations">复制完整观察摘要</button>
             </div>
             <p id="observation-status" class="quiet-copy">尚未记录观察。</p>
             <pre id="observation-output" class="observation-output" tabindex="0"></pre>

@@ -256,6 +256,7 @@ let app = {
   scenario: validScenario(queryValue("scenario", "active-session")),
   state: null,
   observations: [],
+  comparisons: [],
 };
 
 app.state = scenarioDefinitions[app.scenario].create();
@@ -270,13 +271,14 @@ function updateUrl() {
 function selectScenario(id) {
   app.scenario = validScenario(id);
   app.state = scenarioDefinitions[app.scenario].create();
-  clearObservationInputs();
+  clearAllObservationInputs();
   updateUrl();
   render();
 }
 
 function selectVariant(id) {
   app.variant = validVariant(id);
+  clearCombinationObservationInputs();
   updateUrl();
   render();
 }
@@ -633,16 +635,17 @@ function debugState() {
     presentation: app.state.presentation,
     actionHistory: app.state.actionHistory,
     outcome: app.state.outcome,
-    recordedObservations: app.observations,
+    recordedCombinationObservations: app.observations,
+    recordedScenarioComparisons: app.comparisons,
   };
 }
 
 function observationMarkdown() {
-  if (app.observations.length === 0) return "尚未记录观察。";
-  return app.observations
+  const combinationRecords = app.observations.length
+    ? app.observations
     .map((record, index) => {
       return [
-        `### 记录 ${index + 1} — 方案 ${record.variant} / ${record.scenario}`,
+        `### 单项观察 ${index + 1} — ${record.variant} × ${record.scenario}`,
         `- 上下文辨识：${record.clarity}`,
         `- 压力：${record.pressure}`,
         `- 抢焦点风险：${record.focusRisk}`,
@@ -651,21 +654,38 @@ function observationMarkdown() {
         `- 补充：${record.note || "无"}`,
       ].join("\n");
     })
-    .join("\n\n");
+    .join("\n\n")
+    : "尚未记录单项观察。";
+  const comparisonRecords = app.comparisons.length
+    ? app.comparisons
+    .map((record, index) => {
+      return [
+        `### 跨方案比较 ${index + 1} — ${record.scenario}`,
+        `- 偏好：${record.preference}`,
+        `- 理由：${record.note || "无"}`,
+      ].join("\n");
+    })
+    .join("\n\n")
+    : "尚未记录跨方案比较。";
+  return `## 当前组合观察\n\n${combinationRecords}\n\n## 同一场景下的跨方案比较\n\n${comparisonRecords}`;
 }
 
 function refreshEvidence() {
   document.querySelector("#state-output").textContent = JSON.stringify(debugState(), null, 2);
   document.querySelector("#observation-output").textContent = observationMarkdown();
-  document.querySelector("#observation-status").textContent = app.observations.length
-    ? `已记录 ${app.observations.length} 条观察；可复制下方摘要回传。`
+  document.querySelector("#observation-target").textContent = `本条记录绑定：${app.variant} — ${variants[app.variant].name} × ${app.state.scenarioLabel}`;
+  document.querySelector("#comparison-target").textContent = `本条比较绑定：${app.state.scenarioLabel} 下的方案 A / B / C`;
+  const recordCount = app.observations.length;
+  const comparisonCount = app.comparisons.length;
+  document.querySelector("#observation-status").textContent = recordCount || comparisonCount
+    ? `已记录 ${recordCount} 条当前组合观察、${comparisonCount} 条跨方案比较；可复制下方完整摘要回传。`
     : "尚未记录观察。";
 }
 
-function clearObservationInputs() {
+function clearCombinationObservationInputs() {
   ["clarity-select", "pressure-select", "focus-select", "discovery-select"].forEach((id) => {
     const field = document.querySelector(`#${id}`);
-    if (field) field.value = "未记录";
+    if (field) field.value = "未体验";
   });
   ["implication-note", "freeform-note"].forEach((id) => {
     const field = document.querySelector(`#${id}`);
@@ -673,19 +693,46 @@ function clearObservationInputs() {
   });
 }
 
+function clearComparisonInputs() {
+  const preference = document.querySelector("#preferred-variant-select");
+  const note = document.querySelector("#comparison-note");
+  if (preference) preference.value = "未形成偏好";
+  if (note) note.value = "";
+}
+
+function clearAllObservationInputs() {
+  clearCombinationObservationInputs();
+  clearComparisonInputs();
+}
+
+function inputValue(id) {
+  return document.querySelector(`#${id}`).value.trim();
+}
+
 function recordObservation() {
-  const getValue = (id) => document.querySelector(`#${id}`).value.trim();
   app.observations.push({
     variant: `${app.variant} — ${variants[app.variant].name}`,
     scenario: app.state.scenarioLabel,
-    clarity: getValue("clarity-select"),
-    pressure: getValue("pressure-select"),
-    focusRisk: getValue("focus-select"),
-    discovery: getValue("discovery-select"),
-    implication: getValue("implication-note"),
-    note: getValue("freeform-note"),
+    clarity: inputValue("clarity-select"),
+    pressure: inputValue("pressure-select"),
+    focusRisk: inputValue("focus-select"),
+    discovery: inputValue("discovery-select"),
+    implication: inputValue("implication-note"),
+    note: inputValue("freeform-note"),
   });
-  app.state.actionHistory.push(`已记录体验观察 #${app.observations.length}`);
+  app.state.actionHistory.push(`已记录当前组合观察 #${app.observations.length}`);
+  clearCombinationObservationInputs();
+  refreshEvidence();
+}
+
+function recordComparison() {
+  app.comparisons.push({
+    scenario: app.state.scenarioLabel,
+    preference: inputValue("preferred-variant-select"),
+    note: inputValue("comparison-note"),
+  });
+  app.state.actionHistory.push(`已记录跨方案比较 #${app.comparisons.length}`);
+  clearComparisonInputs();
   refreshEvidence();
 }
 
@@ -817,11 +864,12 @@ document.addEventListener("click", (event) => {
 document.querySelector("#scenario-select").addEventListener("change", (event) => selectScenario(event.target.value));
 document.querySelector("#reset-scenario").addEventListener("click", () => selectScenario(app.scenario));
 document.querySelector("#record-observation").addEventListener("click", recordObservation);
+document.querySelector("#record-comparison").addEventListener("click", recordComparison);
 document.querySelector("#copy-observations").addEventListener("click", copyObservations);
 
 window.addEventListener("keydown", (event) => {
   const tag = document.activeElement?.tagName?.toLowerCase();
-  if (tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable) return;
+  if (tag === "input" || tag === "textarea" || tag === "select" || document.activeElement?.isContentEditable) return;
   if (event.key === "ArrowLeft") {
     event.preventDefault();
     nextVariant("previous");
