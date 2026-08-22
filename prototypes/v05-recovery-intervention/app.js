@@ -270,9 +270,17 @@ function updateUrl() {
 }
 
 function selectScenario(id) {
-  app.scenario = validScenario(id);
+  const nextScenario = validScenario(id);
+  const scenarioChanged = app.scenario !== nextScenario;
+  app.scenario = nextScenario;
   app.state = scenarioDefinitions[app.scenario].create();
-  clearAllObservationInputs();
+  if (scenarioChanged) clearAllObservationInputs();
+  updateUrl();
+  render();
+}
+
+function resetScenario() {
+  app.state = scenarioDefinitions[app.scenario].create();
   updateUrl();
   render();
 }
@@ -863,7 +871,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.querySelector("#scenario-select").addEventListener("change", (event) => selectScenario(event.target.value));
-document.querySelector("#reset-scenario").addEventListener("click", () => selectScenario(app.scenario));
+document.querySelector("#reset-scenario").addEventListener("click", resetScenario);
 document.querySelector("#record-observation").addEventListener("click", recordObservation);
 document.querySelector("#record-comparison").addEventListener("click", recordComparison);
 document.querySelector("#copy-observations").addEventListener("click", copyObservations);
