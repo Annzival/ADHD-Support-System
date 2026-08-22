@@ -66,10 +66,11 @@ function baseCurrentPlan(overrides = {}) {
 }
 
 function baseState(id, data) {
+  const scenarioDefinition = scenarioDefinitions[id];
   return {
     prototypeOnly: true,
     scenario: id,
-    scenarioLabel: data.label,
+    scenarioLabel: scenarioDefinition?.label || id,
     recovery: data.recovery,
     pastContext: data.pastContext,
     currentPlan: data.currentPlan,
