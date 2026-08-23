@@ -351,11 +351,16 @@ pre {
 .hybrid-route.current { border-color: #0f766e; background: #f0fdfa; color: #115e59; }
 .hybrid-route:hover { background: #fef3c7; }
 .hybrid-route.current:hover { background: #ccfbf1; }
-.hybrid-route.is-selected { box-shadow: inset 0 0 0 2px #0f172a; }
+.hybrid-route.is-expanded { box-shadow: inset 0 0 0 2px #0f172a; }
 .hybrid-route span { font-size: 0.93rem; font-weight: 800; }
 .hybrid-route small { font-size: 0.77rem; font-weight: 500; line-height: 1.35; }
 .hybrid-detail { margin-top: 0.8rem; }
+.hybrid-expanded-contexts { display: grid; gap: 0.7rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hybrid-context-pane { border-radius: 7px; padding: 0.55rem; }
+.hybrid-context-pane.past { background: #fffbeb; }
+.hybrid-context-pane.current { background: #f0fdfa; }
 .hybrid-context-actions { margin-top: 0.7rem; }
+.hybrid-defer { margin-top: 0.7rem; }
 .hybrid-overlay-status { align-self: start; background: #f8fafc; font-size: 0.78rem; min-height: 195px; padding: 0.65rem; }
 .hybrid-overlay-status h3 { font-size: 0.88rem; margin: 0.4rem 0; }
 .hybrid-overlay-status p { color: #475569; line-height: 1.4; }
@@ -405,7 +410,8 @@ pre {
   .overlay-contexts,
   .notification-led-stage,
   .hybrid-stage,
-  .hybrid-routes { grid-template-columns: 1fr; }
+  .hybrid-routes,
+  .hybrid-expanded-contexts { grid-template-columns: 1fr; }
   .evidence-rail { grid-template-columns: 1fr; }
   .variant-frame { min-height: auto; }
   .desktop-stage { min-height: auto; }
