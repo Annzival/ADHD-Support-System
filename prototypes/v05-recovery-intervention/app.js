@@ -1,10 +1,10 @@
 /*
  * PROTOTYPE — 非生产实现。
- * Three carrier mappings for the recovery-intervention question, switchable
- * through ?variant=A|B|C. State below is deliberately local and disposable.
+ * Three first-round carrier mappings plus one user-directed hybrid, switchable
+ * through ?variant=A|B|C|D. State below is deliberately local and disposable.
  */
 
-const variantOrder = ["A", "B", "C"];
+const variantOrder = ["A", "B", "C", "D"];
 
 const variants = {
   A: {
@@ -18,6 +18,10 @@ const variants = {
   C: {
     name: "系统通知主导",
     short: "通知直接选择入口，主窗口展示所选路线。",
+  },
+  D: {
+    name: "主窗口主入口（混合）",
+    short: "主窗口直接分流上下文，系统通知只作为辅助入口。",
   },
 };
 
@@ -57,6 +61,7 @@ function baseRecovery(overrides = {}) {
 function baseCurrentPlan(overrides = {}) {
   return {
     label: "当前计划",
+    type: "适用的下一步行动",
     headline: "10:30 阅读两份岗位 JD",
     status: "现在适用",
     when: "10:30–11:15",
@@ -79,6 +84,7 @@ function baseState(id, data) {
       mainWindowOpen: data.mainWindowOpen,
       overlayVisible: data.overlayVisible,
       mainFocus: data.mainFocus,
+      recoveryView: data.recoveryView || "chooser",
     },
     actionHistory: data.actionHistory || [],
     outcome: data.outcome || "尚未进行操作。",
@@ -304,7 +310,7 @@ function actionLabel(id) {
 }
 
 function canChoose(id) {
-  return app.state.availableActions.includes(id);
+  return app.state.availableActions.includes(id) || (id === "defer" && app.state.recovery.passiveEntryOpened);
 }
 
 function actionButtons(options = {}) {
@@ -319,6 +325,26 @@ function actionButtons(options = {}) {
       return `<button type="button" class="${danger.trim()}" data-action="${id}" title="${actionMeta[id].help}">${actionMeta[id].label}</button>`;
     })
     .join("")}</div>`;
+}
+
+function hybridActionIds() {
+  const state = app.state;
+  const canChooseFromRecovery = state.recovery.activePresentation || state.recovery.passiveEntryOpened;
+  if (!canChooseFromRecovery) return [];
+  const view = state.presentation.recoveryView;
+  const ids = view === "past"
+    ? state.availableActions.filter((id) => id === "continue-last" || id === "handle-previous")
+    : view === "current"
+      ? state.availableActions.filter((id) => id === "continue-current")
+      : [];
+  if (state.recovery.activePresentation || state.recovery.passiveEntryOpened) ids.push("defer");
+  return ids;
+}
+
+function hybridActionButtons() {
+  const ids = hybridActionIds();
+  if (ids.length === 0) return "";
+  return actionButtons({ actionIds: ids });
 }
 
 function contextCard(context, tone) {
@@ -377,7 +403,10 @@ function outcomePanel() {
 
 function carrierMapping() {
   const state = app.state;
-  const actions = state.availableActions.map(actionLabel).join("、") || "无（已完成这次选择）";
+  const mappedActionIds = app.variant === "D" && state.recovery.passiveEntryOpened && !state.availableActions.includes("defer")
+    ? [...state.availableActions, "defer"]
+    : state.availableActions;
+  const actions = mappedActionIds.map(actionLabel).join("、") || "无（已完成这次选择）";
   const trigger = state.recovery.trigger;
   const passive = state.recovery.passiveEntryVisible
     ? "主窗口首页中的静态“恢复入口”"
@@ -411,6 +440,16 @@ function carrierMapping() {
       actions,
       deepLink: "置顶小窗 → 对应主窗口上下文（需要细节时）",
       degradation: "关闭小窗只隐藏呈现，不改变执行状态；主窗口保留被动入口",
+      passive,
+    };
+  }
+  if (app.variant === "D") {
+    return {
+      trigger,
+      carrier: "主窗口首页的恢复入口为主要载体；系统通知只提供同一入口的辅助跳转",
+      actions,
+      deepLink: "主窗口 → 选择上次或当前路线 → 只展开所选上下文；两条路线可来回查看",
+      degradation: "通知被取消或忽略：主窗口主要入口仍可直接找到；暂不决定后只保留一个静态恢复入口",
       passive,
     };
   }
@@ -626,9 +665,86 @@ function notificationLedVariant() {
     </article>`;
 }
 
+function hybridVariant() {
+  const state = app.state;
+  const recoveryAvailable = state.recovery.activePresentation || state.recovery.passiveEntryOpened;
+  const passiveCollapsed = state.recovery.passiveEntryVisible && !state.recovery.passiveEntryOpened;
+  const view = state.presentation.recoveryView;
+  const routeButton = (action, title, detail, tone, selected) => `
+    <button type="button" class="hybrid-route ${tone} ${selected ? "is-selected" : ""}" data-action="${action}">
+      <span>${title}</span><small>${detail}</small>
+    </button>`;
+  const selectedDetail = view === "past"
+    ? `${contextCard(state.pastContext, "past")}<div class="hybrid-context-actions">${hybridActionButtons()}</div>`
+    : view === "current"
+      ? `${contextCard(state.currentPlan, "current")}<div class="hybrid-context-actions">${hybridActionButtons()}</div>`
+      : `<div class="empty-action">先选择要查看的上下文；这只改变主窗口的阅读焦点，不会替你作出执行决定。</div><div class="hybrid-context-actions">${hybridActionButtons()}</div>`;
+  const recoveryPanel = recoveryAvailable
+    ? `
+      <section class="hybrid-recovery-panel">
+        <div class="hybrid-panel-heading">
+          <div>
+            <span class="state-pill current">${state.recovery.passiveEntryOpened ? "被动重新进入" : "主窗口主要入口"}</span>
+            <h3>恢复选择</h3>
+            <p>系统通知可以打开这里，但不依赖通知也能直接进入。先查看一条上下文，再决定是否操作。</p>
+          </div>
+          <span class="surface-tag">一次恢复入口</span>
+        </div>
+        <div class="hybrid-routes">
+          ${routeButton("open-past-context", "查看上次执行上下文", `${state.pastContext.type} · ${state.pastContext.status}`, "past", view === "past")}
+          ${routeButton("open-current-context", "查看当前计划", `${state.currentPlan.headline} · ${state.currentPlan.status}`, "current", view === "current")}
+        </div>
+        <section class="hybrid-detail" aria-live="polite">${selectedDetail}</section>
+      </section>`
+    : passiveCollapsed
+      ? `
+        <section class="passive-entry hybrid-passive-entry">
+          <h4>恢复入口（被动）</h4>
+          <p>主动呈现已经结束；这里是主窗口中唯一保留的恢复入口，不会再出现第二组重复操作。</p>
+          <button type="button" data-action="open-passive">查看恢复选项</button>
+        </section>`
+      : `
+        <section class="hybrid-recovery-panel">
+          <div class="hybrid-panel-heading">
+            <div><span class="state-pill current">已作出选择</span><h3>${view === "past" ? "上次执行上下文" : "当前计划"}</h3></div>
+            <span class="surface-tag">只显示所选上下文</span>
+          </div>
+          <section class="hybrid-detail">${view === "past" ? contextCard(state.pastContext, "past") : contextCard(state.currentPlan, "current")}</section>
+        </section>`;
+  return `
+    <article class="variant-frame hybrid-variant">
+      <header class="variant-heading">
+        <div>
+          <p class="eyebrow">方案 D · 第一轮反馈支持的唯一混合方案</p>
+          <h2>主窗口主入口，系统通知辅助</h2>
+          <p>保留 C 的低压力分流感受，但把恢复入口固定在主窗口；一次只展开用户选择的上下文。</p>
+        </div>
+        <span class="surface-tag">主窗口为主 · 通知为辅</span>
+      </header>
+      <div class="hybrid-stage">
+        <aside class="hybrid-notification">${notificationMock({ variant: "D", actionMode: "launcher" })}</aside>
+        <section class="surface main-window hybrid-main-window">
+          <div class="surface-bar"><span>执行智能体 — 主窗口</span><span class="surface-tag">模拟主窗口</span></div>
+          <div class="window-content">
+            ${recoveryPanel}
+            ${outcomePanel()}
+            ${mappingPanel()}
+          </div>
+        </section>
+        <aside class="surface hybrid-overlay-status">
+          <span class="surface-tag">模拟置顶小窗</span>
+          <h3>不承担恢复选择</h3>
+          <p>此方案没有恢复时自动置顶小窗；小窗仅保留执行状态转换的独立验证边界。</p>
+          <p><strong>当前主窗口焦点：</strong>${state.presentation.mainFocus}</p>
+        </aside>
+      </div>
+    </article>`;
+}
+
 function renderPrototype() {
   if (app.variant === "A") return mainLedVariant();
   if (app.variant === "B") return overlayLedVariant();
+  if (app.variant === "D") return hybridVariant();
   return notificationLedVariant();
 }
 
@@ -758,7 +874,7 @@ async function copyObservations() {
 
 function applyAction(id) {
   const state = app.state;
-  if (!["open-main", "open-overlay", "open-passive", "close-overlay"].includes(id) && !canChoose(id)) {
+  if (!["open-main", "open-overlay", "open-passive", "close-overlay", "open-past-context", "open-current-context"].includes(id) && !canChoose(id)) {
     state.actionHistory.push(`忽略不可用操作：${id}`);
     render();
     return;
@@ -767,8 +883,21 @@ function applyAction(id) {
   if (id === "open-main") {
     state.presentation.mainWindowOpen = true;
     state.presentation.mainFocus = "恢复入口 / 上次与当前上下文";
+    state.presentation.recoveryView = "chooser";
     state.actionHistory.push("打开主窗口的恢复入口");
     state.outcome = "已打开主窗口；尚未对上次或当前计划作出选择。";
+  } else if (id === "open-past-context") {
+    state.presentation.mainWindowOpen = true;
+    state.presentation.mainFocus = "上次执行上下文";
+    state.presentation.recoveryView = "past";
+    state.actionHistory.push("查看上次执行上下文");
+    state.outcome = "已聚焦上次执行上下文；当前计划仍可随时查看。";
+  } else if (id === "open-current-context") {
+    state.presentation.mainWindowOpen = true;
+    state.presentation.mainFocus = "当前计划";
+    state.presentation.recoveryView = "current";
+    state.actionHistory.push("查看当前计划");
+    state.outcome = "已聚焦当前计划；上次执行上下文仍可随时查看。";
   } else if (id === "open-overlay") {
     state.presentation.overlayVisible = true;
     state.presentation.mainFocus = "置顶小窗的恢复选择";
@@ -786,6 +915,7 @@ function applyAction(id) {
   } else if (id === "open-passive") {
     state.presentation.mainWindowOpen = true;
     state.presentation.mainFocus = "主窗口的被动恢复入口";
+    state.presentation.recoveryView = "chooser";
     state.recovery.passiveEntryOpened = true;
     state.actionHistory.push("用户主动打开被动恢复入口");
     state.outcome = "被动入口已打开；这不是新的通知或干预。";
@@ -797,6 +927,7 @@ function applyAction(id) {
     state.presentation.mainWindowOpen = true;
     state.presentation.overlayVisible = false;
     state.presentation.mainFocus = "上次执行上下文";
+    state.presentation.recoveryView = "past";
     state.pastContext.status = state.pastContext.type === "恢复包" ? "已选择重新进入" : "已选择继续执行";
     state.pastContext.result = "用户选择继续上次；并非对当前计划作出否定";
     state.availableActions = [];
@@ -810,6 +941,7 @@ function applyAction(id) {
     state.presentation.mainWindowOpen = true;
     state.presentation.overlayVisible = false;
     state.presentation.mainFocus = "上一项的状态核对";
+    state.presentation.recoveryView = "past";
     state.pastContext.status = "已打开状态核对，结果尚未填写";
     state.pastContext.result = "仍未知，等待用户明确报告";
     state.availableActions = [];
@@ -823,6 +955,7 @@ function applyAction(id) {
     state.presentation.mainWindowOpen = true;
     state.presentation.overlayVisible = false;
     state.presentation.mainFocus = "当前计划";
+    state.presentation.recoveryView = "current";
     state.currentPlan.status = "已选为当前执行入口";
     state.currentPlan.facts = ["用户选择按当前计划继续", "上一项结果仍是未知，并未被放弃"];
     state.pastContext.status = "结果仍未知";
@@ -839,6 +972,7 @@ function applyAction(id) {
     state.presentation.mainWindowOpen = true;
     state.presentation.overlayVisible = false;
     state.presentation.mainFocus = "主窗口首页";
+    state.presentation.recoveryView = "chooser";
     state.actionHistory.push("选择“暂不决定”");
     state.outcome = "主动呈现已结束；恢复入口可在主窗口被动找到。";
   }
