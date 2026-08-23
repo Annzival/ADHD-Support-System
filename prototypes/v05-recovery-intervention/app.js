@@ -899,7 +899,9 @@ function applyAction(id) {
   } else if (id === "toggle-past-context") {
     state.presentation.mainWindowOpen = true;
     state.presentation.expandedContexts.past = !state.presentation.expandedContexts.past;
-    state.presentation.mainFocus = state.presentation.expandedContexts.past ? "上次执行上下文" : "恢复入口 / 上次与当前上下文";
+    state.presentation.mainFocus = state.presentation.expandedContexts.past
+      ? "上次执行上下文"
+      : state.presentation.expandedContexts.current ? "当前计划" : "恢复入口 / 上次与当前上下文";
     state.presentation.recoveryView = state.presentation.expandedContexts.past ? "past" : state.presentation.expandedContexts.current ? "current" : "chooser";
     state.actionHistory.push(`${state.presentation.expandedContexts.past ? "展开" : "收起"}上次执行上下文`);
     state.outcome = state.presentation.expandedContexts.past
@@ -908,7 +910,9 @@ function applyAction(id) {
   } else if (id === "toggle-current-context") {
     state.presentation.mainWindowOpen = true;
     state.presentation.expandedContexts.current = !state.presentation.expandedContexts.current;
-    state.presentation.mainFocus = state.presentation.expandedContexts.current ? "当前计划" : "恢复入口 / 上次与当前上下文";
+    state.presentation.mainFocus = state.presentation.expandedContexts.current
+      ? "当前计划"
+      : state.presentation.expandedContexts.past ? "上次执行上下文" : "恢复入口 / 上次与当前上下文";
     state.presentation.recoveryView = state.presentation.expandedContexts.current ? "current" : state.presentation.expandedContexts.past ? "past" : "chooser";
     state.actionHistory.push(`${state.presentation.expandedContexts.current ? "展开" : "收起"}当前计划`);
     state.outcome = state.presentation.expandedContexts.current
