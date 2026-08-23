@@ -17,7 +17,7 @@ python3 -m http.server 4173 --directory prototypes/v05-recovery-intervention
 - `variant=A`：主窗口主导；
 - `variant=B`：置顶小窗主导；
 - `variant=C`：系统通知主导；
-- `variant=D`：主窗口主入口（由第一轮用户观察支持的唯一混合方案）；两个上下文可独立展开并同时完整呈现，作出执行选择后才收敛为所选的一条；
+- `variant=D`：主窗口主入口（由第一轮用户观察支持的唯一混合方案）；两个上下文可独立展开并同时完整呈现，但它们只是信息对照，不表示两个前台执行会话；作出执行选择后才收敛为所选的一条；
 - `scenario=active-session`、`resume-packet`、`missed-start`、`merged-expired`、`after-current-plan` 或 `after-defer`。
 
 也可以用页面底部的切换栏或左右方向键切换方案；输入框和文本框获得焦点时，方向键不会切换。

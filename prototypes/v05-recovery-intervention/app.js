@@ -95,7 +95,7 @@ function baseState(id, data) {
 const scenarioDefinitions = {
   "active-session": {
     label: "1. 活动执行会话 + 当前计划推进",
-    description: "已有活动执行会话；当前计划已进入下一项。应出现“继续上次执行”，不应出现“处理上一项”。",
+    description: "已有活动执行会话；它优先作为唯一前台执行上下文。当前计划可查看但只作被动记录；应出现“继续上次执行”，不应出现“处理上一项”或第二个活动会话入口。",
     create() {
       return baseState("active-session", {
         recovery: baseRecovery({ expiredInterventions: 2 }),
@@ -108,7 +108,7 @@ const scenarioDefinitions = {
           result: "未关闭；不是失败或放弃",
         },
         currentPlan: baseCurrentPlan(),
-        availableActions: ["continue-last", "continue-current", "defer"],
+        availableActions: ["continue-last", "defer"],
         mainWindowOpen: false,
         overlayVisible: true,
         mainFocus: "恢复入口尚未打开",
@@ -337,7 +337,11 @@ function hybridContextActionButtons(context) {
     : context === "current"
       ? state.availableActions.filter((id) => id === "continue-current")
       : [];
-  if (ids.length === 0) return "";
+  if (ids.length === 0) {
+    return context === "current" && state.pastContext.type === "活动执行会话"
+      ? '<p class="action-caption">已有活动执行会话正处于前台；当前计划仅供查看，不会在这里创建第二个活动执行会话。</p>'
+      : "";
+  }
   return actionButtons({ actionIds: ids });
 }
 
@@ -350,11 +354,18 @@ function hybridDeferButton() {
 function contextCard(context, tone) {
   const pillClass = tone === "current" ? "current" : tone === "past" ? "past" : "unknown";
   const title = tone === "current" ? "当前计划" : "上次执行上下文";
+  const activeSessionIsForeground = app.state.pastContext.type === "活动执行会话";
+  const role = activeSessionIsForeground
+    ? tone === "past"
+      ? '<p class="context-role foreground"><strong>前台执行上下文（优先）</strong>：已有活动执行会话；本页不会创建第二个活动会话。</p>'
+      : '<p class="context-role passive"><strong>被动计划记录</strong>：当前计划可查看，但在已有活动执行会话时不成为第二个前台会话。</p>'
+    : "";
   return `
     <section class="context-card ${tone === "current" ? "current-context" : ""}">
       <span class="state-pill ${pillClass}">${title}</span>
       <h3>${context.headline}</h3>
       <p><strong>${context.type}</strong> · ${context.status}</p>
+      ${role}
       <dl>
         <dt>时间</dt><dd>${context.when}</dd>
         ${context.facts.map((fact) => `<dt>事实</dt><dd>${fact}</dd>`).join("")}
@@ -694,7 +705,7 @@ function hybridVariant() {
           <div>
             <span class="state-pill current">${state.recovery.passiveEntryOpened ? "被动重新进入" : "主窗口主要入口"}</span>
             <h3>恢复选择</h3>
-            <p>系统通知可以打开这里，但不依赖通知也能直接进入。两条上下文可分别展开并同时保留，再决定是否操作。</p>
+            <p>系统通知可以打开这里，但不依赖通知也能直接进入。两条上下文可分别展开并同时保留作信息对照；这不表示两个执行会话同时处于前台。</p>
           </div>
           <span class="surface-tag">一次恢复入口</span>
         </div>
@@ -726,7 +737,7 @@ function hybridVariant() {
         <div>
           <p class="eyebrow">方案 D · 第一轮反馈支持的唯一混合方案</p>
           <h2>主窗口主入口，系统通知辅助</h2>
-          <p>保留 C 的低压力分流感受，但把恢复入口固定在主窗口；上次与当前上下文可独立展开并同时呈现。</p>
+          <p>保留 C 的低压力分流感受，但把恢复入口固定在主窗口；上次与当前上下文可独立展开并同时呈现，前台执行上下文始终只有一条。</p>
         </div>
         <span class="surface-tag">主窗口为主 · 通知为辅</span>
       </header>

@@ -256,6 +256,8 @@ pre {
 .context-card.current-context { border-left-color: #0f766e; background: #f0fdfa; }
 .context-card h3 { font-size: 0.98rem; margin: 0.35rem 0; }
 .context-card p { color: #334155; font-size: 0.85rem; line-height: 1.45; margin: 0.25rem 0; }
+.context-card .context-role { border-left: 3px solid #a16207; color: #713f12; font-size: 0.78rem; line-height: 1.4; margin: 0.45rem 0 0.6rem; padding-left: 0.45rem; }
+.context-card .context-role.passive { border-left-color: #0f766e; color: #115e59; }
 .context-card dl { display: grid; font-size: 0.8rem; gap: 0.2rem; margin: 0.65rem 0 0; }
 .context-card dt { color: #64748b; font-weight: 700; }
 .context-card dd { margin: 0; }
