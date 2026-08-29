@@ -43,6 +43,7 @@ spikes/sqlite-restart-recovery/**/__pycache__/
 # MVP application: venv, build output, run config, local data and model config.
 app/agent_core/.venv/
 app/agent_core/**/__pycache__/
+app/agent_core/**/*.egg-info/
 app/desktop/bin/
 app/desktop/.evidence/
 app/desktop/frontend/dist/

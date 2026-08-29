@@ -17,6 +17,39 @@ import (
 
 var errHandshakeTimeout = errors.New("bootstrap was not published before timeout")
 
+// coreExited 表示核心在握手完成前就退出了。它携带退出码与核心日志尾部，
+// 使"另一个核心正在运行"这类情况立刻可读，而不是退化成一次无信息的超时。
+type coreExited struct {
+	Code    int
+	LogTail string
+}
+
+func (e *coreExited) Error() string {
+	message := fmt.Sprintf("agent core exited during handshake with code %d", e.Code)
+	if e.LogTail != "" {
+		message += "\n核心日志尾部:\n" + e.LogTail
+	}
+	return message
+}
+
+func tailLines(path string, limit int) string {
+	contents, err := os.ReadFile(path)
+	if err != nil || len(contents) == 0 {
+		return ""
+	}
+	lines := strings.Split(strings.ReplaceAll(string(contents), "\r\n", "\n"), "\n")
+	if len(lines) > limit {
+		lines = lines[len(lines)-limit:]
+	}
+	trimmed := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			trimmed = append(trimmed, line)
+		}
+	}
+	return strings.Join(trimmed, "\n")
+}
+
 type Record struct {
 	Endpoint string `json:"endpoint"`
 	PortMode string `json:"portMode"`
@@ -82,8 +115,8 @@ func (m *Manager) Launch(ctx context.Context) (pid int, wait func() error, kill 
 	if err := os.MkdirAll(filepath.Dir(m.opts.DatabasePath), 0o755); err != nil {
 		return 0, nil, nil, err
 	}
-	logFile, err := os.OpenFile(filepath.Join(filepath.Dir(m.opts.DatabasePath), "agent-core.log"),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	coreLogPath := filepath.Join(filepath.Dir(m.opts.DatabasePath), "agent-core.log")
+	logFile, err := os.OpenFile(coreLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -104,7 +137,55 @@ func (m *Manager) Launch(ctx context.Context) (pid int, wait func() error, kill 
 	}
 	m.opts.OnEvent("core_process_started", map[string]any{"pid": cmd.Process.Pid, "sequence": seq})
 
-	record, waitErr := m.waitForBootstrap(ctx, bootstrapPath)
+	// 把核心（含 venv 启动器派生出的解释器子进程）纳入作业，保证退出时整棵树一起终止。
+	releaseJob, jobErr := attachToKillOnCloseJob(cmd.Process.Pid)
+	if jobErr != nil {
+		// 作业对象不可用只降低清理强度，不阻止启动；该事件会被记录下来供排查。
+		m.opts.OnEvent("job_object_unavailable", map[string]any{"sequence": seq, "error": jobErr.Error()})
+	} else {
+		m.opts.OnEvent("job_object_attached", map[string]any{"sequence": seq, "pid": cmd.Process.Pid})
+	}
+
+	// cmd.Wait 只能调用一次；这里统一收敛，既被握手等待复用，也供后续生命周期使用。
+	var (
+		waitOnce    sync.Once
+		procExitErr error
+		exited      = make(chan struct{})
+	)
+	waitFn := func() error {
+		waitOnce.Do(func() {
+			procExitErr = cmd.Wait()
+			// 核心已退出，主动释放作业句柄；句柄泄漏会让作业一直存在。
+			if releaseJob != nil {
+				releaseJob()
+			}
+		})
+		return procExitErr
+	}
+	go func() {
+		waitOnce.Do(func() {
+			procExitErr = cmd.Wait()
+			if releaseJob != nil {
+				releaseJob()
+			}
+		})
+		close(exited)
+	}()
+
+	// 核心提前退出时带上退出码与日志尾部，避免退化成一次无信息的超时。
+	describeExit := func(fallback error) error {
+		if procExitErr == nil {
+			return fallback
+		}
+		code := -1
+		var exitErr *exec.ExitError
+		if errors.As(procExitErr, &exitErr) {
+			code = exitErr.ExitCode()
+		}
+		return &coreExited{Code: code, LogTail: tailLines(coreLogPath, 12)}
+	}
+
+	record, handshakeErr := m.waitForBootstrap(ctx, bootstrapPath, exited, describeExit)
 	// 无论成功与否都立即消费 bootstrap 文件与其临时目录。
 	_ = os.Remove(bootstrapPath)
 	_ = os.Remove(handoffDir)
@@ -112,11 +193,15 @@ func (m *Manager) Launch(ctx context.Context) (pid int, wait func() error, kill 
 	m.handoff = ""
 	m.mu.Unlock()
 
-	if waitErr != nil {
+	if handshakeErr != nil {
 		logFile.Close()
+		// 关闭作业句柄会终止整棵进程树，避免 venv 启动器的子进程残留。
+		if releaseJob != nil {
+			releaseJob()
+		}
 		_ = cmd.Process.Kill()
-		_, _ = cmd.Process.Wait()
-		return 0, nil, nil, waitErr
+		_ = waitFn()
+		return 0, nil, nil, handshakeErr
 	}
 	m.mu.Lock()
 	m.record = record
@@ -124,8 +209,11 @@ func (m *Manager) Launch(ctx context.Context) (pid int, wait func() error, kill 
 	m.opts.OnEvent("bootstrap_consumed", map[string]any{"sequence": seq, "portMode": record.PortMode})
 	logFile.Close()
 
-	waitFn := func() error { return cmd.Wait() }
 	killFn := func() error {
+		// 先关闭作业句柄以终止整棵进程树，再兜底杀掉启动器进程。
+		if releaseJob != nil {
+			releaseJob()
+		}
 		if cmd.Process == nil {
 			return nil
 		}
@@ -134,25 +222,51 @@ func (m *Manager) Launch(ctx context.Context) (pid int, wait func() error, kill 
 	return cmd.Process.Pid, waitFn, killFn, nil
 }
 
-func (m *Manager) waitForBootstrap(ctx context.Context, path string) (*Record, error) {
+// waitForBootstrap 轮询 bootstrap 文件；若核心进程提前退出则立即返回描述性错误，
+// 不再空等到超时。describeExit 负责把退出码与核心日志尾部拼进错误信息。
+func (m *Manager) waitForBootstrap(
+	ctx context.Context,
+	path string,
+	exited <-chan struct{},
+	describeExit func(error) error,
+) (*Record, error) {
 	deadline := time.Now().Add(m.opts.BootstrapTimeout)
-	for {
+	poll := time.NewTicker(50 * time.Millisecond)
+	defer poll.Stop()
+
+	// check 执行一次探测；done 为真时其返回值即为最终结果。
+	check := func() (*Record, error, bool) {
+		select {
+		case <-exited:
+			return nil, describeExit(errors.New("agent core exited during handshake")), true
+		default:
+		}
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, ctx.Err(), true
 		}
 		contents, err := os.ReadFile(path)
 		if err == nil {
-			record, parseErr := parseRecord(contents)
-			if parseErr == nil {
-				return record, nil
+			if record, parseErr := parseRecord(contents); parseErr == nil {
+				return record, nil, true
+			} else {
+				m.opts.OnEvent("bootstrap_parse_failed", map[string]any{"error": parseErr.Error()})
 			}
-			m.opts.OnEvent("bootstrap_parse_failed", map[string]any{"error": parseErr.Error()})
+		}
+		return nil, nil, false
+	}
+
+	if record, err, done := check(); done {
+		return record, err
+	}
+	for range poll.C {
+		if record, err, done := check(); done {
+			return record, err
 		}
 		if time.Now().After(deadline) {
 			return nil, errHandshakeTimeout
 		}
-		time.Sleep(50 * time.Millisecond)
 	}
+	return nil, errHandshakeTimeout
 }
 
 func parseRecord(contents []byte) (*Record, error) {

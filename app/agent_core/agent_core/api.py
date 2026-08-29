@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import sys
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -336,11 +337,27 @@ def make_handler(context: ApiContext) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
+class LoopbackHTTPServer(ThreadingHTTPServer):
+    """只监听回环的 HTTP 服务，并抑制浏览器预连接造成的连接重置噪音。
+
+    WebView2 会提前建立连接用于资产预取，随后在未发送任何请求时直接关闭。
+    这类 ConnectionReset 不代表请求处理失败，若打印堆栈会淹没真实的服务端错误。
+    只有非连接类异常才继续沿默认路径输出。
+    """
+
+    silent_errors = (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)
+
+    def handle_error(self, request, client_address) -> None:  # noqa: N802
+        if isinstance(sys.exc_info()[1], self.silent_errors):
+            return
+        super().handle_error(request, client_address)
+
+
 class CoreApiServer:
     def __init__(self, context: ApiContext) -> None:
         self.context = context
         handler = make_handler(context)
-        self.http_server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        self.http_server = LoopbackHTTPServer(("127.0.0.1", 0), handler)
         self.http_server.daemon_threads = True
         port = self.http_server.server_address[1]
         self.endpoint = f"http://127.0.0.1:{port}"

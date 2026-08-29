@@ -8,11 +8,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import signal
 import sys
 from pathlib import Path
 
 from .app import AgentCoreApp
+from .singleton import EXIT_CODE_ALREADY_RUNNING, CoreAlreadyRunning, acquire_instance_lock
 
 
 def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
@@ -38,6 +40,16 @@ def default_database_path() -> Path:
 def main(argv: list[str] | None = None) -> int:
     arguments = parse_arguments(argv)
     database = arguments.database or default_database_path()
+
+    # 单实例保护必须在打开数据库之前完成：第二个核心会重复扫描同一份权威状态，
+    # 可能重复送达开始干预或重复生成恢复干预（违反 ADR-0012、ADR-0016）。
+    lock_path = database.parent / "agent-core.lock"
+    try:
+        instance_lock = acquire_instance_lock(lock_path, f"pid={os.getpid()} database={database}")
+    except CoreAlreadyRunning as error:
+        print(f"agent-core 已退出：{error}", flush=True)
+        return EXIT_CODE_ALREADY_RUNNING
+
     app = AgentCoreApp(
         database_path=database,
         frontend_dir=arguments.frontend_dir if arguments.frontend_dir else None,
@@ -68,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         pass
     finally:
         app.stop()
+        instance_lock.close()
     return 0
 
 

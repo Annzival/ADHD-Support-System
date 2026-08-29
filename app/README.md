@@ -18,23 +18,40 @@ app/
 
 ## 运行
 
-前置：Windows 10 x64 + WebView2；Python 3.12（首次需创建 venv）。
+前置：Windows 10 x64 + WebView2 + Go 1.25+ + Python 3.12+。
 
 ```powershell
-# 1. 准备核心环境（一次性）
+# 一键启动（准备 venv → 安装依赖 → 构建宿主 → 启动应用）
+powershell -ExecutionPolicy Bypass -File app\scripts\start.ps1
+```
+
+脚本幂等：已就绪的环境会跳过，只启动应用。常用开关：
+
+| 开关 | 作用 |
+| --- | --- |
+| `-Rebuild` | 强制重新构建桌面宿主 |
+| `-SkipBuild` | 跳过构建，直接启动已有二进制 |
+| `-CheckOnly` | 只做环境与构建检查，不启动应用 |
+
+手动步骤（等价）：
+
+```powershell
 cd app\agent_core
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -e ".[dev]"
-
-# 2. 构建宿主
 cd ..\desktop
 go build -o bin\app-desktop.exe .
-
-# 3. 运行
 .\bin\app-desktop.exe
 ```
 
 宿主自动启动 `app/agent_core/.venv` 中的 Python 核心，通过一次性 bootstrap 文件完成动态回环端点与临时令牌交接（令牌只存在于宿主与核心内存，不落盘、不进日志）。
+
+## 运行期保护
+
+这两项保护服务于同一条边界：智能体核心是唯一状态权威（ADR-0010）。
+
+- **单实例保护**：核心在打开数据库前取得排他锁文件 `agent-core.lock`。第二个核心会被拒绝并退出（退出码 3），避免两个调度器扫描同一份状态、重复送达开始干预或恢复干预（违反 ADR-0012、ADR-0016）。
+- **进程树清理**：Windows 上 venv 的 `Scripts\python.exe` 是启动器，会派生出真正持有端口与数据库锁的解释器子进程。宿主把核心进程加入 `KILL_ON_JOB_CLOSE` 作业对象，因此宿主被强制结束时整棵进程树一起终止，不会留下孤立核心。
 
 ## 模型配置（可选）
 
@@ -45,7 +62,7 @@ go build -o bin\app-desktop.exe .
 ## 验证
 
 ```powershell
-# 单元测试（领域转换、原子性、调度生命周期、恢复、API 认证）
+# 单元测试（领域转换、原子性、调度生命周期、恢复、API 认证、单实例保护）
 cd app\agent_core
 .venv\Scripts\python.exe -m pytest tests\ -q
 
@@ -53,6 +70,8 @@ cd app\agent_core
 cd app
 python scripts\e2e_check.py
 ```
+
+当前基线：单元测试 41 项通过，端到端 18/18 通过。宿主二进制在锁定的 Windows 10 22H2 x64 上完成启动、核心守护与 bootstrap 交接验证。
 
 ## 边界说明
 
