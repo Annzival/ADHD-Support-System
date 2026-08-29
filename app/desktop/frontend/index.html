@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>执行支持</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">执</span>
+      <span class="brand-name">执行支持</span>
+    </div>
+    <nav id="main-nav" class="nav">
+      <button data-view="home" class="nav-btn active">首页</button>
+      <button data-view="plan" class="nav-btn">我的方案</button>
+      <button data-view="settings" class="nav-btn">设置</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- 首页 -->
+    <section id="view-home" class="view">
+      <div id="connection-banner" class="banner banner-warn hidden">智能体核心未连接，正在等待恢复…</div>
+      <div id="recovery-banner" class="hidden"></div>
+      <div id="pending-closure" class="hidden"></div>
+      <div id="active-session" class="hidden"></div>
+      <div id="pending-surfaces" class="stack"></div>
+      <div id="resumable" class="hidden"></div>
+      <div id="quiet-unresolved" class="hidden"></div>
+      <div id="home-empty" class="empty hidden">
+        <p>当前没有等待你的执行安排。</p>
+        <p class="muted">当下不需要做事，是好事。</p>
+      </div>
+    </section>
+
+    <!-- 方案视图（导入 / 审阅工作区） -->
+    <section id="view-plan" class="view hidden">
+      <div id="plan-no-active" class="hidden">
+        <h2>导入你的方案</h2>
+        <p class="muted">粘贴你已经写好的学习或求职方案。系统不会替你制定方案，只帮你把它变成可执行的一步步。</p>
+        <textarea id="import-source" rows="14" placeholder="把方案原文粘贴到这里…"></textarea>
+        <div class="row-end">
+          <button id="btn-import" class="primary">导入并生成草案</button>
+        </div>
+      </div>
+      <div id="plan-review" class="hidden">
+        <div class="review-head">
+          <h2>方案审阅工作区</h2>
+          <span id="review-head-note" class="muted hidden">正在导入新方案；当前已启用方案在你最终确认前保持不变。</span>
+          <span id="review-status" class="muted"></span>
+        </div>
+        <div id="review-generating" class="banner hidden">正在生成方案导入草案…这可能需要一点时间。</div>
+        <div id="review-failed" class="banner banner-error hidden"></div>
+        <div id="review-stale" class="banner banner-warn hidden">方案原文已修改，这份草案已过时，请重新生成。</div>
+        <div class="review-grid">
+          <div class="panel">
+            <h3>方案原文（权威依据）</h3>
+            <pre id="review-source" class="source-pre"></pre>
+          </div>
+          <div class="panel">
+            <h3>草案</h3>
+            <div id="review-draft"></div>
+          </div>
+        </div>
+        <div class="row-end">
+          <button id="btn-regenerate" class="ghost">重新生成草案</button>
+          <button id="btn-enable" class="primary">启用方案…</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="view-settings" class="view hidden">
+      <h2>干预策略</h2>
+      <p class="muted">这些是硬边界：智能体核心不会在安静时段主动联系你，也不会为了送达而扩大权限。</p>
+      <div class="settings-grid">
+        <label>开始宽限时间（分钟）<input id="set-grace" type="number" min="1" max="240"></label>
+        <label>安静时段开始 <input id="set-quiet-start" type="time"></label>
+        <label>安静时段结束 <input id="set-quiet-end" type="time"></label>
+        <label>执行窗口结束 <input id="set-window-end" type="time"></label>
+      </div>
+      <div class="row-end"><button id="btn-save-settings" class="primary">保存干预策略</button></div>
+
+      <h2 class="section-gap">模型配置（方案草案生成）</h2>
+      <p class="muted">模型只用于整理你导入的方案原文。执行闭环完全由确定性规则驱动，不依赖模型。</p>
+      <div id="model-status" class="muted"></div>
+      <div class="settings-grid">
+        <label>API Base URL<input id="model-base-url" placeholder="https://api.example.com/v1"></label>
+        <label>API Key<input id="model-api-key" type="password" placeholder="sk-…"></label>
+        <label>模型名称<input id="model-name" placeholder="例如 gpt-4o-mini / glm-4-flash"></label>
+      </div>
+      <div class="row-end"><button id="btn-save-model" class="primary">保存模型配置</button></div>
+
+      <h2 class="section-gap">导入新方案</h2>
+      <p class="muted">导入新方案会在你最终确认后替换当前已启用的方案；旧的执行安排会被明确取消。</p>
+      <textarea id="reimport-source" rows="8" placeholder="粘贴新方案原文…"></textarea>
+      <div class="row-end"><button id="btn-reimport" class="ghost">开始导入</button></div>
+    </section>
+  </main>
+
+  <!-- 变更确认（模态） -->
+  <div id="modal-root" class="modal-root hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal" id="modal-body"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

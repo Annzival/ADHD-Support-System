@@ -191,10 +191,15 @@ def run_draft_job(
 
     def _job() -> None:
         try:
-            config = ModelConfig.load()
-            if config is None:
-                raise RuntimeError("模型未配置：请在设置中配置模型供应商后重试")
-            draft = generate_draft(source_text, config)
+            if os.environ.get("ADHD_FAKE_DRAFT") == "1":
+                # 开发脚手架：仅当显式设置环境变量时生成预置草案，
+                # 不属于产品功能，也不能代替正式验证中的真实草案生成。
+                draft = _fake_draft(source_text)
+            else:
+                config = ModelConfig.load()
+                if config is None:
+                    raise RuntimeError("模型未配置：请在设置中配置模型供应商后重试")
+                draft = generate_draft(source_text, config)
             if not draft.candidate_actions:
                 raise RuntimeError("模型没有返回任何候选行动，请重试或更换模型")
             service.complete_draft(plan_id, source_version, "ready", draft, None)
@@ -207,6 +212,26 @@ def run_draft_job(
     thread = threading.Thread(target=_job, name=f"draft-{plan_id}", daemon=True)
     thread.start()
     return thread
+
+
+def _fake_draft(source_text: str) -> PlanImportDraft:
+    first_line = next((line.strip() for line in source_text.splitlines() if line.strip()), "导入的方案行动")
+    return PlanImportDraft(
+        original_points=[first_line],
+        derived_points=["开发脚手架草案：未调用模型"],
+        gaps=["该草案由 ADHD_FAKE_DRAFT 脚手架生成，不代表模型输出"],
+        candidate_actions=[
+            DraftCandidateAction(
+                local_id="c1",
+                title=first_line[:60] or "示例行动",
+                origin="original",
+                source_ref=first_line[:80],
+                planned_start_at=None,
+                estimated_minutes=None,
+                user_confirmed=False,
+            )
+        ],
+    )
 
 
 def _safe_message(error: Exception) -> str:

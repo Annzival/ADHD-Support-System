@@ -28,6 +28,7 @@ class AgentCoreApp:
         self.service = Service(self.store, self.clock, broadcast=self._broadcast)
         self.service.on_plan_imported = self._on_plan_imported
         self.api_context = ApiContext(self.service, self.clock, frontend_dir)
+        self.api_context.on_shutdown = self._request_stop
         self.server = CoreApiServer(self.api_context)
         self._stop = threading.Event()
         self._threads: list[threading.Thread] = []
@@ -47,6 +48,10 @@ class AgentCoreApp:
         self._stop.set()
         self.server.shutdown()
         self.store.close()
+
+    def _request_stop(self) -> None:
+        # 从 HTTP 线程触发；shutdown 自带独立逻辑且幂等。
+        threading.Thread(target=self.stop, daemon=True).start()
 
     def _start_background(self, name: str, target) -> None:
         thread = threading.Thread(target=target, name=name, daemon=True)

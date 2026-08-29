@@ -15,6 +15,7 @@ from typing import Any, Callable
 from .clock import Clock, parse_utc, utc_now_iso
 from .domain import (
     ActionStatus,
+    can_reschedule,
     CheckpointResponse,
     CheckpointState,
     DomainError,
@@ -215,7 +216,15 @@ class Service:
             self.store.update_draft_result(plan_id, DraftStatus.READY, _dump_json(draft.to_json()), None, now)
             self.store.record_event("candidate_confirmed", {"planId": plan_id, "localId": local_id}, now)
         self.broadcast({"type": "state_changed", "reason": "candidate_confirmed"})
-        return candidate.__dict__
+        return {
+            "localId": candidate.local_id,
+            "title": candidate.title,
+            "origin": candidate.origin,
+            "sourceRef": candidate.source_ref,
+            "plannedStartAt": candidate.planned_start_at,
+            "estimatedMinutes": candidate.estimated_minutes,
+            "userConfirmed": candidate.user_confirmed,
+        }
 
     def unconfirm_candidate_action(self, plan_id: str, local_id: str) -> None:
         now = self.clock.now_iso()
@@ -341,6 +350,57 @@ class Service:
                 self.store.record_event("start_responded", {"interventionId": intervention_id, "response": response}, now)
                 return {"cancelled": True}
             raise DomainError("unknown_response", f"未知回应：{response}")
+
+    def reschedule_action(self, action_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """用户主动改期（对已过期或未决记录的显式操作，不新增主动联系）。"""
+
+        now_dt = self.clock.now_utc()
+        now = utc_now_iso(now_dt)
+        with self.store.transaction():
+            action = self.store.get_action(action_id)
+            if action is None:
+                raise DomainError("action_not_found", "下一步行动不存在")
+            if not can_reschedule(str(action["status"])):
+                raise DomainError("invalid_transition", "当前状态不能改期")
+            new_start = payload.get("plannedStartAt")
+            if not new_start:
+                raise DomainError("missing_field", "缺少新的计划开始时间")
+            new_start_dt = parse_utc(str(new_start))
+            if new_start_dt <= now_dt:
+                raise DomainError("planned_start_in_past", "新的计划开始时间必须晚于当前时间")
+            self.store.connection.execute(
+                "UPDATE start_interventions SET state = ? WHERE action_id = ? AND state IN ('delivered','followed_up')",
+                (InterventionState.EXPIRED, action_id),
+            )
+            self.store.connection.execute(
+                "UPDATE next_actions SET planned_start_at = ?, start_settled = 0, updated_at = ? WHERE id = ?",
+                (utc_now_iso(new_start_dt), now, action_id),
+            )
+            self.store.record_event("action_rescheduled_by_user", {"actionId": action_id}, now)
+        self.broadcast({"type": "state_changed", "reason": "action_rescheduled"})
+        return {"rescheduledTo": utc_now_iso(new_start_dt)}
+
+    def skip_today_action(self, action_id: str) -> dict[str, Any]:
+        """用户主动放下今天这一项（显式决定，不修改权威方案）。"""
+
+        now = self.clock.now_iso()
+        with self.store.transaction():
+            action = self.store.get_action(action_id)
+            if action is None:
+                raise DomainError("action_not_found", "下一步行动不存在")
+            if not can_reschedule(str(action["status"])):
+                raise DomainError("invalid_transition", "当前状态不能执行该操作")
+            self.store.connection.execute(
+                "UPDATE start_interventions SET state = ? WHERE action_id = ? AND state IN ('delivered','followed_up')",
+                (InterventionState.EXPIRED, action_id),
+            )
+            self.store.connection.execute(
+                "UPDATE next_actions SET status = ?, start_settled = 1, pending_kind = NULL, closure_deadline = NULL, updated_at = ? WHERE id = ?",
+                (ActionStatus.CANCELLED_TODAY, now, action_id),
+            )
+            self.store.record_event("action_skipped_today_by_user", {"actionId": action_id}, now)
+        self.broadcast({"type": "state_changed", "reason": "action_skipped_today"})
+        return {"cancelled": True}
 
     def _start_session_locked(
         self,
@@ -1038,6 +1098,9 @@ class Service:
                 "enabledAt": plan["enabled_at"],
                 "createdAt": str(plan["created_at"]),
             }
+            if plan["status"] == PlanStatus.DRAFT:
+                # 审阅工作区需要原文（权威依据）随草案一起展示。
+                plan_view["sourceText"] = str(plan["source_text"])
             draft_row = self.store.get_draft(str(plan["id"]))
             if draft_row is not None:
                 draft_view = {
@@ -1049,7 +1112,10 @@ class Service:
                     "stale": int(draft_row["based_on_source_version"]) != int(plan["source_version"]),
                     "generating": self.draft_job_running(str(plan["id"])),
                 }
-            for row in self.store.actions_for_plan(str(plan["id"])):
+            # 返回所有方案的行动（含被取代方案）：旧行动被明确取消而非抹除。
+            for row in self.store.connection.execute(
+                "SELECT * FROM next_actions ORDER BY planned_start_at"
+            ).fetchall():
                 actions.append(self._action_view(row))
 
         pending_surfaces = [

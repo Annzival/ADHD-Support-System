@@ -58,6 +58,8 @@ class ApiContext:
         self.frontend_dir = frontend_dir
         self.token = secrets.token_urlsafe(32)
         self.registry = ConnectionRegistry()
+        self.on_shutdown: Any | None = None  # 宿主优雅停机回调，由组合根注入
+        self.runtime_endpoint: str | None = None  # 开发模式（核心直伺服前端）时由服务器回填
 
 
 _MIME = {
@@ -163,6 +165,17 @@ def make_handler(context: ApiContext) -> type[BaseHTTPRequestHandler]:
                 self._handle_websocket(parse_qs(parsed.query))
                 return
             if context.frontend_dir is not None and method == "GET" and not path.startswith("/api/"):
+                if path == "/runtime-config.json":
+                    # 开发模式等价物：宿主中间件在生产中提供相同形状的记录。
+                    self._write_json(
+                        HTTPStatus.OK,
+                        {
+                            "endpoint": context.runtime_endpoint,
+                            "token": context.token,
+                            "coreRunning": True,
+                        },
+                    )
+                    return
                 self._serve_static(path)
                 return
             if not self._authorized():
@@ -174,11 +187,33 @@ def make_handler(context: ApiContext) -> type[BaseHTTPRequestHandler]:
             if method == "GET" and path == "/api/state":
                 self._write_json(HTTPStatus.OK, service.build_state())
                 return
+            if method == "POST" and path == "/api/shutdown":
+                self._write_json(HTTPStatus.ACCEPTED, {"accepted": True})
+                if context.on_shutdown is not None:
+                    threading.Thread(target=context.on_shutdown, daemon=True).start()
+                return
             if method == "GET" and path == "/api/settings":
                 self._write_json(HTTPStatus.OK, service.store.all_settings())
                 return
             if method == "PUT" and path == "/api/settings":
                 self._write_json(HTTPStatus.OK, service.update_settings(body))
+                return
+            if method == "POST" and path == "/api/model-config":
+                from .draft import ModelConfig, model_config_summary
+
+                config = ModelConfig(
+                    base_url=str(body.get("baseUrl", "")).strip().rstrip("/"),
+                    api_key=str(body.get("apiKey", "")).strip(),
+                    model_name=str(body.get("modelName", "")).strip(),
+                )
+                if not (config.base_url.startswith(("http://", "https://")) and config.api_key and config.model_name):
+                    self._write_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "invalid_model_config", "message": "baseUrl / apiKey / modelName 均不能为空"},
+                    )
+                    return
+                config.save()
+                self._write_json(HTTPStatus.OK, model_config_summary())
                 return
             if method == "POST" and path == "/api/plans":
                 plan_id = service.import_plan(str(body.get("sourceText", "")))
@@ -225,6 +260,12 @@ def make_handler(context: ApiContext) -> type[BaseHTTPRequestHandler]:
             scope, item_id, action = parts[1], parts[2], parts[3]
             if scope == "interventions" and action == "respond":
                 self._write_json(HTTPStatus.OK, service.respond_start(item_id, str(body.get("response", "")), body))
+                return
+            if scope == "actions" and action == "reschedule":
+                self._write_json(HTTPStatus.OK, service.reschedule_action(item_id, body))
+                return
+            if scope == "actions" and action == "skip-today":
+                self._write_json(HTTPStatus.OK, service.skip_today_action(item_id))
                 return
             if scope == "checkpoints" and action == "respond":
                 self._write_json(HTTPStatus.OK, service.respond_checkpoint(item_id, str(body.get("response", "")), body))
@@ -303,6 +344,7 @@ class CoreApiServer:
         self.http_server.daemon_threads = True
         port = self.http_server.server_address[1]
         self.endpoint = f"http://127.0.0.1:{port}"
+        context.runtime_endpoint = self.endpoint
         self._thread: threading.Thread | None = None
 
     def broadcast(self, event: dict[str, Any]) -> None:
