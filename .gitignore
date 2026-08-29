@@ -39,3 +39,14 @@ spikes/sqlite-restart-recovery/bin/
 spikes/sqlite-restart-recovery/.spike-build.json
 spikes/sqlite-restart-recovery/.spike-run.json
 spikes/sqlite-restart-recovery/**/__pycache__/
+
+# MVP application: venv, build output, run config, local data and model config.
+app/agent_core/.venv/
+app/agent_core/**/__pycache__/
+app/desktop/bin/
+app/desktop/.evidence/
+app/desktop/frontend/dist/
+app/.run/
+*.sqlite3
+*.sqlite3-*
+model_config.json

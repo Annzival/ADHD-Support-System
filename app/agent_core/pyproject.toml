@@ -1,0 +1,23 @@
+[project]
+name = "agent-core"
+version = "0.1.0"
+description = "ADHD 执行支持系统 智能体核心：唯一权威状态、确定性调度与回环 API"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-ai-slim[openai]>=2.0",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agent_core*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
