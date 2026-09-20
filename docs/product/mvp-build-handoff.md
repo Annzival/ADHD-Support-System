@@ -2,7 +2,9 @@
 
 ## 判断与授权边界
 
-当前为 B-04 交接报告待审稿：验收规格已经写出，仍须完成独立规范／需求审查，再由当前已显式激活的产品治理线程确认六项门槛。不得将待审稿当成已经完成产品功能或通过验收的证明。
+结论：**MVP 已达到可以开始构建的状态。**
+
+2026-09-20，B-04 文档 checkpoint `39f597d` 已完成独立 Standards / Spec 双轴审查，两轴均无 findings；当前产品治理线程结合已接纳技术证据确认六项门槛全部满足，停止产品 grilling。本报告与验收规格由 [PR #30](https://github.com/Annzival/ADHD-Support-System/pull/30) 发布，仍需用户人工审查和合并后，执行 session 才能从最新 main 启动。
 
 构建就绪只表示已有最低充分信息，可以开始第一个可验证闭环的实现；不表示所有路线图需求都已确定、软件可分发或 dogfooding 已可启动。Agent 不在产品治理线程实现代码、不自动创建执行 session，也不标记 PR Ready 或合并。
 
@@ -92,7 +94,7 @@ I-01 的预置数据不是导入功能，也不能进入正式观察；I-03 是 
 
 ## I-01 独立执行任务 Prompt
 
-以下 Prompt 用于用户另开的独立 implementation session；使用前必须先合并承载本交接报告及 B-04 验收标准的文档 PR。当前主线程不启动编码，也不因文件存在赋予新 session 产品治理身份。
+以下 Prompt 用于用户另开的独立 implementation session，任务跟踪为 [Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)，当前未启动；使用前必须先合并 PR #30。当前主线程不启动编码，也不因文件存在赋予新 session 产品治理身份。
 
 ```text
 你在 ADHD-Support-System 仓库执行 I-01：首个 PC 确定性执行闭环的 implementation 任务。
@@ -106,8 +108,8 @@ I-01 的预置数据不是导入功能，也不能进入正式观察；I-03 是 
 1. 只读检查工作树、现有任务 Issue / Draft PR，保护用户修改。
 2. 完整阅读 AGENTS.md、CONTEXT.md、docs/agents/grilling-git-workflow.md、docs/product/mvp-build-readiness.md、mvp-domain-model.md、mvp-domain-transitions.md、mvp-acceptance-scenarios.md 和 mvp-build-handoff.md（后五份均在 docs/product/），以及相关 ADR-0004、0008、0043～0056。
 3. 阅读 docs/spikes/results/ 中 Wails 薄宿主、关闭恢复、localhost 通信及 SQLite 重启的四份结果文档，确认锁定环境和限制，不把 spike 源码直接当成已验收的正式实现。
-4. 核实承载 B-04 与本交接报告的 PR 已人工合并；从最新 main 建立 agent/implement-mvp-first-slice 独立分支。若未合并、文件缺失或存在未知冲突，停止并说明，不从未合并文档分支偷偷借用起点。
-5. 查找已有 I-01 任务 Issue；有则沿用，没有则创建独立 implementation Issue，引用 Issue #10 与本 Prompt，记录范围、验收、退出条件。已有本任务 PR 则沿用，避免重复。
+4. 核实 PR #30 已人工合并；从最新 main 建立 agent/implement-mvp-first-slice 独立分支。若未合并、文件缺失或存在未知冲突，停止并说明，不从未合并文档分支借用起点。
+5. 读取并沿用 I-01 的 Issue #31（https://github.com/Annzival/ADHD-Support-System/issues/31），以及 Issue #10 的构建就绪结论；已有本任务分支或 PR 则沿用，避免重复创建。
 
 交付问题：
 在 Windows 10 22H2 x64，能否用真实桌面客户端通过 localhost API 驱动 Python Core，在预置的确认方案上贯通：到点 → 开始干预 → 立即开始／必要时确认时长 → 会话与首次检查点 → 完成 → 完成或跳过收尾 → SQLite 持久结束？重试、保存失败、Core 重启时是否仍保持一致？
