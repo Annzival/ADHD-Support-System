@@ -2,6 +2,8 @@
 
 本实现对应 [Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)，只覆盖首个 PC 确定性执行闭环。它使用隔离开发夹具，不含真实方案导入，不可用于正式 dogfooding；Windows 操作见 [实机验收步骤](windows-i01.md)，结果见 [结果报告](results/mvp-first-vertical-slice.md)。
 
+当前交付结论：**I-01 PASS**（Windows A／B／D 基线与 C 轮修复复测均已核验）。Draft PR #32 等待人工审查／合并决定；不自动进入 I-02。
+
 ## 组成与边界
 
 - `agent_core/`：Python 3.12.3 标准库实现。SQLite 保存当前记录、命令结果、成功事件、调度与执行证据；不调用 LLM。

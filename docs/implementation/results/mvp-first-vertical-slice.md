@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-**首轮 Windows 验收 FAIL；修复后等待 C 轮复测。** 已核验 `c6b868e` 的 A、B、D 轮通过；C 轮取消／确认时长通过，两个原生关闭失败。已修复页面漏载 Wails runtime，并通过 Linux 回归和 Windows 目标构建，尚无修复后的 Windows 原生关闭证据，不能报告整体 I-01 PASS。此结果不代表完整 MVP、正式 dogfooding 准入或 I-02 启动。
+**I-01 PASS。** 已核验 `c6b868e` 的 A、B、D 轮与 `9493d2e` 的 C 轮修复复测，覆盖首个 PC 确定性执行闭环和全部 13 个人工观察字段。自动检查及真实 Windows 证据满足本阶段范围；原 C 失败记录保留。不同轮次有各自 commit／二进制身份，不声称四轮在同一二进制上重跑。此结果不代表完整 MVP、正式 dogfooding 准入或 I-02 启动。
 
 任务：[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)。本任务是独立 implementation，不是产品治理；从 PR #30 已合并后的 `main@ad940755ebfd19d8fe7ef7011f93ebc17a242e4a` 创建 `agent/implement-mvp-first-slice`，启动时无既有 I-01 PR 或分支、工作树干净。未修改产品范围、领域模型或 ADR。
 
@@ -31,19 +31,19 @@ Linux Go 1.25.0 下载包按 go.dev 官方 SHA-256 核验。浏览器补充检�
 
 ## 场景结果
 
-以下表格保留首次 Linux 交付时的场景映射，Windows “等待”为该 checkpoint 的历史状态；最新实机结论以文末核验表为准。不把测试参数未覆盖的 I-02 分支写成 PASS。
+以下为本阶段最终场景结果。A／B／D 对应 `c6b868e`，C 复测对应 `9493d2e`；自动证据与实机证据各自标明边界，不把 I-02 分支写成 PASS。
 
 | 场景 | 自动检查与实际结果 | Windows 对应步骤／状态 |
 | --- | --- | --- |
-| EX-01 | PASS：唯一开始干预；会话与检查点联合创建；完成后等待收尾；完成／跳过后唯一证据、无活动会话，后续确认安排可以开始。`test_execution_golden_path.py`、`test_atomicity.py` | A/B；等待 |
-| EX-02 | PASS：打开、取消、缺少确认均无会话；确认时长后首次检查时间正确。Python + `frontend.test.mjs` 实际界面操作 | C；等待 |
-| SES-02 完成分支 | PASS：检查点前／后完成 × 完成／跳过收尾四种组合；原检查点立即失效，等待收尾继续占位置。`test_execution_golden_path.py` | A/B；等待 |
+| EX-01 | PASS：唯一开始干预；会话与检查点联合创建；完成后等待收尾；完成／跳过后唯一证据、无活动会话，后续确认安排可以开始。`test_execution_golden_path.py`、`test_atomicity.py` | A/B PASS |
+| EX-02 | PASS：打开、取消、缺少确认均无会话；确认时长后首次检查时间正确。Python + `frontend.test.mjs` 实际界面操作 | C 复测 PASS |
+| SES-02 完成分支 | PASS：检查点前／后完成 × 完成／跳过收尾四种组合；原检查点立即失效，等待收尾继续占位置。`test_execution_golden_path.py` | A/B PASS |
 | AT-01 本阶段 | PASS：开始、完成报告、完成收尾、跳过收尾每个写边界故障回滚；事务中途子进程退出码 71 后保持完整旧状态。`test_atomicity.py` | 自动证据已具备；Windows 脚本重跑同套测试 |
-| AT-02 本阶段 | PASS：成功后丢失响应、重启再用同 ID 返回原结果，状态／事件／调度不重复；前端实际重试原命令。`test_atomicity.py`、`test_transport.py`、前端测试 | D + Windows 自动重跑；等待 |
+| AT-02 本阶段 | PASS：成功后丢失响应、重启再用同 ID 返回原结果，状态／事件／调度不重复；前端实际重试原命令。`test_atomicity.py`、`test_transport.py`、前端测试 | D PASS；Windows Run 自动重跑门槛通过 |
 | AT-03 本阶段 | PASS：开始／完成／收尾竞争只允许一份结果；完成收尾与跳过竞争不产生相互矛盾证据；第二行动在执行中／等待收尾均被拒绝，释放后可开始。`test_atomicity.py` | Windows 自动重跑；不包含改期、续行、恢复竞争 |
-| REC 适用部分 | PASS：真实 Core 重启保留数据库身份、同一会话和检查时间、等待收尾或持久结束；旧主动尝试失效不补发。`test_execution_golden_path.py`、`test_delivery_and_recovery.py`、`test_transport.py` | D；等待；不宣称完整 REC-01～12 |
-| DESK-03 | PASS（Linux）：HTTP／WebSocket 缺失、错误、旧令牌拒绝，旧连接失效，新发现信息重连；Go bootstrap 超时回收子进程和交接目录。`test_transport.py`、`bridge_test.go` | D + Windows 自动重跑；Windows 网络／宿主整合等待 |
-| DESK-04 本阶段 | PASS（Core）：有效对象解析、已解决／过期通知上下文拒绝并返回现状，无重复会话。原生通知回调、焦点与小窗尚无实机证据 | A/B/C；等待 |
+| REC 适用部分 | PASS：真实 Core 重启保留数据库身份、同一会话和检查时间、等待收尾或持久结束；旧主动尝试失效不补发。`test_execution_golden_path.py`、`test_delivery_and_recovery.py`、`test_transport.py` | D PASS；不宣称完整 REC-01～12 |
+| DESK-03 | PASS（Linux）：HTTP／WebSocket 缺失、错误、旧令牌拒绝，旧连接失效，新发现信息重连；Go bootstrap 超时回收子进程和交接目录。`test_transport.py`、`bridge_test.go` | D PASS；Windows 宿主重连整合通过 |
+| DESK-04 本阶段 | PASS（Core）：有效对象解析、已解决／过期通知上下文拒绝并返回现状，无重复会话。原生通知回调、焦点与小窗由 Windows 观察补齐 | A/B PASS；C 复测 PASS |
 
 补充检查：全部完成／部分完成可区分，原完成报告不被覆盖；实际开始、结束和未填用时保持未知。完整历史更正与版本迁移并未实现。
 
@@ -51,21 +51,21 @@ Linux Go 1.25.0 下载包按 go.dev 官方 SHA-256 核验。浏览器补充检�
 
 - Python：17 个测试方法通过；包含上述参数化分支、写入故障、并发和真实进程检查。
 - Go：3 项测试通过；`go vet ./...` 通过。
-- 嵌入式前端：2 项真实浏览器／Core 交互测试通过。
-- Windows amd64 目标 `go build` 通过；未运行该二进制。
+- 嵌入式前端：最终 4 项浏览器／Core 交互测试通过，包含两个窗口入口的 Wails runtime 就绪与关闭回归。
+- Linux 的 Windows amd64 交叉构建通过；该交叉构建产物未运行，实机证据来自 Windows 本机构建的独立二进制。
 - JavaScript 语法、PowerShell AST、`git diff --check` 通过。
 
 原始自动输出留在本次 Linux checkout 的 `.scratch/i01-checks/`；已提交摘要仅含工具版本、结果、源文件／输出／二进制 SHA-256，不含令牌、个人方案、绝对路径或未脱敏日志。首轮 Windows 回传包已受控保存并核验，见文末；原始附件不提交仓库。
 
 ## 限制、未决与回传
 
-1. 已收到通知、焦点、重连及持久结束的实机证据；小窗关闭重开、原生关闭收尾首轮失败，修复后尚待新 C 轮证据。当前不申请合并或 Ready。
+1. 本阶段实机缺口已补齐，C 轮关闭修复复测通过。实现和验收交付完成，交由用户审查／决定合并；PR 保持 Draft，不自行 Ready 或合并。
 2. 开发夹具固定一个 4 小时窗口，这是明确测试数据，不是新增产品默认值。超过该窗口时旧操作拒绝并显示本阶段不可用；自动到期收束、无回应较弱跟进、恢复干预与切换属于 I-02，未在此伪造完成。正式观察不可使用本切片。
 3. 确认行动仅限合成夹具。I-03 的真实导入、LLM／供应商集成未开始；I-02 其他分支、开机启动及完整宿主回归、I-04 观察准入也未开始。
 4. 不覆盖真实 PC 重启、异常断电、数据库损坏／备份恢复、其他 Windows 版本、同权限恶意进程或公开分发。
-5. 当前未发现必须改变产品范围／领域模型／ADR 的冲突，无新增产品治理决策请求。回传内容是本次技术 checkpoint 与 Windows 证据缺口，不改变 Issue #10 已确认的构建就绪结论。
+5. 当前未发现必须改变产品范围／领域模型／ADR 的冲突，无新增产品治理决策请求。回传内容是本次 I-01 PASS 与限定范围，不改变 Issue #10 已确认的构建就绪结论。
 
-下一步仅为 Windows 验收及本 I-01 范围内的必要修正。收到证据后逐项核验，未收到则保留 checkpoint 等待；不自动进入 I-02，不自行 Ready 或合并。
+下一步为人工审查本任务 Draft PR。已回传产品治理追踪 Issue #10，独立 implementation 在 I-01 完成处停止，不自动进入 I-02，不自行 Ready 或合并。
 
 ## Windows 准备反馈：Python 发现兼容性修复
 
@@ -114,6 +114,16 @@ Python 发现修复后，用户运行推进至干净 checkout 检查；`git stat
 
 本次实际检查：前端浏览器 4 项通过，Go 测试通过，Windows amd64 交叉构建通过，diff 检查通过。Core 规则与命令处理未改动；不重复执行未受影响的全部 Python 用例。浏览器检查入口为 `npm test --prefix desktop`，使用锁定 Go 路径 `I01_TEST_GO`、已安装 Chromium 的 `I01_BROWSER_EXECUTABLE` 和本机浏览器运行库；具体环境同上方 Linux 补充检查。
 
-### 下一步与回传
+### 首轮后的复测安排（已完成，保留历史）
 
-只需在新 checkpoint、新目录执行 C1～C6，回传四份中间快照、Collect 摘要、最终状态和桌面日志。可复制命令见[手册“本次只复测 C 轮”](../windows-i01.md)。原 A／B／D 证据保留为原 commit 的已核验基线，不要求用户重复四轮。修复后的 C 未回传前，整体保持未通过；PR 保持 Draft，不合并、不进入 I-02。没有产品范围／ADR 冲突，也没有需要产品治理另行决策的问题。
+当时安排：只需在新 checkpoint、新目录执行 C1～C6，回传四份中间快照、Collect 摘要、最终状态和桌面日志。可复制命令见[手册“本次只复测 C 轮”](../windows-i01.md)。原 A／B／D 证据保留为原 commit 的已核验基线，不要求用户重复四轮。修复后的 C 未回传前，整体保持未通过；PR 保持 Draft，不合并、不进入 I-02。没有产品范围／ADR 冲突，也没有需要产品治理另行决策的问题。
+
+## C 轮修复复测与最终交付
+
+用户回传 `return-20260922-221817.zip`，实测 SHA-256 与提供值均为 `B83A7DAAC4207F837D7E5ACC5D030536673255E1F7B035B4847A4ABB50844486`。源码为 `9493d2e688d33339b43ca1d1463e9807e8132f7a`，Windows 二进制 SHA-256 为 `8E5425919468679691B58C84C56B1D7E619E0DB2DB7ECA01E35E1EB8FE883ABD`，环境与首轮完全一致。用户明确确认小窗和主窗口原生 × 均能关闭，托盘重开得到预期显示；对应四项 observations 均 PASS。
+
+核验四份快照与最终状态：打开／取消时长期间完整持久状态不变，没有会话／检查点；确认后唯一会话和 300 秒首次检查点；执行中关闭小窗后仍为同一会话；主窗口关闭前为等待收尾且无证据，关闭后为 ended、唯一 explicit_skip 证据、无活动会话，未填实际时间／用时仍为未知。回传日志及最终状态哈希匹配摘要，摘要与最终对象一致。
+
+机器可读核验见 [C 轮复测与最终覆盖摘要](mvp-first-vertical-slice.windows-c-retest.json)，内含回传文件哈希和 13 项观察字段到证据轮次／commit 的映射。首轮 [Windows 摘要](mvp-first-vertical-slice.windows-review.json) 及其 C FAIL 保留不覆盖。受影响路径在新二进制复测，A／B／D 沿用先前基线；修复仅增加 runtime 加载，Core 与宿主规则未变，并有修复后的 4 项浏览器回归、Go 测试和 Windows 目标构建记录。本次只更新证据与文档，没有新的产品代码变更，也不重复无关自动测试。
+
+最终结论为 **I-01 PASS**。交付代码、自动测试、Windows 手册、机器可读摘要和结果文档均在同一 Draft PR #32；Issue #31 与产品治理追踪 Issue #10 同步结论。没有 ADR／领域／范围冲突，无需新增产品决策。用户可审查并决定是否合并；本执行任务不自行 Ready、合并、关闭 Issue 或进入 I-02，不宣称完整 MVP 或正式观察准入。
