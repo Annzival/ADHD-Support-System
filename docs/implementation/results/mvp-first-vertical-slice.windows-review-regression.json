@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "stage": "I01",
+  "status": "WINDOWS_TARGETED_REGRESSION_PASS_AWAITING_CODE_REVIEW",
+  "archiveSha256": "9415E21DD348E5BB3CAF3679AC00A8A70C9AB205FA543E28AA278F99A37E7339",
+  "commit": "21b4a24084c16268ded8b63b0b9b044ae55d0875",
+  "binarySha256": "E6651702C387886E8D23758D0334478CE2C07601A9305EC26F5513D537F5FBDA",
+  "environment": {
+    "windows": "10.0.19045",
+    "displayVersion": "22H2",
+    "ubr": 7725,
+    "bits": 64,
+    "python": {
+      "version": "3.12.3",
+      "bits": 64,
+      "sqlite": "3.45.1"
+    },
+    "go": "go version go1.25.0 windows/amd64",
+    "wails": "v3.0.0-beta.8",
+    "webView2": "151.0.4129.78"
+  },
+  "observations": {
+    "arrivalAndCorrectNotification": "PASS",
+    "startAndFirstCheckpoint": "PASS",
+    "cancelDurationLeavesPending": "NOT_RUN",
+    "completionBeforeCheckpoint": "NOT_RUN",
+    "completionAfterCheckpoint": "NOT_RUN",
+    "finishClosure": "PASS",
+    "skipClosure": "NOT_RUN",
+    "nativeCloseSkipsClosure": "NOT_RUN",
+    "staleNotificationShowsCurrentContext": "NOT_RUN",
+    "coreRestartKeepsSameSessionAndCheckpoint": "NOT_RUN",
+    "awaitingClosureSurvivesRestart": "PASS",
+    "endedStateSurvivesRestart": "NOT_RUN",
+    "overlayCloseAndReopen": "NOT_RUN"
+  },
+  "fileSha256": {
+    "desktop-evidence.jsonl": "a2ee6ba45b8ecc6a592034b6cc8cbb08147e106b032ce110ec7c598fbf84dda0",
+    "evidence-summary.json": "db392e31abc40d4970153f43bb8ce9842d1b7433b60f14955b7cf0f88f7ff0f9",
+    "final-state.json": "7444a2bc67e8b77fb07ba20042a34d9bbd0e46d53778a871be911492887685c7",
+    "snapshot-20260922T173102924Z.json": "1d85a35b88291c8d8db75633a7fe89c3b2e1efce1bda2ec9c73f8934f5870cbd",
+    "snapshot-20260922T173138844Z.json": "f7a83833f326c73ba85c4d9ecb64e7d35633046239914adac69eb09fb0afd7d1"
+  },
+  "verifiedChecks": [
+    "重启前后除读取时刻外全部持久状态一致，同一会话等待收尾且没有提前生成证据。",
+    "用户确认断连恢复后仍为部分完成/12分钟；最终唯一confirmed证据为partial/720秒，原报告completed保留，行动仍pending。",
+    "最终会话ended、活动位置释放，摘要与状态一致，回传日志和最终状态哈希匹配摘要。",
+    "日志一次呈现、一次有效通知回调、两次Core连接，与通知不重复及重启观察一致。"
+  ],
+  "limits": [
+    "本轮证明新Windows宿主与前端的定向正常/重连路径；精确领取及回执丢包由已有自动故障注入回归证明，不声称人工制造了丢包。",
+    "数据库快照不包含未提交UI草稿；草稿保留由用户观察和最终partial/720秒证据共同支持。",
+    "Windows自动日志未单独回传；Run测试失败会中止，已有Linux自动测试记录。",
+    "修复后的独立代码复审尚未收到，不据实机通过自动判为可merge。"
+  ]
+}
