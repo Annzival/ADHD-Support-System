@@ -84,3 +84,11 @@ powershell -NoProfile -File scripts/acceptance/tests/test-python-discovery.ps1 -
 实际 Linux 命令使用 PowerShell 7.4.6 与 `/usr/bin/python3`：6 项检查通过，覆盖直接解释器的 `py`、模拟 Launcher、缺少 `py`、错误版本、错误位数和显式路径绕过发现。前者使用真实进程复现原故障；其他候选布局通过进程边界替身模拟。脚本解析与 diff 检查通过。这里不重复宣称 Windows PowerShell 5.1 已通过；待用户用修正版或显式路径重试。
 
 原 `linux-checks.json` 继续对应 `e262f96` 基线，不能当作修复后脚本的哈希。修复证据见 [解释器发现检查摘要](mvp-first-vertical-slice.python-discovery-checks.json)；修复提交由同一 Issue #31 / Draft PR #32 追踪。
+
+## Windows 准备反馈：根目录本机产物误触发干净检查
+
+Python 发现修复后，用户运行推进至干净 checkout 检查；`git status` 显示唯一未跟踪内容为根目录 `.evidence/` 和 `.tools/`。已有忽略规则仅列出部分 spike 子目录的同名产物，遗漏了根目录的本机证据／工具位置。
+
+本次仅将 `/.evidence/` 和 `/.tools/` 加入 `.gitignore` 并补充运行说明；不删除、移动或提交原始证据和下载工具，不放宽验收脚本对源码的干净检查，也不忽略任意层级的同名目录。
+
+用实际 `.gitignore` 在隔离 Git 仓库重现：修复前，两目录出现在脚本使用的 `git status --porcelain --untracked-files=normal` 输出；修复后输出为空。随后修改已跟踪文件、增加普通未跟踪源码和嵌套同名目录，三者仍能被检查发现；产物文件继续存在。检查通过，未重跑未改动的 Core／桌面测试。用户的 Windows 完整重试结果仍待返回，整体继续等待 Windows 验收。

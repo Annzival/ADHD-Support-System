@@ -45,3 +45,7 @@ __pycache__/
 *.pyc
 .i01-runs/
 desktop/bin/
+
+# Root-local Windows evidence and downloaded validation tools (not source).
+/.evidence/
+/.tools/

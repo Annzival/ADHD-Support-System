@@ -25,6 +25,8 @@ powershell -NoProfile -File scripts/acceptance/windows-smoke.ps1 -Stage I01 -Mod
 
 未指定路径时，脚本依次探测 `py -3.12`、不带 Launcher 版本参数的 `py`、`python`、`python3`，仅接纳实际返回 Python 3.12.3、64 位及有效绝对解释器路径的候选。显式指定也保留原版本校验；发现失败不会安装或升级运行时。出现 `Unknown option: -3` 的旧版脚本同样可使用上述显式参数绕过发现阶段。此失败发生在创建测试数据和启动宿主之前。
 
+仓库根目录的 `.evidence/`、`.tools/` 以及 I-01 的 `.i01-runs/` 是本机证据／工具目录，已纳入忽略规则，保留在原处即可。干净 checkpoint 检查仍会拒绝已跟踪文件修改和其他未跟踪文件；这些目录不用于保存项目源码。
+
 脚本先运行 Python 和 Go 自动检查并构建桌面，再创建开发夹具，约 45 秒后到点。它会输出本轮 `DataDirectory`。复制这个实际目录供后续命令使用：
 
 ```powershell
