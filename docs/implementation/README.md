@@ -40,7 +40,7 @@ desktop/node_modules/.bin/playwright install chromium
 npm test --prefix desktop
 ```
 
-浏览器需具备其 Linux 运行依赖；可用 `I01_BROWSER_EXECUTABLE` 指向已安装的 Chromium。`I01_TEST_PYTHON` 可指定锁定 Python 路径。测试用临时本机 HTTP 适配层和真实 Python Core 驱动嵌入式客户端，不部署网站，不测试 Wails 原生事件或 Windows 通知。
+浏览器需具备其 Linux 运行依赖；可用 `I01_BROWSER_EXECUTABLE` 指向已安装的 Chromium。`I01_TEST_PYTHON` 可指定锁定 Python 路径；`I01_TEST_GO` 可指定 Go 路径（默认 `go`）。测试从锁定 Go 模块读取真实 Wails runtime，验证页面发送就绪消息后能处理宿主关闭脚本；只替代原生消息接收端，不能据此宣称 Windows 叉号已通过。测试用临时本机 HTTP 适配层和真实 Python Core 驱动嵌入式客户端，不部署网站，不测试 Wails 原生事件或 Windows 通知。
 
 ## 开发夹具
 

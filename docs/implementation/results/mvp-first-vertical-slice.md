@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-**等待 Windows 验收。** Linux 实现与自动检查已完成；Windows 10 实机尚未运行，不能报告整体 I-01 PASS。此结果不代表完整 MVP、正式 dogfooding 准入或 I-02 启动。
+**首轮 Windows 验收 FAIL；修复后等待 C 轮复测。** 已核验 `c6b868e` 的 A、B、D 轮通过；C 轮取消／确认时长通过，两个原生关闭失败。已修复页面漏载 Wails runtime，并通过 Linux 回归和 Windows 目标构建，尚无修复后的 Windows 原生关闭证据，不能报告整体 I-01 PASS。此结果不代表完整 MVP、正式 dogfooding 准入或 I-02 启动。
 
 任务：[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)。本任务是独立 implementation，不是产品治理；从 PR #30 已合并后的 `main@ad940755ebfd19d8fe7ef7011f93ebc17a242e4a` 创建 `agent/implement-mvp-first-slice`，启动时无既有 I-01 PR 或分支、工作树干净。未修改产品范围、领域模型或 ADR。
 
@@ -25,13 +25,13 @@ Linux 自动检查使用临时数据库、可控制时钟和真实子进程。�
 | Linux 自动 | Linux x86_64 / kernel 6.8.0-49、Python 3.12.3 64 位、SQLite 3.45.1、Go 1.25.0 | 领域、进程、协议及 Windows 目标构建 |
 | 补充前端 | Node 24.19.0、Playwright 1.58.2、Chrome for Testing 151.0.7922.34 Linux | 嵌入式 JS 行为；不是锁定 Windows WebView2 |
 | PowerShell 解析 | PowerShell 7.4.6 Linux | 语法检查，不是 Windows PowerShell 5.1 执行 |
-| Windows 目标 | Windows 10 22H2 / 19045 x64、Python 3.12.3 x64、Go 1.25.0、Wails v3.0.0-beta.8、Fixed WebView2 151.0.4129.78 x64 | 尚无本次实机证据，沿用 V-01R、V-02、V-03 锁定环境 |
+| Windows 目标 | Windows 10 22H2 / 19045 x64、Python 3.12.3 x64、Go 1.25.0、Wails v3.0.0-beta.8、Fixed WebView2 151.0.4129.78 x64 | 首轮已回传：Build 19045.7725、SQLite 3.45.1；沿用锁定环境，详见文末 |
 
 Linux Go 1.25.0 下载包按 go.dev 官方 SHA-256 核验。浏览器补充检查最初因未安装对应浏览器／缺运行库而未启动；补齐仅本地测试运行库、显式使用现有 Linux Chrome 后通过。没有据此升级 Windows、Wails、Go、Python 或 WebView2。
 
 ## 场景结果
 
-以下 PASS 只指表中自动层。凡需 Windows 的行均仍为“等待”，不把测试参数未覆盖的 I-02 分支写成 PASS。
+以下表格保留首次 Linux 交付时的场景映射，Windows “等待”为该 checkpoint 的历史状态；最新实机结论以文末核验表为准。不把测试参数未覆盖的 I-02 分支写成 PASS。
 
 | 场景 | 自动检查与实际结果 | Windows 对应步骤／状态 |
 | --- | --- | --- |
@@ -55,11 +55,11 @@ Linux Go 1.25.0 下载包按 go.dev 官方 SHA-256 核验。浏览器补充检�
 - Windows amd64 目标 `go build` 通过；未运行该二进制。
 - JavaScript 语法、PowerShell AST、`git diff --check` 通过。
 
-原始自动输出留在本次 Linux checkout 的 `.scratch/i01-checks/`；已提交摘要仅含工具版本、结果、源文件／输出／二进制 SHA-256，不含令牌、个人方案、绝对路径或未脱敏日志。Windows 尚无原始包或成功摘要；其数据与证据将在操作者自己的 `.i01-runs/` 中受控保存，按实机步骤回传。
+原始自动输出留在本次 Linux checkout 的 `.scratch/i01-checks/`；已提交摘要仅含工具版本、结果、源文件／输出／二进制 SHA-256，不含令牌、个人方案、绝对路径或未脱敏日志。首轮 Windows 回传包已受控保存并核验，见文末；原始附件不提交仓库。
 
 ## 限制、未决与回传
 
-1. 尚需真实 Windows 的通知送达与激活、焦点、小窗关闭重开、原生关闭收尾，以及与正式 Core 集成后的重新连接和持久结束证据。当前不申请合并或 Ready。
+1. 已收到通知、焦点、重连及持久结束的实机证据；小窗关闭重开、原生关闭收尾首轮失败，修复后尚待新 C 轮证据。当前不申请合并或 Ready。
 2. 开发夹具固定一个 4 小时窗口，这是明确测试数据，不是新增产品默认值。超过该窗口时旧操作拒绝并显示本阶段不可用；自动到期收束、无回应较弱跟进、恢复干预与切换属于 I-02，未在此伪造完成。正式观察不可使用本切片。
 3. 确认行动仅限合成夹具。I-03 的真实导入、LLM／供应商集成未开始；I-02 其他分支、开机启动及完整宿主回归、I-04 观察准入也未开始。
 4. 不覆盖真实 PC 重启、异常断电、数据库损坏／备份恢复、其他 Windows 版本、同权限恶意进程或公开分发。
@@ -92,3 +92,28 @@ Python 发现修复后，用户运行推进至干净 checkout 检查；`git stat
 本次仅将 `/.evidence/` 和 `/.tools/` 加入 `.gitignore` 并补充运行说明；不删除、移动或提交原始证据和下载工具，不放宽验收脚本对源码的干净检查，也不忽略任意层级的同名目录。
 
 用实际 `.gitignore` 在隔离 Git 仓库重现：修复前，两目录出现在脚本使用的 `git status --porcelain --untracked-files=normal` 输出；修复后输出为空。随后修改已跟踪文件、增加普通未跟踪源码和嵌套同名目录，三者仍能被检查发现；产物文件继续存在。检查通过，未重跑未改动的 Core／桌面测试。用户的 Windows 完整重试结果仍待返回，整体继续等待 Windows 验收。
+
+## Windows 首轮证据核验与原生关闭修复
+
+用户回传 `return-20260922-215256.zip`，SHA-256 为 `F9B85B988DB600F1F5100FE2107297403237A1F5E51DDF3B26DF247E74FB6638`，与实际文件一致。四轮源码均为 `c6b868ebc83546eaa981fba0e42abd5760c23a20`，Windows 二进制 SHA-256 均为 `C1976706A097D332ABF5DCD79F3FD085D6D71995E3CD6A8AFDDDCF3944C15E4B`；四个数据库相互独立。机器可读核验与逐文件哈希见 [Windows 核验摘要](mvp-first-vertical-slice.windows-review.json)。原始包在当前任务附件及操作者本机受控保留；仓库不复制原始状态／日志。
+
+| 轮次 | 核验结果 | 关键证据 |
+| --- | --- | --- |
+| A | PASS（本轮范围） | 有效通知回调与人工观察相符；完成报告早于检查点；等待收尾后确认全部完成；一份证据、活动位置释放 |
+| B | PASS（本轮范围） | 检查点先到达、随后报告完成并显式跳过；失效通知回调；旧通知前后完整持久状态一致 |
+| C | FAIL（关闭）；时长分支 PASS | 打开／取消前后持久状态相同且没有会话；确认后首次检查为 300 秒；两个叉号均无法关闭，最终仍等待收尾、没有执行证据 |
+| D | PASS（本轮范围） | 会话与检查时间保持；首次检查提示在第一次重启前已送达；等待收尾重启前后一致；结束后重开状态一致且唯一证据；四次连接没有重放旧呈现 |
+
+摘要与最终状态字段一致，最终状态与桌面日志的哈希匹配摘要。全部中间快照按轮次顺序核验；比较时仅排除读取时刻 `now`，没有把事件或调度差异隐藏。人工观察与合成状态共同支持以上结论。Windows 自动测试原始日志未回传，Run 在自动测试失败时会停止，摘要存在支持脚本已通过该门槛；不声称独立重读了未回传日志。
+
+### 缺陷、修复与检查边界
+
+正式页面只加载 `app.js`，没有加载 Wails 自带的 `/wails/runtime.js`。锁定 beta.8 的 `WebviewWindow.ExecJS` 在收到 `wails:runtime:ready` 前将脚本排队；该消息由 runtime 加载时发送。原生关闭钩子先 Cancel，再通过 ExecJS 派发 `host-close`，因此漏载 runtime 会让窗口保留而前端关闭逻辑收不到事件。旧浏览器测试直接派发事件，绕过了这个依赖，未能发现缺陷。
+
+回归测试从锁定 Go 模块读取真实 runtime，通过浏览器加载正式 HTML，替代的仅是原生消息接收端。修复前就绪消息检查在 2 秒后失败；在 HTML 增加 runtime 模块加载后通过。主窗口和 overlay 两个入口均验证：发送就绪消息、执行真实宿主关闭脚本、执行中隐藏且会话不变、等待收尾时保存唯一最小证据后隐藏。测试不运行 Windows 原生消息循环，故这是依赖缺陷的自动复现与修复证据，不能替代原生 × 实机复验。
+
+本次实际检查：前端浏览器 4 项通过，Go 测试通过，Windows amd64 交叉构建通过，diff 检查通过。Core 规则与命令处理未改动；不重复执行未受影响的全部 Python 用例。浏览器检查入口为 `npm test --prefix desktop`，使用锁定 Go 路径 `I01_TEST_GO`、已安装 Chromium 的 `I01_BROWSER_EXECUTABLE` 和本机浏览器运行库；具体环境同上方 Linux 补充检查。
+
+### 下一步与回传
+
+只需在新 checkpoint、新目录执行 C1～C6，回传四份中间快照、Collect 摘要、最终状态和桌面日志。可复制命令见[手册“本次只复测 C 轮”](../windows-i01.md)。原 A／B／D 证据保留为原 commit 的已核验基线，不要求用户重复四轮。修复后的 C 未回传前，整体保持未通过；PR 保持 Draft，不合并、不进入 I-02。没有产品范围／ADR 冲突，也没有需要产品治理另行决策的问题。
