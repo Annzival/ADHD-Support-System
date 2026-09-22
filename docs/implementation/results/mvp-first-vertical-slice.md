@@ -6,7 +6,7 @@
 
 任务：[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)。本任务是独立 implementation，不是产品治理；从 PR #30 已合并后的 `main@ad940755ebfd19d8fe7ef7011f93ebc17a242e4a` 创建 `agent/implement-mvp-first-slice`，启动时无既有 I-01 PR 或分支、工作树干净。未修改产品范围、领域模型或 ADR。
 
-代码、测试与验收脚本 checkpoint：`e262f96fb2cca99d526dac5feff30e5e53fb5a91`；[Draft PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)。后续仅补充发布身份记录的文档提交不改变该代码锚点。Linux 检查针对该代码，机器可读摘要见 [linux-checks.json](mvp-first-vertical-slice.linux-checks.json)。Windows 必须从最终发布的干净 checkpoint 构建并记录自己的 commit 与二进制哈希，不能复用 Linux 二进制哈希作为实机身份。
+代码、测试与验收脚本 checkpoint：`e262f96fb2cca99d526dac5feff30e5e53fb5a91`；[Draft PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)。该锚点为首次交付基线；后续 Windows 准备修复单独记录于文末，不覆盖原自动证据。Linux 检查针对该代码，机器可读摘要见 [linux-checks.json](mvp-first-vertical-slice.linux-checks.json)。Windows 必须从最终发布的干净 checkpoint 构建并记录自己的 commit 与二进制哈希，不能复用 Linux 二进制哈希作为实机身份。
 
 ## 实现与方法
 
@@ -66,3 +66,21 @@ Linux Go 1.25.0 下载包按 go.dev 官方 SHA-256 核验。浏览器补充检�
 5. 当前未发现必须改变产品范围／领域模型／ADR 的冲突，无新增产品治理决策请求。回传内容是本次技术 checkpoint 与 Windows 证据缺口，不改变 Issue #10 已确认的构建就绪结论。
 
 下一步仅为 Windows 验收及本 I-01 范围内的必要修正。收到证据后逐项核验，未收到则保留 checkpoint 等待；不自动进入 I-02，不自行 Ready 或合并。
+
+## Windows 准备反馈：Python 发现兼容性修复
+
+用户在 Windows 执行 `Run / ConfirmedDuration` 时，发现阶段的 `py -3.12 -c ...` 返回 `Unknown option: -3`，错误用法属于 Python 解释器。此次未进入构建、夹具创建或桌面启动，不能记为桌面能力 FAIL 或 PASS；整体仍等待 Windows 验收。
+
+在 Linux PowerShell 中加载脚本真实函数与发现调用位置，将 `py` 映射到真实 Python 3.12.3 进程，复现完全相同的错误。以同一进程调用器执行普通 `-c` 能成功，确认可复现缺陷是脚本假定命令名 `py` 必然支持 Launcher 版本参数；无需推断 Windows 上具体是何种包装器或命令映射。
+
+修复保留首选 `py -3.12`，失败后依次探测无选择器 `py`、`python`、`python3`，只接纳锁定的 3.12.3 x64 和有效绝对路径。全部失败给出 `-PythonExecutable` 指引；用户显式指定路径时不自动换用其他解释器，后续原版本／位数门槛不变。未修改 Core、桌面代码、产品范围或 ADR。
+
+针对性回归入口（不依赖 Pester）：
+
+```powershell
+powershell -NoProfile -File scripts/acceptance/tests/test-python-discovery.ps1 -TestPython 'D:\Tools\Python312\python.exe'
+```
+
+实际 Linux 命令使用 PowerShell 7.4.6 与 `/usr/bin/python3`：6 项检查通过，覆盖直接解释器的 `py`、模拟 Launcher、缺少 `py`、错误版本、错误位数和显式路径绕过发现。前者使用真实进程复现原故障；其他候选布局通过进程边界替身模拟。脚本解析与 diff 检查通过。这里不重复宣称 Windows PowerShell 5.1 已通过；待用户用修正版或显式路径重试。
+
+原 `linux-checks.json` 继续对应 `e262f96` 基线，不能当作修复后脚本的哈希。修复证据见 [解释器发现检查摘要](mvp-first-vertical-slice.python-discovery-checks.json)；修复提交由同一 Issue #31 / Draft PR #32 追踪。

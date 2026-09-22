@@ -38,6 +38,32 @@ function Invoke-Tool([string]$Executable, [string[]]$Arguments, [string]$Working
     if ($errText) { Write-Host $errText }
     return ($outText + $errText).Trim()
 }
+function Resolve-PythonExecutable {
+    # A command named py is not necessarily the Windows Python Launcher.
+    # Probe the selected interpreter itself before accepting any discovery candidate.
+    $probe = 'import sys,platform,struct,json;print(json.dumps(dict(executable=sys.executable,version=platform.python_version(),bits=struct.calcsize(chr(80))*8)))'
+    $candidates = @(
+        @{ executable = 'py'; prefix = @('-3.12') },
+        @{ executable = 'py'; prefix = @() },
+        @{ executable = 'python'; prefix = @() },
+        @{ executable = 'python3'; prefix = @() }
+    )
+    foreach ($candidate in $candidates) {
+        try {
+            $arguments = @($candidate.prefix) + @('-c', $probe)
+            $runtime = (Invoke-Tool $candidate.executable $arguments) | ConvertFrom-Json
+            if ($runtime.version -eq '3.12.3' -and $runtime.bits -eq 64 -and
+                [IO.Path]::IsPathRooted($runtime.executable) -and
+                (Test-Path -LiteralPath $runtime.executable -PathType Leaf)) {
+                return $runtime.executable
+            }
+        } catch {
+            # Missing commands and unsupported launcher selectors are discovery misses.
+            # The caller's final version check still applies to the selected executable.
+        }
+    }
+    throw 'Python 3.12.3 x64 was not found. Pass -PythonExecutable with its full python.exe path; no runtime was installed or changed.'
+}
 function Write-Json([string]$Path, $Value) {
     $text = $Value | ConvertTo-Json -Depth 40
     [IO.File]::WriteAllText($Path, $text, (New-Object Text.UTF8Encoding($false)))
@@ -127,7 +153,7 @@ if ($Mode -ne 'Run') {
 }
 
 if (-not $WebView2Path) { throw 'Provide -WebView2Path for fixed 151.0.4129.78 x64.' }
-if (-not $PythonExecutable) { $PythonExecutable = Invoke-Tool 'py' @('-3.12','-c','import sys;print(sys.executable)') }
+if (-not $PythonExecutable) { $PythonExecutable = Resolve-PythonExecutable }
 $PythonExecutable = [IO.Path]::GetFullPath($PythonExecutable)
 $WebView2Path = [IO.Path]::GetFullPath($WebView2Path)
 $windows = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'

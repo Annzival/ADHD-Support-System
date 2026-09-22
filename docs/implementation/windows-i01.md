@@ -1,6 +1,6 @@
 # I-01 Windows 实机验收
 
-当前没有 Windows 运行证据。下列步骤在 Windows 10 22H2 x64 实机执行，不能以 Linux 自动结果或交叉编译代替。
+当前收到过 Windows 准备阶段的解释器发现失败反馈，尚无桌面成功验收证据。下列步骤在 Windows 10 22H2 x64 实机执行，不能以 Linux 自动结果或交叉编译代替。
 
 使用独立 checkout 和合成数据。开始前保留一个明确结束点：每轮只做下面一个路径，完成后从托盘退出；中途需要停下时也可退出，记录当前步骤，随后用 `Resume` 回到同一数据库。不要为了填满清单反复重跑已经通过的相同分支。
 
@@ -16,6 +16,14 @@
 $fixedWebView2 = 'D:\Tools\WebView2\151.0.4129.78'
 powershell -NoProfile -File scripts/acceptance/windows-smoke.ps1 -Stage I01 -Mode Run -Case ConfirmedDuration -WebView2Path $fixedWebView2
 ```
+
+如 `py` 并非 Python Launcher，或机器上有多个 Python，可显式指定已安装的解释器。将下面的示例路径换成实际 Python 3.12.3 x64 的 `python.exe`：
+
+```powershell
+powershell -NoProfile -File scripts/acceptance/windows-smoke.ps1 -Stage I01 -Mode Run -Case ConfirmedDuration -WebView2Path $fixedWebView2 -PythonExecutable 'D:\Tools\Python312\python.exe'
+```
+
+未指定路径时，脚本依次探测 `py -3.12`、不带 Launcher 版本参数的 `py`、`python`、`python3`，仅接纳实际返回 Python 3.12.3、64 位及有效绝对解释器路径的候选。显式指定也保留原版本校验；发现失败不会安装或升级运行时。出现 `Unknown option: -3` 的旧版脚本同样可使用上述显式参数绕过发现阶段。此失败发生在创建测试数据和启动宿主之前。
 
 脚本先运行 Python 和 Go 自动检查并构建桌面，再创建开发夹具，约 45 秒后到点。它会输出本轮 `DataDirectory`。复制这个实际目录供后续命令使用：
 
