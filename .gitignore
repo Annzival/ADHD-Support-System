@@ -39,3 +39,9 @@ spikes/sqlite-restart-recovery/bin/
 spikes/sqlite-restart-recovery/.spike-build.json
 spikes/sqlite-restart-recovery/.spike-run.json
 spikes/sqlite-restart-recovery/**/__pycache__/
+
+# I-01 implementation: generated local data, evidence and desktop builds.
+__pycache__/
+*.pyc
+.i01-runs/
+desktop/bin/

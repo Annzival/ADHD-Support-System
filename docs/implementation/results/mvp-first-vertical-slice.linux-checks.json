@@ -1,0 +1,65 @@
+{
+  "stage": "I01",
+  "status": "AWAITING_WINDOWS_ACCEPTANCE",
+  "base_commit": "ad940755ebfd19d8fe7ef7011f93ebc17a242e4a",
+  "environment": {
+    "platform": "Linux x86_64",
+    "python": "3.12.3",
+    "sqlite": "3.45.1",
+    "go": "1.25.0",
+    "node": "24.19.0",
+    "playwright": "1.58.2",
+    "browser": "Chrome for Testing 151.0.7922.34 Linux",
+    "powershell_parser": "7.4.6 Linux"
+  },
+  "checks": {
+    "python": {
+      "status": "PASS",
+      "test_methods": 17
+    },
+    "go": {
+      "status": "PASS",
+      "tests": 3
+    },
+    "go_vet": "PASS",
+    "frontend": {
+      "status": "PASS",
+      "tests": 2
+    },
+    "windows_amd64_cross_build": "PASS",
+    "javascript_syntax": "PASS",
+    "powershell_ast": "PASS",
+    "windows_runtime": "NOT_RUN"
+  },
+  "go_download_sha256": "2852af0cb20a13139b3448992e69b868e50ed0f8a1e5940ee1de9e19a123b613",
+  "linux_cross_build_sha256": "f5052ecb2ac94614ed25a9f2f385c7a294079715c2f72979712d3a4c36e7833d",
+  "output_sha256": {
+    "powershell.txt": "bbd26c7e703245d8c5ead1ca009c358c8920b7ec242ded8282f97407242d3a46",
+    "python.txt": "37f0fa3216640bdb67bebf7f997b18d7cdbcdb1a5a39a5c413e88868e3c54638",
+    "go.txt": "b13e818a669487838d73a2619a1446865e1f2332b25436378d0c6eebf9b9801d",
+    "frontend.txt": "d46a73dedc655d733b552c0e5ff13e3f3d8bc14098343f0c007c5787f827bbbf"
+  },
+  "source_sha256": {
+    "agent_core/__init__.py": "5b8b49c9cad8194ec412c27d57ca243fbe8fc271c8e2f2e02229820569115323",
+    "agent_core/__main__.py": "9d6025b7c2367fa532b5fc6c47b1e582106fd21d9b466729ed721db5330a628e",
+    "agent_core/core.py": "2ed12e7ae598b5ba0b77984a7b5660e7520556193bd9ee5eee796ccee01d4b7c",
+    "agent_core/transport.py": "572ebad512594dcff7e5beef2c22cdd9e0e57c385b9f5a043f012ebb4efa0ad6",
+    "desktop/bridge.go": "2dfc048aece6b762ff4b991a8f450f177e0fe209767786a01874aa5d3ea2ad07",
+    "desktop/bridge_test.go": "b9f5b260848a6450568165b51de1de09b9a9472d63a70d0d06ac5b066be45b48",
+    "desktop/frontend/app.js": "aaba804c81ffcf54d2f08d6639148aa765aa662f135a5b266799928bad140325",
+    "desktop/frontend/index.html": "2c6990f592889d8797f534a5e0504ad3d93a3fdccb351790d2056ff7cd749d23",
+    "desktop/frontend/style.css": "fc3b0b333dcc42abf85641827c35c38363f1e970366e777fecb634e241f1db72",
+    "desktop/go.mod": "d6026dd4ca71d61e451ad06681d362145c1ccb78fca241cbefb9d7b05f3f5771",
+    "desktop/go.sum": "02a021aee61ca02b6b0eb27882d386e3c7d10187f6c35304648f1a22e8ce7871",
+    "desktop/main_other.go": "07b7fb989df2e1940851081dc4ddf20c02ce495d038c3aebd882efb0d422242f",
+    "desktop/main_windows.go": "9ea34b19a43b7f034c641e3f216c7ebd9a803e33e44821e2c1b36cc92731245e",
+    "desktop/package-lock.json": "84fc5ae777361a07019ff6dea536655e16ccc0f3305d3c94086c450931503cf2",
+    "desktop/package.json": "9fdb9e73c7562eeefe6c07b02e93ba262f89cc2acedc43fe61e57c53daf6b50d",
+    "desktop/tests/frontend.test.mjs": "3a9f3d4a83eb7424e175717fba1c81a47742bd210ce807d39d3d73f4c0bbb8c7",
+    "scripts/acceptance/windows-smoke.ps1": "f347b69ff50f4d6a3fe0cbea8a2301532d19a4021db2a260dc953394557d9c33",
+    "tests/acceptance/test_atomicity.py": "9724e26ba63527c7dfb2bc7d3f559d2edc6ff7be6bf86e5a99b495110605935a",
+    "tests/acceptance/test_delivery_and_recovery.py": "254679ca8356c759fe68fc5a20118a05f861ac5078c1881b170f8b4b1a8dd2ac",
+    "tests/acceptance/test_execution_golden_path.py": "9b262b04eaca75bf2c35eaf6cccafd0598455432bec8606d69c4f4a32ab3e739",
+    "tests/acceptance/test_transport.py": "ec045423298f8ccd6c0a66a483824def18bdce03494ba08ae0a0a29218c71a4c"
+  }
+}
