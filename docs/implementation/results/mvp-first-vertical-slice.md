@@ -6,7 +6,7 @@
 
 任务：[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)。本任务是独立 implementation，不是产品治理；从 PR #30 已合并后的 `main@ad940755ebfd19d8fe7ef7011f93ebc17a242e4a` 创建 `agent/implement-mvp-first-slice`，启动时无既有 I-01 PR 或分支、工作树干净。未修改产品范围、领域模型或 ADR。
 
-代码 checkpoint 和 Draft PR 链接在首次发布后追加；Linux 检查针对本次代码，机器可读摘要见 [linux-checks.json](mvp-first-vertical-slice.linux-checks.json)。Windows 必须从最终发布的干净 checkpoint 构建并记录自己的 commit 与二进制哈希，不能复用 Linux 二进制哈希作为实机身份。
+代码、测试与验收脚本 checkpoint：`e262f96fb2cca99d526dac5feff30e5e53fb5a91`；[Draft PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)。后续仅补充发布身份记录的文档提交不改变该代码锚点。Linux 检查针对该代码，机器可读摘要见 [linux-checks.json](mvp-first-vertical-slice.linux-checks.json)。Windows 必须从最终发布的干净 checkpoint 构建并记录自己的 commit 与二进制哈希，不能复用 Linux 二进制哈希作为实机身份。
 
 ## 实现与方法
 

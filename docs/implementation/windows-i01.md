@@ -8,6 +8,8 @@
 
 目标版本：Windows 10 22H2 / Build 19045 x64，Python 3.12.3 x64，Go 1.25.0 windows/amd64，Wails `v3.0.0-beta.8`（由 go.mod 锁定），Fixed WebView2 151.0.4129.78 x64。脚本检查版本、Python 位数和 WebView2 PE 架构；如果不匹配，保留输出并回传，不自行升级替代。无需安装 Wails CLI 或 Node。
 
+代码／测试／脚本锚点为 `e262f96fb2cca99d526dac5feff30e5e53fb5a91`，见 [Draft PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)。可从其分支最新干净提交构建，脚本会记录实际 HEAD；若此前已有运行，应回到该运行记录的 commit 后再 Resume。
+
 在已检出本任务 checkpoint 的仓库根目录打开 PowerShell。将第一行换成此前 spike 使用的固定 WebView2 目录；不要使用浮动 Evergreen 目录。
 
 ```powershell
