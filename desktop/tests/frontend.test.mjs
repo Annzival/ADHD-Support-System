@@ -43,7 +43,7 @@ async function setup(t,missing=false,surface='main'){
   res.setHeader('Content-Type',relative.endsWith('.js')?'text/javascript':relative.endsWith('.css')?'text/css':'text/html');
   res.end(await readFile(join(root,'desktop','frontend',relative)));
  });
- await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>{server.closeAllConnections();server.close(r);}));
  const browser=await chromium.launch({headless:true,executablePath:process.env.I01_BROWSER_EXECUTABLE});t.after(()=>browser.close());
  const page=await browser.newPage();
  // Only the native WebView2 message sink is replaced; the page must load the real runtime.
@@ -116,4 +116,26 @@ for (const surface of ['main','overlay']) test(`embedded ${surface} loads Wails 
  assert.equal(after.active_session,null);
  assert.equal(after.evidence.length,1);
  assert.equal(after.evidence[0].closure,'explicit_skip');
+});
+
+for (const surface of ['main','overlay']) test(`closure draft survives failed poll on ${surface}`,async t=>{
+ const {page,snapshot}=await setup(t,false,surface);
+ await page.getByRole('button',{name:'立即开始',exact:true}).click();
+ await visible(page,'执行会话已建立');
+ await page.getByRole('button',{name:'已经完成',exact:true}).click();
+ await visible(page,'正在等待收尾');
+ await page.getByRole('combobox').selectOption('partial');
+ await page.getByRole('spinbutton').fill('12');
+ const before=await snapshot();
+ await page.route('**/api/state',route=>route.fulfill({status:503,body:'{}',contentType:'application/json'}));
+ await visible(page,'智能体核心暂不可用');
+ await page.unroute('**/api/state');
+ await visible(page,'已连接智能体核心');
+ assert.deepEqual((await snapshot()).sessions,before.sessions);
+ assert.equal(await page.getByRole('combobox').inputValue(),'partial');
+ assert.equal(await page.getByRole('spinbutton').inputValue(),'12');
+ await page.getByRole('button',{name:'完成收尾',exact:true}).click();
+ await visible(page,'已保存执行证据');
+ const after=await snapshot();assert.equal(after.evidence[0].result,'partial');
+ assert.equal(after.evidence[0].actual_duration_seconds,720);
 });

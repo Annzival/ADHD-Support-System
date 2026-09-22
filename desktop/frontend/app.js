@@ -3,6 +3,7 @@ const content = document.querySelector('#content');
 const error = document.querySelector('#error');
 const retry = document.querySelector('#retry');
 const surface = new URLSearchParams(location.search).get('surface') || 'main';
+let closureDraft;
 let state, signature, pending, durationOpen = false, closeRequested = false, busy = false;
 const messages = {
  stale_context: '此操作对应的状态已变化。已读取当前状态。',
@@ -54,6 +55,7 @@ function render(){
  if(!state)return;
  content.replaceChildren();
  const action=state.actions[0],session=state.active_session;
+ if(session?.status!=='awaiting_closure' || closureDraft?.sessionId!==session.id) closureDraft=undefined;
  paragraph(action?.title || '没有开发夹具','h1');
  const arrangement=state.arrangements.find(a=>a.id===(session?.arrangement_id || 'arrangement-a'));
  if (arrangement && state.now>=arrangement.window_end && (session || arrangement.status!=='ended')) {
@@ -66,10 +68,11 @@ function render(){
   paragraph('继续并确认下一检查时间、暂停并保存恢复包：I-01 尚未交付。','small');
   paragraph('会话 '+session.id+' · 检查点 '+cp.id,'p','facts');
  }else if(session?.status==='awaiting_closure'){
+  if(!closureDraft) closureDraft={sessionId:session.id,result:'completed',minutes:''};
   paragraph('已记录完成报告，正在等待收尾。收尾结束后才释放当前会话。');
   const label=document.createElement('label');label.textContent='确认结果 ';const select=document.createElement('select');
-  for(const [value,text] of [['completed','全部完成'],['partial','部分完成']]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}label.append(select);content.append(label);
-  const durationLabel=document.createElement('label');durationLabel.textContent='实际用时（分钟，可留空） ';const input=document.createElement('input');input.type='number';input.min='0.1';input.step='0.1';durationLabel.append(input);content.append(durationLabel);
+  for(const [value,text] of [['completed','全部完成'],['partial','部分完成']]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}select.value=closureDraft.result;select.onchange=()=>{closureDraft.result=select.value;};label.append(select);content.append(label);
+  const durationLabel=document.createElement('label');durationLabel.textContent='实际用时（分钟，可留空） ';const input=document.createElement('input');input.type='number';input.min='0.1';input.step='0.1';input.value=closureDraft.minutes;input.oninput=()=>{closureDraft.minutes=input.value;};durationLabel.append(input);content.append(durationLabel);
   button('完成收尾',()=>submit('finish_closure',session.id,session.version,{result:select.value,actual_duration_seconds:input.value===''?null:Number(input.value)*60}),true);
   button('跳过收尾',()=>submit('skip_closure',session.id,session.version));
   paragraph('关闭当前界面也会按跳过收尾保存最小证据；未填写内容保持未知。','small');

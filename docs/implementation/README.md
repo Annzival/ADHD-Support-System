@@ -2,7 +2,7 @@
 
 本实现对应 [Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)，只覆盖首个 PC 确定性执行闭环。它使用隔离开发夹具，不含真实方案导入，不可用于正式 dogfooding；Windows 操作见 [实机验收步骤](windows-i01.md)，结果见 [结果报告](results/mvp-first-vertical-slice.md)。
 
-当前交付结论：**I-01 PASS**（Windows A／B／D 基线与 C 轮修复复测均已核验）。Draft PR #32 等待人工审查／合并决定；不自动进入 I-02。
+当前状态：**复审 P2 已修复，等待复审与 Windows 定向回归，暂不适合 merge。** 旧实机 PASS 保留为原版本基线；新步骤见[复审回归手册](windows-review-regression.md)。
 
 ## 组成与边界
 

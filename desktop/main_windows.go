@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coder/websocket"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/icons"
@@ -172,64 +171,18 @@ func (h *desktopHost) supervise(ctx context.Context, python, root, data string) 
 	h.record("core_restart_limit_reached", nil)
 }
 func (h *desktopHost) watch(ctx context.Context, material endpoint) {
-	for ctx.Err() == nil {
-		connection, _, err := websocket.Dial(ctx, strings.Replace(material.Endpoint, "http:", "ws:", 1)+"/v1/events", &websocket.DialOptions{HTTPHeader: http.Header{"Authorization": []string{"Bearer " + material.Token}}})
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(time.Second):
-				continue
-			}
+	pump := newDeliveryPump(h.bridge, func(d delivery) bool {
+		contextData := map[string]any{"kind": d.TargetKind, "id": d.Target, "version": d.TargetVersion}
+		category := notifications.NotificationCategory{ID: "i01-open", Actions: []notifications.NotificationAction{{ID: "OPEN_CONTEXT", Title: "查看当前行动"}}}
+		notificationErr := h.notifications.RegisterNotificationCategory(category)
+		if notificationErr == nil {
+			notificationErr = h.notifications.SendNotificationWithActions(notifications.NotificationOptions{ID: d.ID, Title: "执行支持 · 开发验收", Body: "约定的行动或检查时间已到。可在应用中查看并选择。", CategoryID: category.ID, Data: contextData})
 		}
-		connection.SetReadLimit(4 << 20)
-		for ctx.Err() == nil {
-			round, cancel := context.WithTimeout(ctx, 3*time.Second)
-			err = connection.Write(round, websocket.MessageText, []byte(`{"kind":"snapshot"}`))
-			var raw []byte
-			if err == nil {
-				_, raw, err = connection.Read(round)
-			}
-			cancel()
-			if err != nil {
-				break
-			}
-			var state struct {
-				Deliveries []struct {
-					ID            string `json:"id"`
-					Version       int    `json:"version"`
-					Target        string `json:"target"`
-					TargetKind    string `json:"target_kind"`
-					TargetVersion int    `json:"target_version"`
-					Status        string `json:"status"`
-				} `json:"deliveries"`
-			}
-			if json.Unmarshal(raw, &state) == nil {
-				for _, d := range state.Deliveries {
-					if d.Status != "pending" {
-						continue
-					}
-					if !h.bridge.command("delivery_claim", d.ID, d.Version, map[string]any{}, "claim:"+d.ID) {
-						continue
-					}
-					contextData := map[string]any{"kind": d.TargetKind, "id": d.Target, "version": d.TargetVersion}
-					category := notifications.NotificationCategory{ID: "i01-open", Actions: []notifications.NotificationAction{{ID: "OPEN_CONTEXT", Title: "查看当前行动"}}}
-					notificationErr := h.notifications.RegisterNotificationCategory(category)
-					if notificationErr == nil {
-						notificationErr = h.notifications.SendNotificationWithActions(notifications.NotificationOptions{ID: d.ID, Title: "执行支持 · 开发验收", Body: "约定的行动或检查时间已到。可在应用中查看并选择。", CategoryID: category.ID, Data: contextData})
-					}
-					h.overlay.Show().Focus()
-					// Successful native notification submission is the transport receipt, not proof of presence.
-					delivered := notificationErr == nil
-					h.bridge.command("delivery_receipt", d.ID, d.Version+1, map[string]any{"delivered": delivered}, "receipt:"+d.ID)
-					h.record("presentation_requested", map[string]any{"context_id": d.Target, "notification_submitted": delivered})
-				}
-			}
-			select {
-			case <-ctx.Done():
-			case <-time.After(400 * time.Millisecond):
-			}
-		}
-		_ = connection.CloseNow()
-	}
+		h.overlay.Show().Focus()
+		// Successful native notification submission is the transport receipt, not proof of presence.
+		delivered := notificationErr == nil
+		h.record("presentation_requested", map[string]any{"context_id": d.Target, "notification_submitted": delivered})
+		return delivered
+	})
+	watchDeliveries(ctx, material, pump)
 }
