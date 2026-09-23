@@ -143,7 +143,8 @@ class ProcessTransport(unittest.TestCase):
         after = self.http()[1]
         self.assertEqual(after['sessions'], before['sessions'])
         self.assertEqual(after['checkpoints'], before['checkpoints'])
-        self.assertEqual(after['events'], before['events'])
+        self.assertEqual(after['events'][:len(before['events'])], before['events'])
+        self.assertEqual([e['fact'] for e in after['events'][len(before['events']):]], ['recovery_sources_reconciled'])
         self.assertEqual(self.http('/v1/context', valid)[0], 409)
         self.assertEqual(submit('start', valid['id'], 1, {}, 'stale')[0], 409)
         session = result['session_id']

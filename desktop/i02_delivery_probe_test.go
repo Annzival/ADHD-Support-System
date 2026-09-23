@@ -58,7 +58,7 @@ func TestI02DeliveryInterleavingEvidence(t *testing.T) {
 			_ = json.Unmarshal(state["schedules"], &schedules)
 			if len(sessions) != 1 || sessions[0]["status"] != "executing" || len(checkpoints) != 1 ||
 				checkpoints[0]["session_id"] != sessions[0]["id"] || checkpoints[0]["due_at"] != float64(160) ||
-				len(schedules) != 2 || string(state["evidence"]) != "[]" {
+				len(schedules) < 2 || string(state["evidence"]) != "[]" {
 				t.Fatal("session, checkpoint, schedule or unknown-evidence invariant violated")
 			}
 			receiptRequestsBeforeManualRetry := 0

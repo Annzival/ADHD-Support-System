@@ -3,7 +3,7 @@ const content = document.querySelector('#content');
 const error = document.querySelector('#error');
 const retry = document.querySelector('#retry');
 const surface = new URLSearchParams(location.search).get('surface') || 'main';
-let closureDraft;
+let closureDraft, actionForm;
 let state, signature, pending, durationOpen = false, closeRequested = false, busy = false;
 const messages = {
  stale_context: '此操作对应的状态已变化。已读取当前状态。',
@@ -34,7 +34,7 @@ async function sendPending() {
  busy=true;retry.hidden=true;error.textContent='';render();
  try {
   const {status,result}=await request('/api/commands',pending);
-  if (status === 200) {pending=null;durationOpen=false;await refresh();if(closeRequested) await hide();}
+  if (status === 200) {pending=null;durationOpen=false;actionForm=null;await refresh();if(closeRequested) await hide();}
   else if(status === 409 || status === 400){pending=null;closeRequested=false;error.textContent=messages[result.error]||'操作未提交。请查看当前状态。';await refresh();}
   else {throw new Error('unavailable');}
  } catch (_) {
@@ -51,57 +51,106 @@ window.addEventListener('host-close',async()=>{
   else await hide();
  }catch(_){error.textContent='无法读取当前状态，暂未关闭。可重连后再操作，或从托盘退出并保留状态。';}
 });
+function field(labelText, key, values, type='text', initial='') {
+ const label=document.createElement('label');label.textContent=labelText;
+ const input=document.createElement('input');input.type=type;input.value=values[key]??initial;
+ values[key]=input.value;input.oninput=()=>{values[key]=input.value;};label.append(input);content.append(label);return input;
+}
+function openForm(kind,record,payload={}) {actionForm={kind,target:record.id,version:record.version,payload,values:{}};render();}
+function durationForm(){
+ const f=actionForm;paragraph('确认从现在起多久后检查；确认前不会创建或切换会话。');
+ field('本次预计时长（分钟） ','minutes',f.values,'number','1');
+ button('确认时长并开始',()=>submit(f.kind,f.target,f.version,{...f.payload,duration_seconds:Number(f.values.minutes)*60,duration_confirmed:true,confirmed:true}),true);
+ button('取消',()=>{actionForm=null;render();});
+}
 function render(){
  if(!state)return;
  content.replaceChildren();
- const action=state.actions[0],session=state.active_session;
+ const session=state.active_session;
  if(session?.status!=='awaiting_closure' || closureDraft?.sessionId!==session.id) closureDraft=undefined;
- paragraph(action?.title || '没有开发夹具','h1');
- const arrangement=state.arrangements.find(a=>a.id===(session?.arrangement_id || 'arrangement-a'));
- if (arrangement && state.now>=arrangement.window_end && (session || arrangement.status!=='ended')) {
-  paragraph('本次开发验收窗口已结束。自动到期收束与完整恢复尚未交付（I-02）；原事实已保留。');return;
+ if(actionForm){
+  if(actionForm.kind==='reschedule'){
+   paragraph('改期只替换本次安排，其他安排不顺延。新窗口可留空。','h1');
+   field('新的开始时间 ','start',actionForm.values,'datetime-local');
+   field('新的窗口结束（可留空） ','end',actionForm.values,'datetime-local');
+   button('确认改期',()=>submit('reschedule',actionForm.target,actionForm.version,{confirmed:true,start_at:new Date(actionForm.values.start).getTime()/1000,window_end:actionForm.values.end?new Date(actionForm.values.end).getTime()/1000:null}),true);
+  }else if(actionForm.kind==='correct_fact'){
+   paragraph('追加更正会保留原始事实。','h1');
+   const select=document.createElement('select');for(const [v,t] of [['completed','全部完成'],['partial','部分完成'],['paused','暂停'],['unknown','未知']]){const o=document.createElement('option');o.value=v;o.textContent=t;select.append(o);}select.value=actionForm.values.result||'unknown';select.onchange=()=>actionForm.values.result=select.value;content.append(select);
+   field('更正内容 ','content',actionForm.values);field('更正原因 ','reason',actionForm.values);
+   button('保存更正',()=>submit('correct_fact',actionForm.target,actionForm.version,{...actionForm.values,result:select.value}),true);
+  }else {durationForm();return;}
+  button('取消',()=>{actionForm=null;render();});return;
  }
+ const foreground=state.foreground;
+ const starts=state.interventions.filter(i=>i.status==='pending'&&state.now<i.expires_at);
+ const selected=starts.find(i=>i.id===foreground?.id);
+ const currentAction=state.actions.find(a=>a.id===(session?.action_id||state.arrangements.find(a=>a.id===selected?.arrangement_id)?.action_id));
+ paragraph(currentAction?.title||'执行支持','h1');
  if(session?.status==='executing'){
-  const cp=state.checkpoints.find(c=>c.session_id===session.id);
-  paragraph(cp.status==='due'?'约定的检查时间已到。完成后可报告结果。':'执行会话已建立。检查时间：'+date(cp.due_at));
+  const cp=state.checkpoints.find(c=>c.session_id===session.id&&['scheduled','due'].includes(c.status));
+  paragraph(cp.status==='due'?'约定的检查时间已到。可完成、继续或暂停。':'执行会话已建立。检查时间：'+date(cp.due_at));
   button('已经完成',()=>submit('report_complete',session.id,session.version),true);
-  paragraph('继续并确认下一检查时间、暂停并保存恢复包：I-01 尚未交付。','small');
-  paragraph('会话 '+session.id+' · 检查点 '+cp.id,'p','facts');
+  button('暂停并保存恢复包',()=>submit('pause',session.id,session.version));
+  if(cp.status==='due')button('继续并确认下一检查时间',()=>openForm('continue',cp));
  }else if(session?.status==='awaiting_closure'){
-  if(!closureDraft) closureDraft={sessionId:session.id,result:'completed',minutes:''};
-  paragraph('已记录完成报告，正在等待收尾。收尾结束后才释放当前会话。');
-  const label=document.createElement('label');label.textContent='确认结果 ';const select=document.createElement('select');
-  for(const [value,text] of [['completed','全部完成'],['partial','部分完成']]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}select.value=closureDraft.result;select.onchange=()=>{closureDraft.result=select.value;};label.append(select);content.append(label);
-  const durationLabel=document.createElement('label');durationLabel.textContent='实际用时（分钟，可留空） ';const input=document.createElement('input');input.type='number';input.min='0.1';input.step='0.1';input.value=closureDraft.minutes;input.oninput=()=>{closureDraft.minutes=input.value;};durationLabel.append(input);content.append(durationLabel);
-  button('完成收尾',()=>submit('finish_closure',session.id,session.version,{result:select.value,actual_duration_seconds:input.value===''?null:Number(input.value)*60}),true);
+  if(!closureDraft)closureDraft={sessionId:session.id,result:session.report==='paused'?'paused':'completed',minutes:'',progress:''};
+  paragraph('已记录'+(session.report==='paused'?'暂停':'完成')+'报告，正在等待收尾。收尾结束后才释放当前会话。');
+  const select=document.createElement('select');
+  for(const [value,text] of (session.report==='paused'?[['paused','暂停']]:[['completed','全部完成'],['partial','部分完成']])){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}select.value=closureDraft.result;select.onchange=()=>closureDraft.result=select.value;content.append(select);
+  field('实际用时（分钟，可留空） ','minutes',closureDraft,'number');
+  if(session.report==='paused')field('已取得的进展（可留空） ','progress',closureDraft);
+  button('完成收尾',()=>submit('finish_closure',session.id,session.version,{result:closureDraft.result,actual_duration_seconds:closureDraft.minutes===''?null:Number(closureDraft.minutes)*60,progress:closureDraft.progress||null}),true);
   button('跳过收尾',()=>submit('skip_closure',session.id,session.version));
   paragraph('关闭当前界面也会按跳过收尾保存最小证据；未填写内容保持未知。','small');
- }else if(state.evidence.length){
-  const evidence=state.evidence[state.evidence.length-1];paragraph('已保存执行证据，会话已结束。');paragraph(evidence.result==='completed'?'已确认全部完成。':'已确认部分完成，行动没有被标为全部完成。');
-  paragraph('可从托盘退出。重复验收使用新的隔离数据目录。','small');paragraph('证据 '+evidence.id,'p','facts');
- }else{
-  const intervention=state.interventions.find(i=>i.status==='pending' && state.now<i.expires_at);
-  if(!intervention){paragraph('等待约定时间：'+date(arrangement.start_at));}
-  else if(durationOpen){
-   paragraph('确认从现在起多久后检查；确认前不会创建会话。');
-   const label=document.createElement('label');label.textContent='本次预计时长（分钟） ';const input=document.createElement('input');input.type='number';input.min='0.1';input.max='180';input.step='0.1';input.value='1';label.append(input);content.append(label);
-   const preview=paragraph('确认后，首次检查在 1 分钟后。');input.oninput=()=>preview.textContent='确认后，首次检查在 '+input.value+' 分钟后。';
-   button('确认时长并开始',()=>submit('start',intervention.id,intervention.version,{duration_seconds:Number(input.value)*60,duration_confirmed:true}),true);
-   button('取消',()=>{durationOpen=false;render();});
-  }else{
-   paragraph(arrangement.duration_confirmed?'已确认时长：'+arrangement.duration_seconds/60+' 分钟；立即开始后据此建立首次检查点。':'尚未确认本次时长。');
-   button('立即开始',()=>{if(arrangement.duration_confirmed)submit('start',intervention.id,intervention.version);else{durationOpen=true;render();}},true);
-   paragraph('已经开始、已经完成、改期、今天不做：I-01 尚未交付。','small');
+ }
+ const visibleStarts=surface==='overlay'?(session?[]:selected?[selected]:[]):starts;
+ for(const i of visibleStarts){
+  const a=state.arrangements.find(a=>a.id===i.arrangement_id), action=state.actions.find(x=>x.id===a.action_id);
+  paragraph(action.title,'h2');
+  paragraph(a.duration_confirmed?'已确认时长：'+a.duration_seconds/60+' 分钟；立即开始后据此建立首次检查点。':'尚未确认本次时长。');
+  button('立即开始',()=>a.duration_confirmed?submit('start',i.id,i.version):openForm('start',i),true);
+  button('我已经开始',()=>openForm('already_started',i));
+  button('我已经完成',()=>submit('already_completed',i.id,i.version));
+  if(surface==='main'){
+   button('改到具体时间',()=>openForm('reschedule',i));
+   button('今天不做',()=>submit('skip_today',i.id,i.version));
   }
  }
+ if(surface==='overlay'){
+  if(!session&&state.evidence.length){const e=state.evidence[state.evidence.length-1];paragraph('已保存执行证据，会话已结束。');paragraph(e.result==='partial'?'已确认部分完成，行动没有被标为全部完成。':e.result==='paused'?'已暂停并保存恢复包。':'已确认全部完成。');}
+  button('打开主窗口',()=>request('/ui/open',{}));return;
+ }
+ for(const r of (state.recoveries||[]).filter(r=>['pending','deferred'].includes(r.status))){
+  paragraph(r.status==='deferred'?'稍后处理上次上下文':'恢复上下文','h2');
+  const detail=(title,text)=>{const d=document.createElement('details');const summary=document.createElement('summary');summary.textContent=title;d.append(summary);const p=document.createElement('p');p.textContent=text;d.append(p);content.append(d);};
+  const old=state.sessions.find(s=>s.id===r.source.session_id), a=state.arrangements.find(a=>a.id===r.source.arrangement_id);
+  detail('上次执行',old?state.actions.find(a=>a.id===old.action_id)?.title:'只有错过开始记录时，不能据此认定已经执行。');
+  detail('当前计划',a?state.actions.find(x=>x.id===a.action_id)?.title:'当前没有可开始的安排。');
+  if(old)button('继续上次执行',()=>submit('return_previous',r.id,r.version));
+  else if(r.source.previous_intervention_ids.length)button('处理上一项',()=>submit('return_previous',r.id,r.version));
+  for(const id of r.source.packet_ids){
+   const packet=state.packets.find(p=>p.id===id);paragraph('上次暂停：'+state.actions.find(a=>a.id===packet.action_id)?.title+'；进展：'+(packet.progress||'未知'));
+   button('从此暂停包继续',()=>openForm('resume_packet',r,{packet_id:id}));
+   if(a)button('按当前计划继续，归档此包',()=>submit('archive_packet',r.id,r.version,{packet_id:id}));
+  }
+  if(old?.status==='executing'&&a)button('切换到当前计划（旧结果保持未知）',()=>openForm('switch_current',r));
+  if(r.status!=='deferred')button('暂不决定',()=>submit('defer_recovery',r.id,r.version));
+ }
+ for(const e of state.evidence){
+  paragraph('已保存执行证据，会话已结束。');paragraph(e.result==='completed'?'已确认全部完成。':e.result==='partial'?'已确认部分完成，行动没有被标为全部完成。':'已暂停并保存恢复包。');
+  button('追加事实更正',()=>openForm('correct_fact',e));
+ }
+ for(const c of state.corrections||[])paragraph('更正：'+c.content+'；原因：'+c.reason);
+ if(!session&&!starts.length&&!state.evidence.length)paragraph('当前没有可操作的开始入口；未来安排会按约定时间出现，过期结果保持未知。');
 }
 async function refresh(){
  try {
   const {status,result}=await request('/api/state');if(status!==200)throw new Error();
   state=result;document.querySelector('#connection').textContent='已连接智能体核心 · 状态已持久保存';
-  const key=JSON.stringify([result.sessions,result.interventions,result.checkpoints,result.evidence,result.deliveries,result.now>=result.arrangements[0]?.window_end]);
+  const key=JSON.stringify([result.sessions,result.interventions,result.checkpoints,result.evidence,result.deliveries,result.recoveries,result.packets,result.corrections,result.foreground]);
   if(key!==signature){signature=key;render();}
-  const notice=await request('/ui/notice');document.querySelector('#notice').textContent=notice.result?.valid===false?'原通知上下文已失效，当前显示的是 Core 最新状态。':notice.result?.valid===true?'已从系统通知返回对应行动。':'';
+  const notice=await request('/ui/notice');document.querySelector('#notice').textContent=notice.result?.message?notice.result.message:notice.result?.valid===false?'原通知上下文已失效，当前显示的是 Core 最新状态。':notice.result?.valid===true?'已从系统通知返回对应行动。':'';
  }catch(_){document.querySelector('#connection').textContent='智能体核心暂不可用，正在重新连接…';for(const b of content.querySelectorAll('button'))b.disabled=true;signature=null;}
 }
 refresh();setInterval(refresh,600);

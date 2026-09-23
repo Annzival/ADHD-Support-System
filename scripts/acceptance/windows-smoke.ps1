@@ -1,11 +1,14 @@
-param(
-    [ValidateSet('I01')][string]$Stage = 'I01',
-    [ValidateSet('Run','Resume','Snapshot','RestartCore','Collect')][string]$Mode = 'Run',
-    [ValidateSet('ConfirmedDuration','MissingDuration')][string]$Case = 'ConfirmedDuration',
+﻿param(
+    [ValidateSet('I01','I02')][string]$Stage = 'I01',
+    [ValidateSet('Run','Resume','Snapshot','RestartCore','Collect','BeforeReboot','AfterReboot')][string]$Mode = 'Run',
+    [ValidateSet('ConfirmedDuration','MissingDuration','MultiplePlans','ShortWindow','WithoutWindow')][string]$Case = 'ConfirmedDuration',
     [string]$WebView2Path,
     [string]$DataDirectory,
     [string]$PythonExecutable,
-    [int]$StartDelay = 45
+    [int]$StartDelay = 45,
+    [int]$DurationSeconds = 60,
+    [int]$GraceSeconds = 30,
+    [int]$SecondDelay = 90
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
@@ -93,11 +96,30 @@ function Start-Desktop {
 if ($Mode -ne 'Run') {
     Require-Data
     $run = Read-Run
+    if ($run.stage) { $Stage = $run.stage }
     if (-not $PythonExecutable) { $PythonExecutable = $run.pythonExecutable }
     if (-not $WebView2Path) { $WebView2Path = $run.webView2Path }
     if (Invoke-Tool 'git' @('status','--porcelain','--untracked-files=normal')) { throw 'Use the clean recorded checkpoint.' }
     $commit = Invoke-Tool 'git' @('rev-parse','HEAD')
     if ($commit -ne $run.commit) { throw 'Checkout differs from run commit. Return to the recorded checkpoint.' }
+    if ($Mode -in @('BeforeReboot','AfterReboot')) {
+        $boot = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString('o')
+        $corePattern = [Regex]::Escape($DataDirectory)
+        $cores = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-m agent_core serve' -and $_.CommandLine -match $corePattern })
+        $hosts = @(Get-Process -Name 'i01-desktop' -ErrorAction SilentlyContinue)
+        $state = (Invoke-Tool $PythonExecutable @('-m','agent_core','inspect','--data-dir',$DataDirectory) | ConvertFrom-Json).state
+        $record = [ordered]@{ boot = $boot; hostCount = $hosts.Count; coreCount = $cores.Count; databaseId = $state.database_id; commit = $commit }
+        if ($Mode -eq 'AfterReboot') {
+            $prior = Get-Content (Join-Path $DataDirectory 'before-reboot.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($prior.boot -eq $boot) { throw 'A real PC reboot has not been observed.' }
+            if ($prior.databaseId -ne $state.database_id -or $hosts.Count -ne 1 -or $cores.Count -ne 1) { throw 'Database identity or process count mismatch.' }
+        } elseif ($hosts.Count -ne 1 -or $cores.Count -ne 1) { throw 'Expected exactly one host and Core before reboot.' }
+        $label = if ($Mode -eq 'BeforeReboot') { 'before-reboot' } else { 'after-reboot' }
+        Write-Json (Join-Path $DataDirectory ($label + '.json')) $record
+        Save-Snapshot ($label + '-state')
+        Write-Host 'Reboot evidence saved locally; review domain state separately.'
+        exit 0
+    }
     if ($Mode -eq 'Snapshot') {
         Save-Snapshot ('snapshot-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
         Write-Host 'Snapshot saved locally. It contains only this synthetic fixture.'
@@ -127,11 +149,14 @@ if ($Mode -ne 'Run') {
         Save-Snapshot 'final-state'
         $observations = Get-Content (Join-Path $DataDirectory 'observations.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $allowedObservations = @('arrivalAndCorrectNotification','startAndFirstCheckpoint','cancelDurationLeavesPending','completionBeforeCheckpoint','completionAfterCheckpoint','finishClosure','skipClosure','nativeCloseSkipsClosure','staleNotificationShowsCurrentContext','coreRestartKeepsSameSessionAndCheckpoint','awaitingClosureSurvivesRestart','endedStateSurvivesRestart','overlayCloseAndReopen')
+        if ($Stage -eq 'I02') { $allowedObservations += @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier') }
         foreach ($property in $observations.PSObject.Properties) {
             if ($property.Name -notin $allowedObservations -or $property.Value -notin @('NOT_RUN','PASS','FAIL','BLOCKED')) { throw 'Observations must use the template fields and NOT_RUN/PASS/FAIL/BLOCKED only.' }
         }
         if (@($observations.PSObject.Properties).Count -ne $allowedObservations.Count) { throw 'Observation fields are missing.' }
         $files = @('run.json','environment.json','automatic-tests.txt','observations.json','final-state.json','desktop-evidence.jsonl')
+        $files += @(Get-ChildItem -LiteralPath $DataDirectory -Filter '*reboot*.json' | ForEach-Object { $_.Name })
+        $files += @(Get-ChildItem -LiteralPath $DataDirectory -Filter 'snapshot-*.json' | ForEach-Object { $_.Name })
         $hashes = @{}
         foreach ($name in $files) {
             $path = Join-Path $DataDirectory $name
@@ -139,7 +164,7 @@ if ($Mode -ne 'Run') {
         }
         $final = Get-Content (Join-Path $DataDirectory 'final-state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $summary = [ordered]@{
-            schemaVersion = 1; stage = 'I01'; status = 'AWAITING_EVIDENCE_REVIEW'; commit = $run.commit
+            schemaVersion = 1; stage = $Stage; status = 'AWAITING_EVIDENCE_REVIEW'; commit = $run.commit
             case = $run.case; binarySha256 = $run.binarySha256; environment = $run.environment
             databaseId = $final.state.database_id; activeSession = $final.state.active_session
             sessions = $final.state.sessions; evidence = $final.state.evidence
@@ -147,7 +172,7 @@ if ($Mode -ne 'Run') {
         }
         Write-Json (Join-Path $DataDirectory 'evidence-summary.json') $summary
         Write-Host ('Return this synthetic summary: ' + (Join-Path $DataDirectory 'evidence-summary.json'))
-        Write-Host 'No automatic I-01 PASS is declared. Preserve local source files for review; do not publish run.json or the database.'
+        Write-Host 'No automatic stage PASS is declared. Preserve local source files for review; do not publish run.json or the database.'
         exit 0
     }
 }
@@ -192,10 +217,16 @@ $DataDirectory = [IO.Path]::GetFullPath($DataDirectory)
 $allowedParent = [IO.Path]::GetFullPath((Join-Path $repoRoot '.i01-runs')) + [IO.Path]::DirectorySeparatorChar
 if (-not $DataDirectory.StartsWith($allowedParent, [StringComparison]::OrdinalIgnoreCase)) { throw 'Use a new directory under .i01-runs.' }
 $seedArgs = @('-m','agent_core','seed','--data-dir',$DataDirectory,'--confirm-development-fixture','--start-delay',"$StartDelay")
+if ($Stage -eq 'I02') {
+    $seedArgs += @('--duration',"$DurationSeconds",'--grace-seconds',"$GraceSeconds")
+    if ($Case -eq 'MultiplePlans') { $seedArgs += @('--second-delay',"$SecondDelay",'--second-version','Q') }
+    if ($Case -eq 'ShortWindow') { $seedArgs += @('--window-seconds','180') }
+    if ($Case -eq 'WithoutWindow') { $seedArgs += @('--window-seconds','0') }
+}
 if ($Case -eq 'MissingDuration') { $seedArgs += '--without-duration' }
 [void](Invoke-Tool $PythonExecutable $seedArgs)
 Write-Json (Join-Path $DataDirectory 'environment.json') $environment
-Write-Json (Join-Path $DataDirectory 'run.json') ([ordered]@{ commit = $commit; case = $Case; binarySha256 = (Get-FileHash $binary -Algorithm SHA256).Hash; pythonExecutable = $PythonExecutable; webView2Path = $WebView2Path; environment = $environment })
+Write-Json (Join-Path $DataDirectory 'run.json') ([ordered]@{ commit = $commit; stage = $Stage; case = $Case; binarySha256 = (Get-FileHash $binary -Algorithm SHA256).Hash; pythonExecutable = $PythonExecutable; webView2Path = $WebView2Path; environment = $environment })
 [IO.File]::WriteAllText((Join-Path $DataDirectory 'automatic-tests.txt'), ($testOutput + "`n" + $goTests), (New-Object Text.UTF8Encoding($false)))
 Write-Json (Join-Path $DataDirectory 'observations.json') ([ordered]@{
     arrivalAndCorrectNotification = 'NOT_RUN'; startAndFirstCheckpoint = 'NOT_RUN'
@@ -205,7 +236,12 @@ Write-Json (Join-Path $DataDirectory 'observations.json') ([ordered]@{
     coreRestartKeepsSameSessionAndCheckpoint = 'NOT_RUN'; awaitingClosureSurvivesRestart = 'NOT_RUN'
     endedStateSurvivesRestart = 'NOT_RUN'; overlayCloseAndReopen = 'NOT_RUN'
 })
+if ($Stage -eq 'I02') {
+    $observations = Get-Content (Join-Path $DataDirectory 'observations.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($name in @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier')) { $observations | Add-Member NoteProperty $name 'NOT_RUN' }
+    Write-Json (Join-Path $DataDirectory 'observations.json') $observations
+}
 Start-Desktop
 Write-Host ('DataDirectory: ' + $DataDirectory)
-Write-Host 'Follow docs/implementation/windows-i01.md. Set only observed entries to PASS or FAIL; leave others NOT_RUN.'
+Write-Host 'Follow docs/implementation/windows-i01.md or windows-i02.md for the selected stage. Set only observed entries to PASS or FAIL; leave others NOT_RUN.'
 Write-Host 'Exit via tray when finished. Use Resume for persistence checks, Collect for the return summary.'

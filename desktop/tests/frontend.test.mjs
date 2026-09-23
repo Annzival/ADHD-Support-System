@@ -16,10 +16,10 @@ const moduleInfo=spawnSync(process.env.I01_TEST_GO || 'go',['list','-m','-json',
 assert.equal(moduleInfo.status,0,moduleInfo.stderr.toString());
 const runtimePath=join(JSON.parse(moduleInfo.stdout).Dir,'internal/assetserver/bundledassets/runtime.js');
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-async function setup(t,missing=false,surface='main'){
+async function setup(t,missing=false,surface='main',fixtureArgs=[]){
  const directory=await mkdtemp(join(tmpdir(),'i01-ui-'));
  const data=join(directory,'data'),bootstrap=join(directory,'bootstrap.json');
- const seed=spawnSync(python,['-m','agent_core','seed','--data-dir',data,'--confirm-development-fixture','--start-delay','-1',...(missing?['--without-duration']:[])],{cwd:root});
+ const seed=spawnSync(python,['-m','agent_core','seed','--data-dir',data,'--confirm-development-fixture','--start-delay','-1',...(missing?['--without-duration']:[]),...fixtureArgs],{cwd:root});
  assert.equal(seed.status,0,seed.stderr.toString());
  let core=spawn(python,['-m','agent_core','serve','--data-dir',data,'--bootstrap',bootstrap],{cwd:root,stdio:'ignore'});
  t.after(async()=>{core.kill();await rm(directory,{recursive:true,force:true});});
@@ -31,7 +31,7 @@ async function setup(t,missing=false,surface='main'){
   if(req.url==='/wails/runtime.js'){res.setHeader('Content-Type','application/javascript');res.end(await readFile(runtimePath));return;}
   if(req.url.startsWith('/api/')){
    const body=[];for await(const chunk of req)body.push(chunk);
-   const upstream=await fetch(material.endpoint+req.url.replace('/api/','/v1/'),{method:req.method,headers:{Authorization:'Bearer '+material.token},body:req.method==='POST'?Buffer.concat(body):undefined});
+   const upstream=await fetch(material.endpoint+req.url.replace('/api/','/v1/'),{method:req.method,headers:{Authorization:'Bearer '+material.token,Connection:'close'},body:req.method==='POST'?Buffer.concat(body):undefined});
    const text=await upstream.text();
    if(loseResponse && req.url==='/api/commands'){loseResponse=false;res.writeHead(503,{'Content-Type':'application/json'});res.end('{"error":"response_lost"}');return;}
    res.writeHead(upstream.status,{'Content-Type':'application/json'});res.end(text);return;
@@ -49,8 +49,14 @@ async function setup(t,missing=false,surface='main'){
  // Only the native WebView2 message sink is replaced; the page must load the real runtime.
  await page.addInitScript(()=>{window.__hostMessages=[];window.chrome.webview={postMessage:message=>window.__hostMessages.push(message)};});
  await page.goto('http://127.0.0.1:'+server.address().port+'/?surface='+surface);
- const snapshot=async()=>await (await fetch(material.endpoint+'/v1/state',{headers:{Authorization:'Bearer '+material.token}})).json();
- return {page,snapshot,lose:()=>{loseResponse=true;},hidden:()=>hidden};
+ const snapshot=async()=>await (await fetch(material.endpoint+'/v1/state',{headers:{Authorization:'Bearer '+material.token,Connection:'close'}})).json();
+ const restart=async()=>{
+  await new Promise(resolve=>{core.once('exit',resolve);core.kill();});
+  core=spawn(python,['-m','agent_core','serve','--data-dir',data,'--bootstrap',bootstrap],{cwd:root,stdio:'ignore'});
+  let next;for(let i=0;i<100;i++){try{next=JSON.parse(await readFile(bootstrap));break;}catch{await delay(30);}}
+  assert.ok(next);material=next;await unlink(bootstrap);
+ };
+ return {page,snapshot,restart,lose:()=>{loseResponse=true;},hidden:()=>hidden};
 }
 async function visible(page,text){await page.getByText(text,{exact:false}).first().waitFor({timeout:5000});}
 
@@ -138,4 +144,66 @@ for (const surface of ['main','overlay']) test(`closure draft survives failed po
  await visible(page,'已保存执行证据');
  const after=await snapshot();assert.equal(after.evidence[0].result,'partial');
  assert.equal(after.evidence[0].actual_duration_seconds,720);
+});
+
+
+test('I02 EX-03/04: already-started confirmation and retrospective completion',async t=>{
+ const {page,snapshot}=await setup(t);
+ await page.getByRole('button',{name:'我已经开始',exact:true}).click();
+ assert.equal((await snapshot()).sessions.length,0);
+ await page.getByRole('button',{name:'取消',exact:true}).click();
+ await page.getByRole('button',{name:'我已经完成',exact:true}).click();
+ await visible(page,'正在等待收尾');
+ assert.equal((await snapshot()).checkpoints.length,0);
+ await page.getByRole('button',{name:'跳过收尾',exact:true}).click();
+ await visible(page,'已保存执行证据');assert.equal((await snapshot()).sessions[0].entry_source,'already_completed');
+});
+
+test('I02 EX-05/06: cancel reschedule then skip only this arrangement',async t=>{
+ const {page,snapshot}=await setup(t);
+ await page.getByRole('button',{name:'改到具体时间',exact:true}).click();
+ const before=await snapshot();await page.getByRole('button',{name:'取消',exact:true}).click();
+ assert.deepEqual((await snapshot()).arrangements,before.arrangements);
+ await page.getByRole('button',{name:'今天不做',exact:true}).click();
+ for(let i=0;i<100&&(await snapshot()).decisions.length===0;i++)await delay(20);
+ const after=await snapshot();assert.equal(after.decisions.length,1);assert.equal(after.sessions.length,0);assert.equal(after.actions[0].status,'pending');
+});
+
+test('I02 SES-04/REC-05: native close after pause saves packet and resume creates linked session',async t=>{
+ const {page,snapshot}=await setup(t);
+ await page.getByRole('button',{name:'立即开始',exact:true}).click();await visible(page,'执行会话已建立');
+ const old=(await snapshot()).active_session.id;
+ await page.getByRole('button',{name:'暂停并保存恢复包',exact:true}).click();await visible(page,'正在等待收尾');
+ await page.evaluate(()=>window.dispatchEvent(new Event('host-close')));await visible(page,'已暂停并保存恢复包');
+ await page.getByRole('button',{name:'从此暂停包继续',exact:true}).click();
+ await page.getByRole('button',{name:'确认时长并开始',exact:true}).click();await visible(page,'执行会话已建立');
+ const after=await snapshot();assert.notEqual(after.active_session.id,old);assert.equal(after.packets[0].used_by,after.active_session.id);
+});
+
+test('I02 SES-01/07: continue keeps session and correction appends to evidence',async t=>{
+ const {page,snapshot}=await setup(t,false,'main',['--duration','1']);
+ await page.getByRole('button',{name:'立即开始',exact:true}).click();await visible(page,'约定的检查时间已到');
+ const old=(await snapshot()).active_session.id;
+ await page.getByRole('button',{name:'继续并确认下一检查时间',exact:true}).click();
+ await page.getByRole('button',{name:'确认时长并开始',exact:true}).click();await visible(page,'执行会话已建立');
+ assert.equal((await snapshot()).active_session.id,old);assert.equal((await snapshot()).checkpoints.length,2);
+ await page.getByRole('button',{name:'已经完成',exact:true}).click();await visible(page,'正在等待收尾');
+ await page.getByRole('button',{name:'跳过收尾',exact:true}).click();await visible(page,'已保存执行证据');
+ const original=(await snapshot()).evidence;
+ await page.getByRole('button',{name:'追加事实更正',exact:true}).click();
+ await page.getByRole('combobox').selectOption('partial');
+ await page.getByLabel('更正内容').fill('只完成第一段');await page.getByLabel('更正原因').fill('测试更正');
+ await page.getByRole('button',{name:'保存更正',exact:true}).click();await visible(page,'更正：只完成第一段');
+ assert.deepEqual((await snapshot()).evidence,original);assert.equal((await snapshot()).corrections.length,1);
+});
+
+test('I02 REC-10: restart reveals current plan and explicit switch keeps old result unknown',async t=>{
+ const {page,snapshot,restart}=await setup(t,false,'main',['--second-delay','3','--second-version','Q']);
+ await page.getByRole('button',{name:'立即开始',exact:true}).click();await visible(page,'执行会话已建立');
+ const old=(await snapshot()).active_session.id;await delay(3100);await restart();
+ await page.getByRole('button',{name:'切换到当前计划（旧结果保持未知）',exact:true}).click();
+ await page.getByRole('button',{name:'确认时长并开始',exact:true}).click();
+ for(let i=0;i<100&&(await snapshot()).active_session.id===old;i++)await delay(20);
+ const after=await snapshot();assert.notEqual(after.active_session.id,old);assert.equal(after.active_session.plan_version,'Q');
+ assert.equal(after.sessions.find(s=>s.id===old).exit_reason,'user_selected_switch');assert.equal(after.evidence.length,0);assert.equal(after.packets.length,0);
 });
