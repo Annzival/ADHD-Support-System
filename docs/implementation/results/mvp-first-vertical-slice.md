@@ -2,7 +2,11 @@
 
 ## 当前结论
 
-**复审修复及 Windows 定向回归已通过，等待独立代码复审。** `21b4a24` 的通知不重复、Core 断连恢复后收尾 partial／12 保留，以及最终 partial／720 秒持久证据均已核验。两项 P2 的故障注入自动回归已通过；新实机证据补齐。尚未收到修复后的独立复审结论，不据此宣布可 merge，不自行 Ready、合并或进入 I-02。旧版本成功与失败证据均保留。
+**I-01 限定范围 PASS；修复后的独立复审通过，PR #32 已人工合并。** 2026-09-23，治理线程复审 `3c80071...c277988`，前轮两项 P2 关闭，Standards 无 findings、Spec 无新增阻塞。用户随后合并 PR #32，merge `9fcd7663e640822bc3bfacc97c93a3d5aefa848f`。产品代码修复为 `21b4a24`，证据 checkpoint 为 `c277988`。这不表示完整 MVP 完成或正式 dogfooding 准入。
+
+独立复核重跑 Python 17 项、Go 7 个测试入口及 race/vet、浏览器 6 项，均通过；新 Windows 回传 5 个文件哈希与摘要一致，重启前后持久状态一致，最终 partial／720 秒、会话结束及行动仍 pending 已核对。复核在 Linux 进行，未重做 Windows 原生操作。迟到回执与用户回应交错作为后续 I-02 生命周期验证风险，未预设新的补偿规则。
+
+以下各节保留当时的执行与审查状态，不覆盖旧失败、旧成功或机器可读证据；当前发布状态以本节为准。后续任务见 [I-02 交接](../plans/mvp-deterministic-branches-recovery.md)。
 
 任务：[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)。本任务是独立 implementation，不是产品治理；从 PR #30 已合并后的 `main@ad940755ebfd19d8fe7ef7011f93ebc17a242e4a` 创建 `agent/implement-mvp-first-slice`，启动时无既有 I-01 PR 或分支、工作树干净。未修改产品范围、领域模型或 ADR。
 
