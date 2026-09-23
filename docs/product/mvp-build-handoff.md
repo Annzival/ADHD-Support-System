@@ -4,7 +4,9 @@
 
 结论：**MVP 已达到可以开始构建的状态。**
 
-2026-09-20，B-04 文档 checkpoint `39f597d` 已完成独立 Standards / Spec 双轴审查，两轴均无 findings；当前产品治理线程结合已接纳技术证据确认六项门槛全部满足，停止产品 grilling。本报告与验收规格由 [PR #30](https://github.com/Annzival/ADHD-Support-System/pull/30) 发布，仍需用户人工审查和合并后，执行 session 才能从最新 main 启动。
+2026-09-20，B-04 文档 checkpoint `39f597d` 已完成独立 Standards / Spec 双轴审查，两轴均无 findings；当前产品治理线程结合已接纳技术证据确认六项门槛全部满足，停止产品 grilling。本报告与验收规格由已人工合并的 [PR #30](https://github.com/Annzival/ADHD-Support-System/pull/30) 发布。
+
+实施进度（2026-09-23）：I-01 已通过限定范围验收及修复后的独立复审，[PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32) 已人工合并（`9fcd766`）。下一步为 [I-02 独立任务交接](../implementation/plans/mvp-deterministic-branches-recovery.md)／[Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)，等待该交接文档 PR 合并后启动。I-03、I-04 尚未完成，不可开始正式观察。
 
 构建就绪只表示已有最低充分信息，可以开始第一个可验证闭环的实现；不表示所有路线图需求都已确定、软件可分发或 dogfooding 已可启动。Agent 不在产品治理线程实现代码、不自动创建执行 session，也不标记 PR Ready 或合并。
 
@@ -75,7 +77,7 @@
 | I-03 完整设置与模型边界 | 用户从真实文本／Markdown 在审阅工作区完成导入和启用；PydanticAI 模型调用只生成草案；两个供应商配置切换验收、模型不可用及状态保留 | 全部 SET、AT-04～05；用真实导入结果重新跑 EX-01 | `python -m pytest tests/acceptance/test_plan_setup.py tests/acceptance/test_provider_boundary.py`；`powershell -NoProfile -File scripts/acceptance/model-integration.ps1` |
 | I-04 集成与观察准入 | 在锁定 Windows 上验证正式构建的全部必要场景，完成脱敏证据索引、退出控制和观察协议走查；用户决定是否开始观察 | 所有场景与 OBS-01～04；所有 FAIL／BLOCKED 均有处理结论，未通过必要功能不得开始正式观察 | `python -m pytest tests/acceptance`；`powershell -NoProfile -File scripts/acceptance/windows-smoke.ps1 -Stage Full`；按 OBS 手动走查并记录 |
 
-这些命令是建议的交付接口，**当前测试文件和脚本尚不存在，不能立即运行或声称通过**。执行 session 在所负责阶段创建相应入口，或选择等价测试框架后在仓库运行说明中给出实际命令与场景 ID 映射；无需为命令命名再做产品决策。PowerShell 步骤必须提供给 Windows PC 的操作者，Linux 执行成功不能替代它。真实模型调用需测试凭据与成本控制，不能在本线程代跑。
+表中命令是最初交接时建议的交付接口，不是当前已实现命令清单。I-01 已交付等价的 unittest 与桌面测试，实际入口见[运行说明](../implementation/README.md)；I-02～I-04 的目标测试与脚本尚待各阶段实现，不能提前运行或声称通过。执行 session 可选择等价测试框架，在运行说明中给出实际命令与场景 ID 映射，无需为命令命名再做产品决策。PowerShell 步骤必须提供给 Windows PC 的操作者，Linux 执行成功不能替代它。真实模型调用需测试凭据与成本控制，不能在本线程代跑。
 
 I-01 的预置数据不是导入功能，也不能进入正式观察；I-03 是 dogfooding 前的硬性依赖。I-02、I-03 是否在接口稳定后并行是实施协调选择，不改变全部必须完成的结果。
 
@@ -94,7 +96,7 @@ I-01 的预置数据不是导入功能，也不能进入正式观察；I-03 是 
 
 ## I-01 独立执行任务 Prompt
 
-以下 Prompt 用于用户另开的独立 implementation session，任务跟踪为 [Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)，当前未启动；使用前必须先合并 PR #30。当前主线程不启动编码，也不因文件存在赋予新 session 产品治理身份。
+以下保留 I-01 原始任务 Prompt 供追溯；[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31) 对应实现已经完成并合并，不应再次启动。本阶段结果见[结果报告](../implementation/results/mvp-first-vertical-slice.md)，下一阶段使用上文 I-02 交接。当前主线程不启动编码，也不因文件存在赋予新 session 产品治理身份。
 
 ```text
 你在 ADHD-Support-System 仓库执行 I-01：首个 PC 确定性执行闭环的 implementation 任务。

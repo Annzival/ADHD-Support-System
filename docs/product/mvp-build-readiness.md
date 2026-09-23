@@ -384,7 +384,7 @@ V-03 不覆盖异常断电、数据库加密、备份恢复、其他 Windows 版
 
 **无产品构建阻塞，停止 grilling。**
 
-六项门槛全部满足。当前下一步是用户审查并合并 PR #30，随后按[构建交接报告](mvp-build-handoff.md)在独立 implementation session 执行 I-01（[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31)，未启动）。无需为了继续讨论而新增问题或 spike；未来实现发现真实冲突时，带证据返回本线程重新评估。
+六项门槛全部满足。PR #30 已合并；2026-09-23，I-01 经限定范围验收和修复后的独立复审通过，PR #32 已人工合并（`9fcd766`），[Issue #31](https://github.com/Annzival/ADHD-Support-System/issues/31) 收束。当前下一步是 [I-02 独立交接](../implementation/plans/mvp-deterministic-branches-recovery.md)／[Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)，等待交接文档 PR 合并后由独立 session 实施。无需新增产品问题或 spike；完整 MVP 与正式观察仍依赖 I-02～I-04，未来实现发现真实冲突时带证据返回本线程。
 
 PR #28 已合并，B-04 和构建交接由独立分支 `agent/mvp-acceptance-criteria` 的 PR #30 承载；当前线程不编写产品代码、不自动启动新 session、不将 PR 标记 Ready 或合并。阶段划分、完成条件、拟交付的验收命令、非阻塞风险及完整 I-01 Prompt 均已保存在交接报告中。
 
