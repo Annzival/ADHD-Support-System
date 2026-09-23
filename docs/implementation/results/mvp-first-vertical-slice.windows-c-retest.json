@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "stage": "I01",
+  "status": "PASS",
+  "scope": "首个 PC 确定性执行闭环；不是完整 MVP 或 dogfooding 准入",
+  "archiveSha256": "B83A7DAAC4207F837D7E5ACC5D030536673255E1F7B035B4847A4ABB50844486",
+  "commit": "9493d2e688d33339b43ca1d1463e9807e8132f7a",
+  "binarySha256": "8E5425919468679691B58C84C56B1D7E619E0DB2DB7ECA01E35E1EB8FE883ABD",
+  "environment": {
+    "windows": "10.0.19045",
+    "displayVersion": "22H2",
+    "ubr": 7725,
+    "bits": 64,
+    "python": {
+      "version": "3.12.3",
+      "bits": 64,
+      "sqlite": "3.45.1"
+    },
+    "go": "go version go1.25.0 windows/amd64",
+    "wails": "v3.0.0-beta.8",
+    "webView2": "151.0.4129.78"
+  },
+  "observations": {
+    "arrivalAndCorrectNotification": "NOT_RUN",
+    "startAndFirstCheckpoint": "PASS",
+    "cancelDurationLeavesPending": "PASS",
+    "completionBeforeCheckpoint": "NOT_RUN",
+    "completionAfterCheckpoint": "NOT_RUN",
+    "finishClosure": "NOT_RUN",
+    "skipClosure": "NOT_RUN",
+    "nativeCloseSkipsClosure": "PASS",
+    "staleNotificationShowsCurrentContext": "NOT_RUN",
+    "coreRestartKeepsSameSessionAndCheckpoint": "NOT_RUN",
+    "awaitingClosureSurvivesRestart": "NOT_RUN",
+    "endedStateSurvivesRestart": "NOT_RUN",
+    "overlayCloseAndReopen": "PASS"
+  },
+  "fileSha256": {
+    "desktop-evidence.jsonl": "33b5d978ac28b1e39701507e19e2ec6cc8bc29d476265062f358e0a4d9872cf9",
+    "evidence-summary.json": "efae254fffb65ff8c9267faf3e082c1fcba0f591bbfc6dab7f7657f587802803",
+    "final-state.json": "71e033446b980cd662dbc34a76faadab3a357f579ca9362deb2bb43dacd646fe",
+    "snapshot-20260922T141425189Z.json": "d7aeb0f8e56041183ce851aee02314ed942ac6a4d89e984dcccf7ae0544420d4",
+    "snapshot-20260922T141453060Z.json": "2432081f262ec8f3c6ebef56b68ae27414f2acaf89bffd60b556fa825a8e6717",
+    "snapshot-20260922T141547390Z.json": "118eace54e98056f95dffc2ced39ef20167e047df10da1905ac31ba8edba4436",
+    "snapshot-20260922T141617570Z.json": "e2782e5ed5886078b8e50f4b589dc9e24b84b1328fcd2b3cc79a979f17b68b39"
+  },
+  "verifiedChecks": [
+    "四份快照与最终状态为同一独立数据库，摘要与状态及回传文件哈希一致。",
+    "打开/取消时长时完整持久状态不变且没有会话/检查点。",
+    "确认后唯一会话和300秒检查点；关闭小窗后仍执行中。",
+    "主窗口关闭前等待收尾且无证据；关闭后唯一explicit_skip证据，活动位置释放，未知用时字段仍未知。",
+    "人工记录与用户回传确认两个原生叉号关闭及托盘重开成功。"
+  ],
+  "combinedObservationCoverage": {
+    "arrivalAndCorrectNotification": {
+      "status": "PASS",
+      "round": "A",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "startAndFirstCheckpoint": {
+      "status": "PASS",
+      "round": "C-retest",
+      "commit": "9493d2e688d33339b43ca1d1463e9807e8132f7a"
+    },
+    "completionBeforeCheckpoint": {
+      "status": "PASS",
+      "round": "A",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "finishClosure": {
+      "status": "PASS",
+      "round": "A",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "completionAfterCheckpoint": {
+      "status": "PASS",
+      "round": "B",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "skipClosure": {
+      "status": "PASS",
+      "round": "B",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "staleNotificationShowsCurrentContext": {
+      "status": "PASS",
+      "round": "B",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "coreRestartKeepsSameSessionAndCheckpoint": {
+      "status": "PASS",
+      "round": "D",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "awaitingClosureSurvivesRestart": {
+      "status": "PASS",
+      "round": "D",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "endedStateSurvivesRestart": {
+      "status": "PASS",
+      "round": "D",
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20"
+    },
+    "cancelDurationLeavesPending": {
+      "status": "PASS",
+      "round": "C-retest",
+      "commit": "9493d2e688d33339b43ca1d1463e9807e8132f7a"
+    },
+    "nativeCloseSkipsClosure": {
+      "status": "PASS",
+      "round": "C-retest",
+      "commit": "9493d2e688d33339b43ca1d1463e9807e8132f7a"
+    },
+    "overlayCloseAndReopen": {
+      "status": "PASS",
+      "round": "C-retest",
+      "commit": "9493d2e688d33339b43ca1d1463e9807e8132f7a"
+    }
+  },
+  "priorEvidence": "mvp-first-vertical-slice.windows-review.json",
+  "limits": [
+    "A/B/D沿用c6b868e证据，C复测对应9493d2e；不是声称四轮在同一二进制上全部重跑。",
+    "原C失败证据不覆盖；本次仅核验与更新文档，没有更改产品代码或重跑无关自动测试。",
+    "Windows自动测试日志未独立回传，Run流程会在测试失败时停止；Linux自动检查已有独立记录。"
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "stage": "I01",
+  "status": "FAIL_AWAITING_C_RETEST",
+  "archiveSha256": "F9B85B988DB600F1F5100FE2107297403237A1F5E51DDF3B26DF247E74FB6638",
+  "rounds": {
+    "A": {
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20",
+      "binarySha256": "C1976706A097D332ABF5DCD79F3FD085D6D71995E3CD6A8AFDDDCF3944C15E4B",
+      "environment": {
+        "windows": "10.0.19045",
+        "displayVersion": "22H2",
+        "ubr": 7725,
+        "bits": 64,
+        "python": {
+          "version": "3.12.3",
+          "bits": 64,
+          "sqlite": "3.45.1"
+        },
+        "go": "go version go1.25.0 windows/amd64",
+        "wails": "v3.0.0-beta.8",
+        "webView2": "151.0.4129.78"
+      },
+      "observations": {
+        "arrivalAndCorrectNotification": "PASS",
+        "startAndFirstCheckpoint": "PASS",
+        "cancelDurationLeavesPending": "NOT_RUN",
+        "completionBeforeCheckpoint": "PASS",
+        "completionAfterCheckpoint": "NOT_RUN",
+        "finishClosure": "PASS",
+        "skipClosure": "NOT_RUN",
+        "nativeCloseSkipsClosure": "NOT_RUN",
+        "staleNotificationShowsCurrentContext": "NOT_RUN",
+        "coreRestartKeepsSameSessionAndCheckpoint": "NOT_RUN",
+        "awaitingClosureSurvivesRestart": "NOT_RUN",
+        "endedStateSurvivesRestart": "NOT_RUN",
+        "overlayCloseAndReopen": "NOT_RUN"
+      },
+      "snapshotCount": 1,
+      "verdict": "PASS",
+      "fileSha256": {
+        "desktop-evidence.jsonl": "7ef93b4814e8d834d370fd22e464bba260d5bf32af087e1c1686445820ed5ab5",
+        "evidence-summary.json": "b6dfe0f6265ddf4d9e46b9b0237b7ba49ccadc0df923b9099d4af8272ca832cb",
+        "final-state.json": "6d23205cf3218759a66d6e9fd95ce2de6f48013f138635768cbac96aed4bb26d",
+        "snapshot-20260922T131806643Z.json": "2ebf96f01804c1c75dc340bd0cde610e50b59542bf28b75caab3b7d05f3b39c0"
+      }
+    },
+    "B": {
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20",
+      "binarySha256": "C1976706A097D332ABF5DCD79F3FD085D6D71995E3CD6A8AFDDDCF3944C15E4B",
+      "environment": {
+        "windows": "10.0.19045",
+        "displayVersion": "22H2",
+        "ubr": 7725,
+        "bits": 64,
+        "python": {
+          "version": "3.12.3",
+          "bits": 64,
+          "sqlite": "3.45.1"
+        },
+        "go": "go version go1.25.0 windows/amd64",
+        "wails": "v3.0.0-beta.8",
+        "webView2": "151.0.4129.78"
+      },
+      "observations": {
+        "arrivalAndCorrectNotification": "NOT_RUN",
+        "startAndFirstCheckpoint": "PASS",
+        "cancelDurationLeavesPending": "NOT_RUN",
+        "completionBeforeCheckpoint": "NOT_RUN",
+        "completionAfterCheckpoint": "PASS",
+        "finishClosure": "NOT_RUN",
+        "skipClosure": "PASS",
+        "nativeCloseSkipsClosure": "NOT_RUN",
+        "staleNotificationShowsCurrentContext": "PASS",
+        "coreRestartKeepsSameSessionAndCheckpoint": "NOT_RUN",
+        "awaitingClosureSurvivesRestart": "NOT_RUN",
+        "endedStateSurvivesRestart": "NOT_RUN",
+        "overlayCloseAndReopen": "NOT_RUN"
+      },
+      "snapshotCount": 3,
+      "verdict": "PASS",
+      "fileSha256": {
+        "desktop-evidence.jsonl": "0c8eeb576d14be2c047ddaed70c4691b6e458233e762c60eb01257d138ab6f9c",
+        "evidence-summary.json": "ac5e92a3b4bd2068334e7f2782fa0303d2bbfcfaaef3c6b2ba30dc1a54a0e06a",
+        "final-state.json": "6e838996da2068aebc800c522b484c8f1a5a7454b9a59e9f39164fd0fadc617d",
+        "snapshot-20260922T132616726Z.json": "29332a8c9840b76889bf04364d237f9ba6eaa48118f413c1308ac527e607b205",
+        "snapshot-20260922T132656558Z.json": "4bd6fbcbabcaee7668d996ebdf4870026aa4a5e10a57ee5ef56e315c630561cd",
+        "snapshot-20260922T132746947Z.json": "6ed7596bc37f90b2ef84c43abcc689833a79b7718b217899b936fc2d220e7b9d"
+      }
+    },
+    "C": {
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20",
+      "binarySha256": "C1976706A097D332ABF5DCD79F3FD085D6D71995E3CD6A8AFDDDCF3944C15E4B",
+      "environment": {
+        "windows": "10.0.19045",
+        "displayVersion": "22H2",
+        "ubr": 7725,
+        "bits": 64,
+        "python": {
+          "version": "3.12.3",
+          "bits": 64,
+          "sqlite": "3.45.1"
+        },
+        "go": "go version go1.25.0 windows/amd64",
+        "wails": "v3.0.0-beta.8",
+        "webView2": "151.0.4129.78"
+      },
+      "observations": {
+        "arrivalAndCorrectNotification": "NOT_RUN",
+        "startAndFirstCheckpoint": "PASS",
+        "cancelDurationLeavesPending": "PASS",
+        "completionBeforeCheckpoint": "NOT_RUN",
+        "completionAfterCheckpoint": "NOT_RUN",
+        "finishClosure": "NOT_RUN",
+        "skipClosure": "NOT_RUN",
+        "nativeCloseSkipsClosure": "FAIL",
+        "staleNotificationShowsCurrentContext": "NOT_RUN",
+        "coreRestartKeepsSameSessionAndCheckpoint": "NOT_RUN",
+        "awaitingClosureSurvivesRestart": "NOT_RUN",
+        "endedStateSurvivesRestart": "NOT_RUN",
+        "overlayCloseAndReopen": "FAIL"
+      },
+      "snapshotCount": 4,
+      "verdict": "FAIL",
+      "fileSha256": {
+        "desktop-evidence.jsonl": "5784497895f715e54476c8eb5f187ef9fc4fb723b05d4d0ea0555d8ad2a4ba09",
+        "evidence-summary.json": "d9f8669326ec82e5f82320a914d78e06e654741a468d9cbeb4edb5c04ca50535",
+        "final-state.json": "fbcc326511e9185b39b685c0e40366e8e9f92256c038c903167c3943b757c6f7",
+        "snapshot-20260922T133311420Z.json": "2be4c4e075474906825b5017372e2d08a345e35907da9d0d07da037a771da3d5",
+        "snapshot-20260922T133359644Z.json": "edf394cde2b52fc7dc12a0db693eeb08fe91438c8ef23fa65b044d27e0e7c0dd",
+        "snapshot-20260922T133601923Z.json": "d888ff9b3975d3a7a19e6a3b2e04a89e27b026a95b8115261119d74f57d6d50a",
+        "snapshot-20260922T133647018Z.json": "b157b65f30be5dd0232ccb0fa104eb910520c52a4a64f0fcb4681e20993bf10d"
+      }
+    },
+    "D": {
+      "commit": "c6b868ebc83546eaa981fba0e42abd5760c23a20",
+      "binarySha256": "C1976706A097D332ABF5DCD79F3FD085D6D71995E3CD6A8AFDDDCF3944C15E4B",
+      "environment": {
+        "windows": "10.0.19045",
+        "displayVersion": "22H2",
+        "ubr": 7725,
+        "bits": 64,
+        "python": {
+          "version": "3.12.3",
+          "bits": 64,
+          "sqlite": "3.45.1"
+        },
+        "go": "go version go1.25.0 windows/amd64",
+        "wails": "v3.0.0-beta.8",
+        "webView2": "151.0.4129.78"
+      },
+      "observations": {
+        "arrivalAndCorrectNotification": "NOT_RUN",
+        "startAndFirstCheckpoint": "NOT_RUN",
+        "cancelDurationLeavesPending": "NOT_RUN",
+        "completionBeforeCheckpoint": "NOT_RUN",
+        "completionAfterCheckpoint": "NOT_RUN",
+        "finishClosure": "NOT_RUN",
+        "skipClosure": "NOT_RUN",
+        "nativeCloseSkipsClosure": "NOT_RUN",
+        "staleNotificationShowsCurrentContext": "NOT_RUN",
+        "coreRestartKeepsSameSessionAndCheckpoint": "PASS",
+        "awaitingClosureSurvivesRestart": "PASS",
+        "endedStateSurvivesRestart": "PASS",
+        "overlayCloseAndReopen": "NOT_RUN"
+      },
+      "snapshotCount": 6,
+      "verdict": "PASS",
+      "fileSha256": {
+        "desktop-evidence.jsonl": "1b1e535c14f917fdf89ff0f56440ceed81461d830ca97d28954547e283231492",
+        "evidence-summary.json": "cc1648a5904b3fac1c8361402f8be405824f9f9b17fb32bbabbe5ab8f7b17f77",
+        "final-state.json": "5f029a559b4134d85c443af53cfd861046b74a0de2ba71581cdc8d1bb0b03ae6",
+        "snapshot-20260922T134607054Z.json": "3f8c334b5af7f21d636fc9790ab569e1e91e3b163f31c36fd978c25d49bf6f44",
+        "snapshot-20260922T134759999Z.json": "9c84871242c64a1cebe8c96bcb99232185a5cbcecdbbbf737cd6acd6080016a1",
+        "snapshot-20260922T134851278Z.json": "4f4d863cdc0ae1cd5c526994a25a8b6014b6dd168172b05d7f2a28b2f18e24f2",
+        "snapshot-20260922T134929151Z.json": "ceb0784f5b49226d9381dd0fe33ff58f02bcbf9541874465021d774adf9e835d",
+        "snapshot-20260922T134956609Z.json": "918b1e603dbe9fea06f7b66c34f3ccb38ad31914581b705986e997765f875bce",
+        "snapshot-20260922T135056423Z.json": "d06e482fc6ccb9d717faa4ef46b912aaedd6d149f360ae85cf5ba0b72c1ea73d"
+      }
+    }
+  },
+  "verifiedChecks": [
+    "四轮 commit/二进制一致；数据库各自独立；摘要与最终状态一致；回传日志和最终状态哈希匹配摘要。",
+    "A：检查点前报告完成，等待收尾后显式确认；唯一证据、活动位置释放。",
+    "B：检查点到达后报告完成并跳过；旧通知前后完整持久状态不变。",
+    "C：打开/取消不改变持久状态，确认后建立300秒检查点；关闭失败后仍等待收尾、没有结束证据。",
+    "D：执行中会话/检查时间不变；检查点正常从scheduled到due且提示发生于第一次重启前；等待收尾和结束状态重启前后不变；四次连接只出现两次到点呈现。",
+    "A/B：日志分别记录有效/失效通知回调，与人工观察对应。"
+  ],
+  "limits": [
+    "原始包受控保留，不提交原始日志或状态。",
+    "自动测试原始日志未回传；Run在测试失败时终止，摘要存在可支持已执行，但未独立重读Windows自动日志。",
+    "A/B/D结论对应c6b868e，关闭修复后需要新的C轮证据。"
+  ]
+}

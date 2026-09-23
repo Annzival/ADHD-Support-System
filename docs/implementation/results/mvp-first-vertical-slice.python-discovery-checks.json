@@ -1,0 +1,23 @@
+{
+  "status": "LINUX_REGRESSION_PASS_WINDOWS_RETRY_PENDING",
+  "baseline_commit": "e262f96fb2cca99d526dac5feff30e5e53fb5a91",
+  "environment": {
+    "powershell": "7.4.6 Linux",
+    "python": "3.12.3 x64"
+  },
+  "checks": {
+    "py_is_interpreter": "PASS",
+    "launcher": "PASS",
+    "python_without_py": "PASS",
+    "reject_wrong_version": "PASS",
+    "reject_32_bit": "PASS",
+    "explicit_path_bypass": "PASS",
+    "powershell_ast": "PASS",
+    "windows_retry": "NOT_RUN"
+  },
+  "source_sha256": {
+    "scripts/acceptance/windows-smoke.ps1": "53f4a884dfa2a30d25c84970dc900afb160c99f66ea19ebe36c48e77c71fceb0",
+    "scripts/acceptance/tests/test-python-discovery.ps1": "d25608d6e8834a6de13d44c06a18355a589bd22d823a5b22a16773e4cd438536"
+  },
+  "output_sha256": "10d70eb63764f1792f374cefccc526698ef3c05f1f5f529dc1e762b3f253b488"
+}
