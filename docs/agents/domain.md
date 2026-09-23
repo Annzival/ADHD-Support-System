@@ -42,6 +42,8 @@ Multi-context repo（根目录存在 `CONTEXT-MAP.md`）：
 
 当你的输出命名某个 domain concept 时（issue title、refactor proposal、hypothesis、test name），使用 `CONTEXT.md` 中定义的 term。不要漂移到 glossary 明确避免的 synonyms。
 
+这条要求约束概念身份，不要求面向用户的解释全部使用抽象名词。按 AGENTS.md 的“面向用户的解释”，先用具体场景说明含义，再在必要时标注规范术语；这不是给领域对象另起一个有歧义的名字。若术语本身持续妨碍理解，应提出澄清或改名建议，经确认再更新 glossary，而不是要求用户先学会术语才参与决定。
+
 如果你需要的概念还不在 glossary 中，这是一个信号：要么你正在发明项目没有使用的语言（重新考虑），要么确实存在缺口（为 `/domain-modeling` 记录）。
 
 ## Flag ADR conflicts
