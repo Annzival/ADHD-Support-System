@@ -207,3 +207,24 @@ test('I02 REC-10: restart reveals current plan and explicit switch keeps old res
  const after=await snapshot();assert.notEqual(after.active_session.id,old);assert.equal(after.active_session.plan_version,'Q');
  assert.equal(after.sessions.find(s=>s.id===old).exit_reason,'user_selected_switch');assert.equal(after.evidence.length,0);assert.equal(after.packets.length,0);
 });
+
+test('I02 EX-05: concrete reschedule creates successor and invalidates old surface',async t=>{
+ const {page,snapshot}=await setup(t);
+ await page.getByRole('button',{name:'改到具体时间',exact:true}).click();
+ const value=await page.evaluate(()=>{const d=new Date(Date.now()+300000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);});
+ await page.getByLabel('新的开始时间').fill(value);
+ await page.getByRole('button',{name:'确认改期',exact:true}).click();
+ for(let i=0;i<100&&(await snapshot()).arrangements.length===1;i++)await delay(20);
+ const s=await snapshot();assert.equal(s.arrangements.length,2);assert.equal(s.arrangements.find(a=>a.id==='arrangement-a').status,'rescheduled');
+ assert.equal(s.sessions.length,0);assert.equal(s.interventions[0].status,'resolved');
+});
+
+test('I02 DESK-05: defer recovery preserves passive entry without changing execution facts',async t=>{
+ const {page,snapshot}=await setup(t);
+ await page.getByRole('button',{name:'暂不决定',exact:true}).click();
+ for(let i=0;i<100&&!(await snapshot()).recoveries.some(r=>r.status==='deferred');i++)await delay(20);
+ await visible(page,'稍后处理上次上下文');
+ const s=await snapshot();assert.equal(s.sessions.length,0);assert.equal(s.evidence.length,0);
+ await page.locator('summary').filter({hasText:'上次执行'}).click();await page.locator('summary').filter({hasText:'当前计划'}).click();
+ assert.equal(await page.locator('details[open]').count(),2);
+});

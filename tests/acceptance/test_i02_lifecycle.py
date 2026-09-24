@@ -13,6 +13,7 @@ class LifecycleTests(unittest.TestCase):
         core = Core(path, clock=lambda:now[0])
         core.seed_fixture(**(dict(confirmed=True,start=1000,duration=60,window_end=4000,grace=30,timezone_offset=480)|options))
         core.tick(desktop_online=True)
+        self.addCleanup(lambda:self.invariants(core))
         return core,now,path
 
     def record(self,c,kind,status=None):
@@ -35,6 +36,25 @@ class LifecycleTests(unittest.TestCase):
         for cp in s['checkpoints']:
             self.assertIn(cp['session_id'],[x['id'] for x in s['sessions']])
         self.assertEqual(len({e['command_id'] for e in s['events']}),len(s['events']))
+        self.assertEqual(s['command_count'],len(s['events']))
+        arrangements={a['id']:a for a in s['arrangements']};actions={a['id']:a for a in s['actions']}
+        sessions={r['id']:r for r in s['sessions']};checks={r['id']:r for r in s['checkpoints']}
+        targets=set(arrangements)|set(checks)|{r['id'] for r in s['interventions']}
+        for a in arrangements.values():self.assertEqual(a['plan_version'],actions[a['action_id']]['plan_version'])
+        for session in sessions.values():
+            self.assertEqual(session['action_id'],arrangements[session['arrangement_id']]['action_id'])
+            self.assertEqual(session['plan_version'],arrangements[session['arrangement_id']]['plan_version'])
+        for schedule in s['schedules']:
+            self.assertIn(schedule['target'],targets)
+            if schedule['status']=='scheduled' and schedule['kind']=='checkpoint':self.assertEqual(checks[schedule['target']]['status'],'scheduled')
+        for e in s['evidence']:
+            self.assertEqual(e['plan_version'],sessions[e['session_id']]['plan_version'])
+            self.assertEqual(sessions[e['session_id']]['status'],'ended')
+        for packet in s['packets']:
+            self.assertEqual(sessions[packet['session_id']]['status'],'ended')
+            self.assertEqual(packet['plan_version'],sessions[packet['session_id']]['plan_version'])
+            if packet['status']=='used':self.assertEqual(sessions[packet['used_by']]['packet_id'],packet['id'])
+        self.assertLessEqual(sum(r['status'] in ('pending','deferred') for r in s['recoveries']),1)
         return s
 
     def test_ex03_requires_remaining_duration_even_when_estimated(self):
@@ -303,3 +323,76 @@ Core(sys.argv[1],clock=lambda:float(sys.argv[2]),fault=fail).command(*json.loads
                 else:
                     c=Core(path,clock=lambda:now[0]);saved=c.snapshot();self.assertEqual(c.command(*args),result);self.assertEqual(c.snapshot(),saved);break
                 boundary+=1;self.assertLess(boundary,80)
+
+    def test_rec07_available_packet_cannot_start_second_session(self):
+        c,_,_=self.fixture(second_start=1000);self.pause(c)
+        c.command('start','intervention:arrangement-b',1,{},'start-b')
+        r=self.record(c,'recoveries','pending');packet=self.record(c,'packets');before=c.snapshot()
+        with self.assertRaisesRegex(Rejected,'active_session_exists'):
+            c.command('resume_packet',r['id'],r['version'],dict(packet_id=packet['id'],duration_confirmed=True,duration_seconds=60),'resume-blocked')
+        self.assertEqual(c.snapshot(),before)
+
+    def test_rec08_defer_is_quiet_across_restarts(self):
+        c,now,path=self.fixture();c.recover();c.tick(desktop_online=True)
+        r=self.record(c,'recoveries','pending');c.command('defer_recovery',r['id'],r['version'],{},'defer')
+        before=c.snapshot();c=Core(path,clock=lambda:now[0]);c.recover();c.tick(desktop_online=True)
+        self.assertEqual(c.snapshot(),before)
+        self.assertEqual(c.snapshot()['sessions'],[])
+
+    def test_ses07_correction_and_packet_archive_each_write_failure_and_retry(self):
+        for kind in ('correct_fact','archive_packet'):
+            boundary=1
+            while True:
+                c,now,path=self.fixture(second_start=1100,second_version='Q');self.pause(c)
+                if kind=='correct_fact':r=self.record(c,'evidence');payload=dict(result='partial',content='更正进展',reason='测试')
+                else:
+                    now[0]=1100;c.tick(desktop_online=True);r=self.record(c,'recoveries','pending');payload=dict(packet_id=self.record(c,'packets')['id'])
+                args=(kind,r['id'],r['version'],payload,'tested-extra');before=c.snapshot();writes=[0]
+                def fault():
+                    writes[0]+=1
+                    if writes[0]==boundary:raise OSError('injected')
+                c.fault=fault
+                try:result=c.command(*args)
+                except OSError:self.assertEqual(Core(path,clock=lambda:now[0]).snapshot(),before)
+                else:
+                    c=Core(path,clock=lambda:now[0]);saved=c.snapshot();self.assertEqual(c.command(*args),result);self.assertEqual(c.snapshot(),saved);break
+                boundary+=1;self.assertLess(boundary,80)
+
+
+    def test_rec03_return_same_session_cancels_unexecuted_recovery_delivery(self):
+        c,now,_=self.fixture();self.start(c);c.recover();c.tick(desktop_online=True)
+        r=self.record(c,'recoveries','pending');original=c.snapshot()['active_session'];cp=self.record(c,'checkpoints')
+        c.command('return_previous',r['id'],r['version'],{},'return')
+        self.assertEqual(c.snapshot()['active_session'],original);self.assertEqual(self.record(c,'checkpoints'),cp)
+        self.assertTrue(all(d['status']=='cancelled' for d in c.snapshot()['deliveries'] if d['target']==r['id']))
+
+    def test_ses01_missing_confirmation_keeps_original_checkpoint_and_schedule(self):
+        c,now,_=self.fixture();self.start(c);now[0]=1060;c.tick(desktop_online=True)
+        cp=self.record(c,'checkpoints','due');before=c.snapshot()
+        for payload in ({},dict(duration_seconds=90),dict(duration_confirmed=True)):
+            with self.assertRaisesRegex(Rejected,'duration_confirmation_required'):
+                c.command('continue',cp['id'],cp['version'],payload,'unconfirmed')
+            self.assertEqual(c.snapshot(),before)
+
+    def test_ses03_later_fixture_version_does_not_rewrite_prior_evidence(self):
+        for result in ('completed','partial'):
+            c,now,path=self.fixture(second_start=1100,second_version='Q')
+            # Synthetic pointer changes isolate history; this is not I-03 activation.
+            with c.connect() as db:db.execute("UPDATE metadata SET value='P' WHERE key='current_plan'")
+            self.start(c);self.send(c,'report_complete','sessions','executing')
+            self.send(c,'finish_closure','sessions','awaiting_closure',dict(result=result))
+            original=c.snapshot()
+            with c.connect() as db:db.execute("UPDATE metadata SET value='Q' WHERE key='current_plan'")
+            c=Core(path,clock=lambda:now[0]);c.recover();current=c.snapshot()
+            for category in ('plans','actions','arrangements','sessions','checkpoints','evidence'):
+                self.assertEqual(current[category],original[category])
+            self.assertEqual(current['evidence'][0]['plan_version'],'P')
+            self.assertEqual(current['evidence'][0]['original_report'],'completed')
+            self.assertEqual(current['current_plan'],'Q')
+
+    def test_rec11_old_switch_cannot_override_explicit_completion_report(self):
+        c,_,_,args=self.prepared('switch_current')
+        self.send(c,'report_complete','sessions','executing');before=c.snapshot()
+        with self.assertRaises(Rejected):c.command(*args)
+        self.assertEqual(c.snapshot(),before)
+        self.assertEqual(c.snapshot()['active_session']['report'],'completed')

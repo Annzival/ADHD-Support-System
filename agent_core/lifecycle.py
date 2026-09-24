@@ -466,6 +466,7 @@ class Lifecycle:
             self.change(db, 'recoveries', r, status='deferred')
             return dict(recovery_id=r['id']), 'recovery_deferred'
         if kind == 'return_previous':
+            self.cancel_deliveries(db, r['id'])
             self.change(db, 'recoveries', r, status='resolved', choice=kind)
             return dict(session_id=current['session_id'], intervention_ids=current['previous_intervention_ids']), 'recovery_context_selected'
         if kind in ('resume_packet','archive_packet'):

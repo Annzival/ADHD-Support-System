@@ -3,7 +3,7 @@ const content = document.querySelector('#content');
 const error = document.querySelector('#error');
 const retry = document.querySelector('#retry');
 const surface = new URLSearchParams(location.search).get('surface') || 'main';
-let closureDraft, actionForm;
+let closureDraft, actionForm, lastNoticeKey;
 let state, signature, pending, durationOpen = false, closeRequested = false, busy = false;
 const messages = {
  stale_context: '此操作对应的状态已变化。已读取当前状态。',
@@ -89,7 +89,7 @@ function render(){
  paragraph(currentAction?.title||'执行支持','h1');
  if(session?.status==='executing'){
   const cp=state.checkpoints.find(c=>c.session_id===session.id&&['scheduled','due'].includes(c.status));
-  paragraph(cp.status==='due'?'约定的检查时间已到。可完成、继续或暂停。':'执行会话已建立。检查时间：'+date(cp.due_at));
+  paragraph(cp.status==='due'?'约定的检查时间已到。可完成、继续或暂停。':'执行会话已建立。检查时间：'+date(cp.due_at)).id=cp.id;
   button('已经完成',()=>submit('report_complete',session.id,session.version),true);
   button('暂停并保存恢复包',()=>submit('pause',session.id,session.version));
   if(cp.status==='due')button('继续并确认下一检查时间',()=>openForm('continue',cp));
@@ -107,7 +107,7 @@ function render(){
  const visibleStarts=surface==='overlay'?(session?[]:selected?[selected]:[]):starts;
  for(const i of visibleStarts){
   const a=state.arrangements.find(a=>a.id===i.arrangement_id), action=state.actions.find(x=>x.id===a.action_id);
-  paragraph(action.title,'h2');
+  paragraph(action.title,'h2').id=i.id;
   paragraph(a.duration_confirmed?'已确认时长：'+a.duration_seconds/60+' 分钟；立即开始后据此建立首次检查点。':'尚未确认本次时长。');
   button('立即开始',()=>a.duration_confirmed?submit('start',i.id,i.version):openForm('start',i),true);
   button('我已经开始',()=>openForm('already_started',i));
@@ -122,7 +122,7 @@ function render(){
   button('打开主窗口',()=>request('/ui/open',{}));return;
  }
  for(const r of (state.recoveries||[]).filter(r=>['pending','deferred'].includes(r.status))){
-  paragraph(r.status==='deferred'?'稍后处理上次上下文':'恢复上下文','h2');
+  paragraph(r.status==='deferred'?'稍后处理上次上下文':'恢复上下文','h2').id=r.id;
   const detail=(title,text)=>{const d=document.createElement('details');const summary=document.createElement('summary');summary.textContent=title;d.append(summary);const p=document.createElement('p');p.textContent=text;d.append(p);content.append(d);};
   const old=state.sessions.find(s=>s.id===r.source.session_id), a=state.arrangements.find(a=>a.id===r.source.arrangement_id);
   detail('上次执行',old?state.actions.find(a=>a.id===old.action_id)?.title:'只有错过开始记录时，不能据此认定已经执行。');
@@ -151,6 +151,7 @@ async function refresh(){
   const key=JSON.stringify([result.sessions,result.interventions,result.checkpoints,result.evidence,result.deliveries,result.recoveries,result.packets,result.corrections,result.foreground]);
   if(key!==signature){signature=key;render();}
   const notice=await request('/ui/notice');document.querySelector('#notice').textContent=notice.result?.message?notice.result.message:notice.result?.valid===false?'原通知上下文已失效，当前显示的是 Core 最新状态。':notice.result?.valid===true?'已从系统通知返回对应行动。':'';
+  const noticeKey=JSON.stringify(notice.result);if(notice.result?.valid&&noticeKey!==lastNoticeKey){document.getElementById(notice.result.context?.id)?.scrollIntoView({block:'center'});}lastNoticeKey=noticeKey;
  }catch(_){document.querySelector('#connection').textContent='智能体核心暂不可用，正在重新连接…';for(const b of content.querySelectorAll('button'))b.disabled=true;signature=null;}
 }
 refresh();setInterval(refresh,600);
