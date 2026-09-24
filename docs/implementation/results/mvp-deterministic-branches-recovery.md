@@ -1,6 +1,8 @@
 # I-02：确定性执行分支与恢复
 
-## 当前结论与交接点
+> 当前实现、37 项更新映射和未决验收见文末“当前实现与验收状态”。以下首段保留 `7834bdb` 的历史结论，不代表后续工作仍未实现。
+
+## 7834bdb 历史结论与交接点
 
 **BLOCKED：送达回执交错的规格解释待产品治理判断；I-02 未完成。** 本轮是实施前覆盖盘点与风险证据 checkpoint，没有改动产品代码，没有完成三个工作包，也没有达到“只等待 Windows 验收”的阶段。
 
@@ -164,3 +166,83 @@ Linux 实际工具路径与补充浏览器依赖沿用 I-01 本机产物；使�
 修复过程保留：首次检查点因两次读时钟产生微小偏差，改为同一进入时刻派生；小窗结束后补显示保存结果；浏览器测试适配层关闭复用连接，解决用例之间的连接重置。原 I-01 的重启测试仅增加对新恢复事件的明确断言，仍要求原状态／原事件不重复；旧开始尝试不补发与新恢复呈现分别核对，未跳过旧回归。
 
 下一检查点补完整 Windows 操作手册、逐项场景证据映射及最终检查摘要。G-01 仍局部待主线程确认；当前不能宣称“仅等待 Windows”。
+
+## 当前实现与验收状态（2026-09-24，源码 f50af6e）
+
+**整体仍为 BLOCKED／未 PASS：G-01 的历史结果接纳条件尚待主线程确认，Windows 原生验收尚未执行。** 不依赖 G-01 的三个工作包已实现并完成下列自动检查，不再把这项规则缺口当作其他功能的阻塞。实现可开始审查；PR #35 保持 Draft，不能据本报告直接认定 I-02 完成或启动 I-03。
+
+历史链：`7834bdb` 保存原始诊断 → `57cedc2` 正常合入已合并决定 → `433c2ed` 提交 G-01 推荐方案 → `7b4201d` 保存三个工作包的共享事务、领域和桌面实现 → 本次补恢复通知取消、通知上下文定位、遗漏断言、Windows 手册及最终映射。各工作包相互依赖同一事务模块，本次共享实现保存在同一代码 checkpoint；没有重建分支、改写历史或覆盖旧证据。
+
+### 当前 37 项覆盖清单
+
+“自动通过”只指表中参数和测试层；原生操作另列，不是整行 Windows PASS。L = `tests/acceptance/test_i02_lifecycle.py`（方法名包含场景编号）；G/A/D/T/UI/宿主沿用上文缩写。L 每个临时库结束时同时检查会话唯一性、当前检查点、事件命令去重、调度与目标、方案／安排／会话／证据／包引用和恢复记录唯一性；各分支另外检查业务结果。完整快照相等用于证明拒绝、故障和同 ID 重试没有副作用。
+
+| 场景 | 已实现并验证／测试入口及参数 | 仍需处理 |
+| --- | --- | --- |
+| EX-01 | G 全链路；UI 原开始／完成／两类收尾保留；L 新分支同一活动位置 | Windows A；迟到送达与开始先后归因依赖 G-01 |
+| EX-02 | G 未确认、取消、确认；UI 主窗／小窗时长输入和取消，无半会话 | Windows B |
+| EX-03 | L `ex03`：已有估时仍确认剩余时长、拒绝未确认、来源与实际开始未知；UI 确认／取消 | Windows B |
+| EX-04 | L `ex04`：回顾完成后全部／部分／跳过，无检查点、时长未知；UI 回顾入口 | Windows C 两轮 |
+| EX-05 | L `ex05`：后继、原时间和行动引用、旧送达取消；AT 逐写故障；UI 确认及取消改期 | Windows D |
+| EX-06 | L `ex06`：仅当前安排与决定事实，其他安排和行动不变，无会话／包／后继；UI | Windows D |
+| EX-07 | L `ex07_08`、D/宿主：正常首次回执、最多一次较弱跟进、不产生第三次，原请求／响应丢失重试保留 | 迟到结果子支确实依赖 G-01；Windows E 原生强弱 |
+| EX-08 | L `ex07_08`：宽限时安静／离线／下一项到来，不补发，无推断结果 | Windows E 的原生部分；其余受控时钟自动验证 |
+| EX-09 | L `ex09`：窗口／T0+D／本地次日零点，期限早于宽限；过期旧入口拒绝，行动仍未知 | Windows F；无窗口入口可另用 WithoutWindow |
+| EX-10 | L `ex10`：有／无活动会话时单一前台，旧入口被动保留、取消旧跟进；UI 多安排 | Windows G 焦点与置顶 |
+| SES-01 | L `ses01`：同会话后继链、原检查时间、同 ID 重试；另测三种缺确认保持完整快照；UI 续行 | Windows A |
+| SES-02 | G 完成前／后检查点；L `ses02` 暂停前／后、旧续行拒绝；等待收尾仍占位置；UI | Windows A/B |
+| SES-03 | G 全部／部分及原报告；L `ses03` 后续合成版本指针变化不改旧事实；UI 原两个页面草稿断连回归 | Windows A/C；版本变化是隔离夹具，不是 I-03 方案启用测试 |
+| SES-04 | L `ses04` 完成／显式跳过暂停收尾、最小包和未知进展；UI 暂停后宿主关闭钩子 | Windows B 原生关闭 |
+| SES-05 | L `ses05_and_rec04` 完成／暂停 × 窗口／下一项／零点，最早边界、重复恢复无重复证据／包；自动命令逐写故障 | Windows F；零点由可控时钟验证 |
+| SES-06 | L `ses06_rec03` 检查点首次及一次较弱跟进、窗口／检查点日期零点未知结束，无证据／包 | Windows F |
+| SES-07 | L `ses07` 追加内容／原因／时间，原事实保留、逐写故障与重试；`rec06` 更正后完成拒绝恢复；UI | Windows A |
+| REC-01 | L `rec01_02_08_09`、D/T：同库身份、未确认旧尝试失效、来源不变复用；UI 重连 | Windows H 真实 PC 重启 |
+| REC-02 | 同上：未过期被动保留／已过期未知，不重放；L `ex09` 三种期限 | Windows F/H |
+| REC-03 | G 同会话未来检查点；L `ses06_rec03` 被动核对和过期未知；`return_same_session` 返回不重计时并取消恢复呈现 | Windows F/H |
+| REC-04 | L `ses05_and_rec04` 未到／已到边界重启，完成／暂停去重；G 等待收尾持久化 | Windows F/H |
+| REC-05 | L `rec05_06` 包→新安排／会话／检查点／已使用，再次暂停新包关联旧包；AT 同 ID 重试；UI 包继续 | Windows B |
+| REC-06 | L `rec05_06` 旧 P 继续仍引用 P、当前 Q 不移动；`rec06_archive` 未使用归档原事实不变；UI 两个主窗选择 | Windows G |
+| REC-07 | L `rec07` 已使用、已归档、已明确完成、有另一活动会话均拒绝，完整快照不变 | Windows G 可观察拒绝 |
+| REC-08 | L `rec08_defer` 仅错过开始、暂不决定后重启安静、无虚构会话；UI 被动返回 | Windows G |
+| REC-09 | L `rec09_each_source` 会话／包／安排／当前版本变化四支，旧命令拒绝且新来源重核；UI 读取新状态 | Windows G/H；版本切换由合成夹具隔离 |
+| REC-10 | L `rec10_11_12` R09 原子切换，A 未知无证据／包，B 独占；UI 真 Core 切换入口 | Windows H |
+| REC-11 | L 缺两类确认、逐写故障、同 ID 重试、旧切换不得覆盖完成报告；UI 取消／确认 | Windows H |
+| REC-12 | L 提交后重开同库原 ID 返回原 B，旧 A 检查点失效；T 提交丢 HTTP 响应；宿主原通知核验 | Windows H 真实重启及旧通知 |
+| DESK-01 | 宿主原单实例／托盘／关闭机制保留；UI 两页关闭收尾先保存，失败可重试 | 等待 Windows：小窗置顶／恢复、单实例、关闭主窗留托盘 |
+| DESK-02 | 受限 Core 守护保留，增加当前用户登录启动配置／清理及真实重启脚本；Windows 交叉构建通过 | 等待 Windows：守护次数、登录启动、同库 PC 重启 |
+| DESK-03 | T/宿主：回环 HTTP/WS、令牌与重连；新命令白名单仅 Core 执行；前端真实 HTTP | 等待 Windows 宿主整合，Wails 不访问 SQLite |
+| DESK-04 | Core 对过期／解决／改期旧上下文拒绝；宿主通知向 Core 核验，主窗定位目标；UI 状态刷新 | 等待 Windows 通知实际跳转／焦点；迟到结果接纳另依赖 G-01 |
+| DESK-05 | UI 主窗两侧独立展开、暂停包／切换／暂不决定；小窗仅打开主窗、不承载恢复选择 | 等待 Windows 载体、原生通知辅助返回 |
+| AT-01 | A 旧命令保留；L 9 类新增联合命令每次写入故障及提交前子进程退出；另测更正／归档、过期／自动收尾／未知结束／跟进每次写入回滚 | Windows 同库进程／PC 恢复；方案启用不属本阶段 |
+| AT-02 | A/T/UI/宿主旧重试；L 新联合命令、自动命令、更正／归档提交后重开同库同 ID 返回同结果、整库快照不变 | G-01 未提交迟到结果确实待决；Windows 恢复 |
+| AT-03 | L 不同命令四对：开始／改期、续行／完成、包恢复／包恢复、切换／完成；A 旧竞争保留 | Windows 表现；SQLite 竞争已在 Linux 真实临时库验证 |
+
+没有仍以“当前可以实现”搁置的已知独立功能；该状态的条目已推进至实现和表列自动证据。表中的原生行为以及 G-01 子支尚未通过，不合并成 37/37 PASS。UI 关闭钩子、通知回调替身与 Windows 原生事件分别计证。
+
+### 运行与证据
+
+最终命令（在仓库根目录；使用既有本机锁定工具，不安装或升级环境）：
+
+```bash
+/usr/bin/python3 -m unittest discover -s tests/acceptance -v
+PATH="$PWD/.scratch/toolchain/go/bin:$PATH" I02_DELIVERY_PROBE=1 go -C desktop test -race -count=1 ./...
+.scratch/toolchain/go/bin/go -C desktop vet ./...
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 .scratch/toolchain/go/bin/go -C desktop build -o ../.scratch/i02-desktop.exe .
+I01_TEST_GO="$PWD/.scratch/toolchain/go/bin/go" I01_BROWSER_EXECUTABLE=/home/Parzival/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome LD_LIBRARY_PATH="$PWD/.scratch/browser-libs/extracted/usr/lib/x86_64-linux-gnu" npm test --prefix desktop
+.scratch/powershell/pwsh -NoProfile -File scripts/acceptance/tests/test-python-discovery.ps1 -TestPython /usr/bin/python3
+git diff --check
+```
+
+工具路径可替换为操作者已经核实的同版本安装，不能因此把 Linux PowerShell 当作 Windows 宿主验收。Windows 可复制的操作、预期与结束点见 [I-02 Windows 手册](../windows-i02.md)；正式入口现已支持 `-Stage I02`，取代上文历史 checkpoint 的“脚本尚未实现”说明。
+
+本轮 Python 46 个测试方法、浏览器 13 项（零跳过）、Go race（含四支诊断）、Go vet、Windows amd64 交叉构建和 6 支 PowerShell 解释器发现检查均通过。自动层未发现失败项；这不抵消表中 G-01 和 Windows 缺口。
+
+最终源码 commit、环境、原始输出哈希、测试数量及构建哈希见 [本轮实现证据摘要](mvp-deterministic-branches-recovery.implementation.json)。旧 [交错证据](mvp-deterministic-branches-recovery.interleaving.json)原样保留；本轮诊断输出只作回归观察，不重新命名为接纳规则验收。所有原始输出保留在本 checkout 的 `.scratch/i02-checks/` 至复审结束；仓库只保存摘要与 SHA-256，不保存原始库、个人内容或令牌。
+
+最后补充修复：返回原会话时取消尚未执行的恢复通知任务，避免选择后仍被旧恢复通知打扰；通知返回主窗口时定位对应当前上下文。未放宽任意版本检查或历史回执接纳。
+
+### 交回主线程与 Windows 操作者
+
+主线程仅需决定三个产品结果：用什么证据认定回执属于之前允许发送的那次提醒、顺序不明时保存到什么程度、未提交结果可跨哪些重启接纳。推荐方案已在 [G-01 文档](../plans/i02-late-delivery-proposal.md)分别列出 Core 持久许可、宿主内存发送结果、两种时间及六种事件顺序；推荐顺序未知时不推断促成进入、未提交结果不跨进程轮次接纳。字段和表结构等可逆实现细节无需用户选择。该推荐尚不是生产规则。
+
+未发现新的确定 ADR 冲突；G-01 是 ADR-0057 已接受原则下的接纳条件缺口。待主线程确认后仍需实现并把争议诊断改为明确验收断言，再结合 Windows 本轮证据才能判断整体 PASS。Windows 操作者可先执行其他场景，不必等待 G-01；本 session 没有 Windows 操作条件，到此保存检查点，不无限等待或外推 Linux 结果。
