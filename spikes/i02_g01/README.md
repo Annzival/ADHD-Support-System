@@ -1,5 +1,7 @@
 # G-01 隔离关联与重启实验
 
+> 以下为第一轮 `62bc99a` 的机制说明。第二轮加入保留 OS 进程句柄，原 `TestG01RestartBeforeRegistration` 在原断言下通过；新的 `TestG01RestartRevalidation/exit_after_check_before_commit` 仍失败。最新结果见 [第二轮报告](../../docs/implementation/results/i02-g01-restart-revalidation.md)。第一轮失败报告和摘要保持原样。
+
 本目录与 `desktop/i02_g01_spike_test.go` 仅供 Issue #33 有界验证。生产启动器不导入此目录；不修改生产表、回执守卫或命令白名单。实验端点使用现有回环 HTTP 验证和 Go bridge；正式 pump 经测试专用 transport 将结果转到 `/spike/result`，并用独立的内存结果交回逻辑验证取消后重试。设备调用是返回布尔结果的替身，不能证明 Windows 呈现或阅读。
 
 实验 Core 是独立 Python 子进程，宿主是独立 Go 测试子进程；父测试通过管道控制顺序、终止并等待进程、启动新进程。运行材料仅经受控临时文件和管道交接，不打印令牌。临时目录含真实 Core 数据库和单独的 `experiment.sqlite3`。后者保存实验许可、调用关联、报告、事实与命令结果，不是生产 schema。

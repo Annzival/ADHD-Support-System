@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 
 from agent_core.core import Core, Rejected, encode
+from .process_identity import ProcessIdentity
 from agent_core.transport import Server, Handler, read_exact
 
 
@@ -16,6 +17,12 @@ class Experiment:
         self.core, self.path = core, path
         self.run = str(uuid.uuid4())
         self.host = None
+        self.identities = {}
+        self.hook = None
+        self.hook_entered = threading.Event()
+        self.hook_release = threading.Event()
+        self.cached_exit = False
+        self.delay_observer = False
         self.lock = threading.RLock()
         with self.db() as db:
             db.executescript('''
@@ -29,11 +36,64 @@ class Experiment:
     def db(self):
         return sqlite3.connect(self.path)
 
+    def checkpoint(self, name):
+        if self.hook == name:
+            self.hook_entered.set()
+            if not self.hook_release.wait(8):
+                raise OSError('barrier_timeout')
+            self.hook = None
+
+    def live(self, host, instance):
+        identity = self.identities.get(host)
+        if identity is None:
+            raise Rejected('process_identity_unavailable')
+        if identity.instance != instance:
+            raise Rejected('process_instance_mismatch')
+        try:
+            alive = identity.alive()
+        except OSError:
+            raise Rejected('process_identity_unavailable')
+        if not alive:
+            if not self.delay_observer:
+                self.cached_exit = True
+            raise Rejected('host_process_exited')
+
+    def control(self, p):
+        # Only diagnostic barriers; intentionally outside transaction lock.
+        action = p['action']
+        if action == 'arm':
+            self.hook = p['point']; self.hook_entered.clear(); self.hook_release.clear()
+        elif action == 'release':
+            self.hook_release.set()
+        elif action == 'delay_observer':
+            self.delay_observer = True
+        elif action == 'identity_unavailable':
+            self.identities[self.host].close()
+        elif action == 'reuse_identity':
+            # Deterministic replacement of the instance behind the same numeric PID.
+            self.identities[self.host].instance = 'synthetic-reused-instance'
+        elif action != 'inspect':
+            raise Rejected('unknown_control')
+        return dict(entered=self.hook_entered.is_set(), cached_exit=self.cached_exit,
+                    registered_host=self.host, observer_delayed=self.delay_observer)
+
     def handle(self, route, p):
+        if route == 'control':
+            return self.control(p)
         with self.lock, self.db() as db:
             db.execute('BEGIN IMMEDIATE')
             if route == 'host':
-                self.host = p['host']
+                host = p['host']
+                if host not in self.identities:
+                    try:
+                        self.identities[host] = ProcessIdentity(p.get('pid'))
+                    except (OSError, AttributeError):
+                        raise Rejected('process_identity_unavailable')
+                identity = self.identities[host]
+                if identity.pid != p.get('pid'):
+                    raise Rejected('process_instance_mismatch')
+                self.live(host, identity.instance)
+                self.host = host
                 return dict(core=self.run)
             if route == 'advance':
                 self.core.clock = lambda: p['now']
@@ -52,7 +112,8 @@ class Experiment:
                 if not d or d['status'] != 'claimed' or not self.core.context(d['target_kind'], d['target'], d['target_version'])['valid']:
                     raise Rejected('not_current_claim')
                 permit = dict(id=str(uuid.uuid4()), database=state['database_id'], attempt=d['id'],
-                              target=d['target'], target_version=d['target_version'], core=self.run, host=self.host)
+                              target=d['target'], target_version=d['target_version'], core=self.run, host=self.host,
+                              process_instance=self.identities[self.host].instance)
                 # No second licence for the same attempt, including after a restart.
                 if any(json.loads(row[0])['attempt'] == d['id'] for row in db.execute('SELECT body FROM permits')):
                     raise Rejected('attempt_already_permitted')
@@ -73,6 +134,7 @@ class Experiment:
             if permit['core'] != self.run or permit['host'] != self.host:
                 raise Rejected('run_boundary_uncommitted')
             if route == 'begin':
+                self.live(permit['host'], permit['process_instance'])
                 d = next(d for d in self.core.snapshot()['deliveries'] if d['id'] == permit['attempt'])
                 if d['status'] != 'claimed' or not self.core.context(d['target_kind'], d['target'], d['target_version'])['valid']:
                     raise Rejected('cancelled_before_call')
@@ -100,7 +162,10 @@ class Experiment:
             if p.get('fault_before_commit'):
                 raise OSError('injected rollback')
             db.execute('INSERT INTO commands VALUES (?,?,?)', (p['command'], encode(p), encode(result)))
-            return result
+            self.checkpoint('before_live_check')
+            self.live(permit['host'], permit['process_instance'])
+            self.checkpoint('after_live_check_before_commit')
+            return result  # SQLite context manager commits next; OS exit is not serialized with it.
 
 
 class SpikeHandler(Handler):

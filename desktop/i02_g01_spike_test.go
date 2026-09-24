@@ -158,7 +158,7 @@ func TestG01SpikeHostProcess(t *testing.T) {
 		case "connect":
 			h.b.set(p.Endpoint)
 			h.mode = p.Mode
-			status, result = h.post("/spike/host", map[string]any{"host": h.id})
+			status, result = h.post("/spike/host", map[string]any{"host": h.id, "pid": os.Getpid()})
 			h.mark("connected")
 		case "observe":
 		case "mode":
@@ -554,7 +554,7 @@ func TestG01MixedCommittedAndUncommitted(t *testing.T) {
 
 // A new OS process exists before its registration reaches Core. Retained bytes
 // below stand for an old request delayed in transport, not host persistence.
-// Keep the required 409 assertion: observed 200 must remain a failing candidate.
+// Keep the original required 409 assertion; round two must satisfy it without registration.
 func TestG01RestartBeforeRegistration(t *testing.T) {
 	if os.Getenv("I02_G01_SPIKE") != "1" {
 		t.Skip("isolated opt-in experiment")
@@ -586,7 +586,7 @@ func TestG01RestartBeforeRegistration(t *testing.T) {
 	if status != 409 || len(saved["reports"].([]any)) != 0 {
 		outcome = "FAIL"
 	}
-	observation := map[string]any{"case": "host_restart_before_registration", "status": outcome, "input_trace": []string{"permit_saved", "api_enter", "api_return", "result_request_held_in_transport", "user_response_committed", "old_host_killed_and_waited", "new_host_started_and_running", "new_host_registration_not_yet_received", "old_result_released_to_core"}, "api_calls": 1, "resends": 0, "core_restarted": false, "host_restarted": true, "old_and_new_host_differ": true, "expected_http": 409, "actual_http": status, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "reason": "Core only knows registered host; OS restart precedes registration", "production_snapshot_unchanged_by_report": true, "windows": "NOT_RUN"}
+	observation := map[string]any{"case": "host_restart_before_registration", "status": outcome, "input_trace": []string{"permit_saved", "api_enter", "api_return", "result_request_held_in_transport", "user_response_committed", "old_host_killed_and_waited", "new_host_started_and_running", "new_host_registration_not_yet_received", "old_result_released_to_core"}, "api_calls": 1, "resends": 0, "core_restarted": false, "host_restarted": true, "old_and_new_host_differ": true, "expected_http": 409, "actual_http": status, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "reason": "retained OS process instance checked without replacement registration", "production_snapshot_unchanged_by_report": true, "windows": "NOT_RUN"}
 	output, _ := json.Marshal(observation)
 	t.Log("G01_OBSERVATION " + string(output))
 	if outcome != "PASS" {
