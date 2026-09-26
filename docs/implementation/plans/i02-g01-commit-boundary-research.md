@@ -1,5 +1,7 @@
 # G-01：重启边界与提交协调的有界研究
 
+状态：已完成，研究回传 `baf72b1`。用户随后接受有限放宽，决定见 [ADR-0058](../../adr/0058-allow-inflight-delivery-result-commit-after-host-restart.md)，下一步按[新契约验证交接](i02-g01-accepted-boundary-validation.md)。下文是历史研究任务，不重复执行，也不继续寻找严格协调方案。
+
 任务类型：research，不是第三轮修复或 production implementation。第二轮源码 `9848b29`、证据 `86b6941` 的[报告](https://github.com/Annzival/ADHD-Support-System/blob/86b6941/docs/implementation/results/i02-g01-restart-revalidation.md)表明，保留进程实例句柄仍未消除最后检查至提交之间的竞争。原 30 支通过，新增 8 支中 7 PASS、1 FAIL。
 
 治理已核对计数、10 个源码文件与 8 份原始输出的哈希／长度，并独立重跑 `TestG01RestartRevalidation/exit_after_check_before_commit`，重现应 409／零报告、实际 200／一份报告。未重跑全矩阵、未完成 PR #35 全量代码审查，也未验证 Windows。接受 FAIL 证据；不推断所有方案均不可能，也不授权再加检查或事后删除事实来换取通过。ADR-0057 不变。
