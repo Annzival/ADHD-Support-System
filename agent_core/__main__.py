@@ -19,6 +19,10 @@ def main():
     parser.add_argument('--start-delay', type=int, default=45)
     parser.add_argument('--duration', type=int, default=60)
     parser.add_argument('--without-duration', action='store_true')
+    parser.add_argument('--window-seconds', type=int, default=14400)
+    parser.add_argument('--second-delay', type=int)
+    parser.add_argument('--second-version')
+    parser.add_argument('--grace-seconds', type=int, default=600)
     parser.add_argument('--bootstrap', type=Path)
     args = parser.parse_args()
     marker = args.data_dir / 'i01-development-only.json'
@@ -29,7 +33,9 @@ def main():
         core = Core(args.data_dir / 'state.sqlite3')
         start = time.time() + args.start_delay
         core.seed_fixture(confirmed=True, start=start, duration=None if args.without_duration else args.duration,
-                          window_end=start + 4 * 3600)
+                          window_end=start + args.window_seconds if args.window_seconds else None,
+                          second_start=start + args.second_delay if args.second_delay is not None else None,
+                          second_version=args.second_version, grace=args.grace_seconds)
         marker.write_text(json.dumps({'purpose': 'I01_DEVELOPMENT_ONLY', 'fixture': 'P/A/a-v1', 'confirmed': True}), encoding='utf-8')
         print('Development fixture confirmed; not an import or dogfooding setup.')
         return

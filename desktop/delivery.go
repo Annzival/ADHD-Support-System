@@ -3,6 +3,7 @@ package main
 import "encoding/json"
 
 type delivery struct {
+	Strength      string `json:"strength"`
 	ID            string `json:"id"`
 	Version       int    `json:"version"`
 	Target        string `json:"target"`

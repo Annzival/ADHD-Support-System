@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .core import Rejected, encode
+from .lifecycle import USER_KINDS
 
 
 def read_exact(stream, size):
@@ -61,6 +62,7 @@ class Server(ThreadingHTTPServer):
 
     def schedule(self):
         last_tick = time.monotonic()
+        last_online = True
         while not self.stopped.wait(0.2):
             now = time.monotonic()
             try:
@@ -72,7 +74,10 @@ class Server(ThreadingHTTPServer):
                                 self.core.command('delivery_expire', delivery['id'], delivery['version'], {}, 'expire:' + delivery['id'])
                             except Rejected:
                                 pass
+                if online and not last_online:
+                    self.core.recover()
                 self.core.tick(desktop_online=online)
+                last_online = online
                 self.scheduler_error = False
             except Exception:
                 # Fail closed and expose transport unavailability, never a false ready state.
@@ -180,7 +185,7 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 raise ValueError('object required')
             if self.path == '/v1/commands':
-                if body.get('kind') not in ('start', 'report_complete', 'finish_closure', 'skip_closure', 'delivery_claim', 'delivery_receipt'):
+                if body.get('kind') not in USER_KINDS:
                     raise Rejected('operation_not_available_in_i01')
                 if not isinstance(body.get('payload'), dict):
                     raise ValueError('payload required')
