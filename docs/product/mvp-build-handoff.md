@@ -6,7 +6,7 @@
 
 2026-09-20，B-04 文档 checkpoint `39f597d` 已完成独立 Standards / Spec 双轴审查，两轴均无 findings；当前产品治理线程结合已接纳技术证据确认六项门槛全部满足，停止产品 grilling。本报告与验收规格由已人工合并的 [PR #30](https://github.com/Annzival/ADHD-Support-System/pull/30) 发布。
 
-实施进度：I-01 已通过限定范围验收及独立复审，PR #32 已合并（`9fcd766`）；I-02 交接 PR #34 已合并（`afd6eaa`），[Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33) 已启动并在 PR #35 回传交错证据及其余实现。ADR-0057 已确认有限追加、重启边界与顺序不明仍保存设备报告的行为；剩余关联机制及验收映射按 [G-01 有界验证交接](../implementation/plans/i02-g01-verification-handoff.md)回传，暂停该项产品 grilling。当前状态见[构建就绪文档](mvp-build-readiness.md)；不受影响的 I-02 工作可继续。I-02 尚未 PASS，I-03、I-04 尚未完成，不可开始正式观察。
+实施进度：I-01 已通过限定范围验收及独立复审，PR #32 已合并（`9fcd766`）；I-02 交接 PR #34 已合并（`afd6eaa`），[Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33) 已启动并在 PR #35 回传交错证据及其余实现。ADR-0057／0058 已确认有限追加、重启边界与顺序不明仍保存设备报告的行为；剩余关联机制及验收映射按 [G-01 有界验证交接](../implementation/plans/i02-g01-accepted-boundary-validation.md)回传，暂停该项产品 grilling。当前状态见[构建就绪文档](mvp-build-readiness.md)；不受影响的 I-02 工作可继续。I-02 尚未 PASS，I-03、I-04 尚未完成，不可开始正式观察。
 
 构建就绪只表示已有最低充分信息，可以开始第一个可验证闭环的实现；不表示所有路线图需求都已确定、软件可分发或 dogfooding 已可启动。Agent 不在产品治理线程实现代码、不自动创建执行 session，也不标记 PR Ready 或合并。
 
