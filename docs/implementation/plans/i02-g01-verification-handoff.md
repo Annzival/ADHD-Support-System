@@ -2,6 +2,8 @@
 
 任务类型：technical spike，作为现有 I-02 中与正式实现隔离的验证阶段。沿用独立 I-02 session、Issue #33、`agent/implement-mvp-deterministic-recovery` 与 Draft PR #35；不由治理线程执行，也不从头重建已有任务。产品取舍见 [ADR-0057](../../adr/0057-allow-late-delivery-facts-without-reopening-actions.md)，验收预期见 [G01-R／U 补充场景](../../product/mvp-acceptance-scenarios.md)。候选提案位于 PR #35，不作为已通过的证据。
 
+当前状态：两轮均已完成并回传 FAIL；第二轮原 30 支通过、新增 8 支中 7 PASS／1 FAIL。本文两轮 Prompt 均为执行历史，不自动重试。当前后续任务改为[重启边界与提交协调的有界研究](i02-g01-commit-boundary-research.md)，尚未授权第三轮修复或放宽 ADR。
+
 ## 第一轮回传与治理核对
 
 PR #38 已合并为 `065e8fb`。第一轮隔离实验源码 `62bc99a`、证据 `eb3863b` 已在 [PR #35](https://github.com/Annzival/ADHD-Support-System/pull/35) 回传 **FAIL：29／30 支通过**；[报告](https://github.com/Annzival/ADHD-Support-System/blob/eb3863b/docs/implementation/results/i02-g01-verification.md)和机器摘要仍在未合并的实现 PR，不声称已进入 main。
@@ -56,7 +58,7 @@ PR #38 已合并为 `065e8fb`。第一轮隔离实验源码 `62bc99a`、证据 `
 - 回传验证结论 PASS／FAIL／BLOCKED、证据与限制、推荐机制、未覆盖项及是否发现产品／ADR 冲突。结果返回当前明确激活的治理线程核对后，再决定 G-01 正式实现授权；不自动进入下一阶段。
 ```
 
-## 第二轮：宿主重启识别的最小修复复验 Prompt
+## 第二轮：宿主重启识别的最小修复复验 Prompt（历史，已执行完毕）
 
 使用条件：包含本节的治理 PR 经人工合并后，由用户交给既有 I-02 任务执行；不自动启动，不重复创建 session／Issue／分支。下面是完整续接 Prompt。
 
