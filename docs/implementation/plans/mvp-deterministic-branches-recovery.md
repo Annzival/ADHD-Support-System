@@ -2,11 +2,11 @@
 
 ## 状态与依据
 
-任务类型：implementation；跟踪 [Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)。交接 PR #34 已合并，独立任务已启动，PR #35 保留 `7834bdb` 交错证据，并以源码 `f50af6e`／证据 `50b17d8` 回传其余三个工作包及桌面入口。I-02 尚未完成；G-01 的产品取舍已确认，当前先按[补充验证交接](i02-g01-verification-handoff.md)完成隔离技术验证，不直接启用新的生产接纳规则。
+任务类型：implementation；跟踪 [Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)。交接 PR #34 已合并，独立任务已启动，PR #35 保留 `7834bdb` 交错证据，并以源码 `f50af6e`／证据 `50b17d8` 回传其余三个工作包及桌面入口。I-02 尚未完成；G-01 的产品取舍已确认，当前先按[补充验证交接](i02-g01-accepted-boundary-validation.md)完成隔离技术验证，不直接启用新的生产接纳规则。
 
 I-01 已在限定范围内 PASS，经独立复审后由用户合并 [PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)，main 合并锚点为 `9fcd766`。产品代码修复为 `21b4a24`，证据 checkpoint 为 `c277988`；[结果报告](../results/mvp-first-vertical-slice.md)保留各轮证据和限制。
 
-本任务展开[构建交接报告](../../product/mvp-build-handoff.md)既定 I-02，不扩展 MVP。[ADR-0057](../../adr/0057-allow-late-delivery-facts-without-reopening-actions.md)已确认有限追加、不恢复旧操作、重启边界和同一运行期顺序未知的保存规则；门槛 3、4 的关联证据与验收映射待技术验证回传。其余不受影响的工作可继续，I-02 完整实现与验收尚未发生。
+本任务展开[构建交接报告](../../product/mvp-build-handoff.md)既定 I-02，不扩展 MVP。[ADR-0057](../../adr/0057-allow-late-delivery-facts-without-reopening-actions.md)与 ADR-0058 已确认有限追加、不恢复旧操作、重启边界和同一运行期顺序未知的保存规则；门槛 3、4 的关联证据与验收映射待技术验证回传。其余不受影响的工作可继续，I-02 完整实现与验收尚未发生。
 
 ## 验证问题与范围
 
