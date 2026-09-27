@@ -6,11 +6,13 @@ import platform
 import sqlite3
 import subprocess
 from pathlib import Path
+from .source_evidence import checked_source
 
 parser = argparse.ArgumentParser()
 parser.add_argument('raw', type=Path)
 parser.add_argument('target', type=Path)
 parser.add_argument('--go', default='go')
+parser.add_argument('--source-commit', default='HEAD', help='运行矩阵时记录的 commit；不是重新生成摘要时的版本')
 args = parser.parse_args()
 lines = args.raw.read_text(encoding='utf-8-sig').splitlines()
 
@@ -36,13 +38,18 @@ assert len(added) == len({r['case'] for r in added}) == 10, 'missing new cases'
 assert all(r.get('contract') == 'ADR-0058' for r in second+added), 'wrong contract version'
 assert 'PASS' in lines and not any(s.startswith('FAIL') or '--- FAIL:' in s for s in lines), 'not a successful complete run'
 assert all(r['status'] == 'PASS' for r in old+second+added)
-source_commit = run('git', 'rev-parse', 'HEAD')
-source_paths = ['spikes/i02_g01/server.py','spikes/i02_g01/process_identity.py','spikes/i02_g01/summarize_accepted.py',
+source_commit = run('git', 'rev-parse', '--verify', args.source_commit + '^{commit}')
+summarizer_commit = run('git', 'rev-parse', 'HEAD')
+source_paths = ['spikes/i02_g01/server.py','spikes/i02_g01/process_identity.py',
                 'desktop/i02_g01_spike_test.go','desktop/i02_g01_restart_test.go','desktop/i02_g01_accepted_test.go',
                 'agent_core/core.py','agent_core/transport.py','desktop/bridge.go','desktop/delivery.go']
-for path in source_paths:
-    committed = subprocess.check_output(['git','show',f'{source_commit}:{path}'])
-    assert committed == Path(path).read_bytes(), f'uncommitted source: {path}'
+def source_hashes(paths, commit):
+    return {path: checked_source(subprocess.check_output(['git','show',f'{commit}:{path}']),
+                                 Path(path).read_bytes(), path) for path in paths}
+
+source_hashes_by_path = source_hashes(source_paths, source_commit)
+summarizer_hashes = source_hashes(['spikes/i02_g01/summarize_accepted.py',
+                                   'spikes/i02_g01/source_evidence.py'], summarizer_commit)
 layer = 'Windows process API + isolated HTTP/SQLite; synthetic device' if platform.system() == 'Windows' else 'Linux pidfd + isolated HTTP/SQLite; synthetic device'
 for r in old+second+added:
     # No bootstrap tokens, raw response bodies, challenge nonces or local paths.
@@ -80,7 +87,11 @@ summary = dict(status='PASS',scope='ADR-0058 隔离候选；不是生产集成�
                                 windows='EXECUTED_ISOLATED' if platform.system()=='Windows' else 'NOT_RUN'),
                original_30=dict(counts=counts(old),cases=old),prior_8=dict(counts=counts(second),cases=second),
                added_10=dict(counts=counts(added),cases=added),
-               sources_sha256={p:sha(p) for p in source_paths},
+               # Preserve the previous field's meaning: actual worktree bytes, NOT normalized bytes.
+               sources_sha256={p:h['worktree_sha256'] for p,h in source_hashes_by_path.items()},
+               sources_git_sha256={p:h['git_sha256'] for p,h in source_hashes_by_path.items()},
+               source_comparison='Only CRLF -> LF for comparison; hashes retain original bytes',
+               summarizer=dict(commit=summarizer_commit, sources=summarizer_hashes),
                historical_sha256={n:sha(Path('docs/implementation/results')/n) for n in history},
                raw_output=dict(name=args.raw.name,sha256=sha(args.raw),bytes=args.raw.stat().st_size),
                limits=['真实 PID 复用采用确定性替身，真实进程退出独立执行',
