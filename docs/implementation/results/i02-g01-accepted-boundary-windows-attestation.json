@@ -30,7 +30,13 @@
     "sqlite": "3.45.1",
     "go": "go version go1.25.0 windows/amd64",
     "windows": "EXECUTED_ISOLATED",
-    "locked_windows_22h2_19045": "PENDING: original os.txt not yet returned"
+    "locked_windows_22h2_19045": "MATCHED: operator returned original os.txt",
+    "original_os_txt": {
+      "Caption": "Microsoft Windows 10 家庭中文版",
+      "Version": "10.0.19045",
+      "BuildNumber": "19045",
+      "OSArchitecture": "64 位"
+    }
   },
   "raw_output": {
     "name": "matrix.txt",
@@ -55,13 +61,13 @@
     "两份摘要工具 Git blob 哈希与回传完全一致",
     "将对应 Git 内容 LF 转 CRLF 后的字节哈希与回传工作区哈希完全一致",
     "bc24f2a 至 647a404 的矩阵与生产来源代码无差异",
-    "原矩阵哈希与先前回传一致"
+    "原矩阵哈希与先前回传一致",
+    "原 os.txt 回传为 Windows 10 Build 19045 64 位，与锁定目标对应"
   ],
   "limits": [
     "未接收原始 matrix.txt 或完整 summary JSON 字节；其哈希由操作者回传，未在本 session 对原文件独立重算",
     "未重跑任何矩阵",
     "PID 复用为确定性替身，原生通知／Wails／PC 重启不在此核验内",
-    "Windows 22H2/19045 精确系统版本尚待原 os.txt 核对",
     "生产接纳未实现，I-02 未 PASS；既有浏览器 12/13 的失败保留"
   ]
 }

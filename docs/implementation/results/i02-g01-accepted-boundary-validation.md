@@ -1,6 +1,6 @@
 # G-01：ADR-0058 新契约与原进程实例核验
 
-> 最新操作者回传：Windows 隔离矩阵与完整摘要校验 **48/48 PASS**，原日志哈希一致，工具 Git／CRLF 工作区哈希已本地核对。见文末“Windows 操作者证据归档”及[回传摘要](i02-g01-accepted-boundary-windows-attestation.json)。精确 Windows 22H2／19045 系统版本仍待原 os.txt；不是生产集成或 I-02 PASS。下述 NOT_RUN／等待摘要段落属于此前 checkpoint 历史。
+> 最新操作者回传：Windows 隔离矩阵与完整摘要校验 **48/48 PASS**，原日志哈希一致，工具 Git／CRLF 工作区哈希已本地核对。见文末“Windows 操作者证据归档”及[回传摘要](i02-g01-accepted-boundary-windows-attestation.json)。原 os.txt 已补回 Windows 10 Build 19045、64 位，锁定目标核对完成；不是生产集成或 I-02 PASS。下述 NOT_RUN／等待摘要段落属于此前 checkpoint 历史。
 
 > Windows 后续进度：操作者报告现有矩阵退出码为 0，摘要曾因纯 CRLF/LF 差异停止。换行修复与**仅重建摘要**步骤见文末“Windows 摘要换行修复”。下述 Linux／NOT_RUN 结论保留为 `647a404` 当时证据；当前尚未收到通过完整校验的 Windows 摘要，不宣称 Windows PASS，不重跑矩阵。
 
@@ -263,4 +263,4 @@ Get-FileHash -Algorithm SHA256 "$g01Out\matrix.txt"
 
 两份摘要工具的 Git blob 哈希均与回传一致；把对应 Git 字节从 LF 转 CRLF 后，哈希也分别与回传工作区字节哈希一致，支持本次换行修复没有掩盖内容差异。逐项值保存在[独立操作者回传摘要](i02-g01-accepted-boundary-windows-attestation.json)，不覆盖 Linux 摘要。原始日志及完整 Windows 摘要继续由操作者受控保存；仓库只记录回传信息及哈希，没有复制个人路径。
 
-环境元数据 `kernel: 10` 不能独自确认 Windows 10 22H2／19045；已请求读取原脚本保存的 `os.txt`，不需要新测试或重跑矩阵。在该信息回传前，精确锁定 Windows 环境核对仍待完成。生产接纳、生产同事务集成和完整 I-02 验收继续留后续授权；旧浏览器回归失败不被本次 Windows 结果覆盖。
+环境元数据 `kernel: 10` 原先不足以确认精确版本；操作者随后补回原 `os.txt`：Microsoft Windows 10 家庭中文版、Version `10.0.19045`、BuildNumber `19045`、64 位。结合 Microsoft [Windows 10 release information](https://learn.microsoft.com/en-us/windows/release-health/release-information)的 22H2／19045 对应关系，锁定目标核对完成；没有新测试或重跑矩阵。生产接纳、生产同事务集成和完整 I-02 验收继续留后续授权；旧浏览器回归失败不被本次 Windows 结果覆盖。

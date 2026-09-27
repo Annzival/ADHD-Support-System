@@ -1,6 +1,6 @@
 # I-02：确定性执行分支与恢复
 
-> 最新 Windows 回传：[隔离契约操作者证据](i02-g01-accepted-boundary-validation.md#windows-操作者证据归档)为 48/48 PASS，摘要完整校验已成功；Git／CRLF 工具哈希已核对，原矩阵未重跑。精确 Windows 22H2／19045 版本仍待原 os.txt，生产接纳与 I-02 整体尚未通过。以下等待摘要／NOT_RUN 文字保留为各 checkpoint 历史。
+> 最新 Windows 回传：[隔离契约操作者证据](i02-g01-accepted-boundary-validation.md#windows-操作者证据归档)为 48/48 PASS，摘要完整校验已成功；Git／CRLF 工具哈希已核对，原矩阵未重跑。原 os.txt 已确认 Windows 10 Build 19045、64 位；锁定环境核对完成，生产接纳与 I-02 整体尚未通过。以下等待摘要／NOT_RUN 文字保留为各 checkpoint 历史。
 
 > Windows 摘要后续：矩阵退出码 0 已由操作者回传，原日志哈希已记录；`576916c` 修复纯 CRLF/LF 造成的源码误报，实际修改仍拒绝，Git／工作区哈希分列。见 [仅用原日志重建摘要](i02-g01-accepted-boundary-validation.md#windows-摘要换行修复)。不重跑矩阵；等待完整 Windows 摘要核对，不据此宣称 Windows 或 I-02 PASS。
 
