@@ -39,6 +39,11 @@ func TestG01RestartRevalidation(t *testing.T) {
 				c.json(t, "/spike/control", map[string]any{"action": "arm", "point": "before_live_check"})
 			case "exit_after_check_before_commit":
 				c.json(t, "/spike/control", map[string]any{"action": "arm", "point": "after_live_check_before_commit"})
+				// ADR-0058 permits THIS already-checked transaction to finish.
+				// Without the explicit version, the historical assertion remains.
+				if os.Getenv("I02_G01_CONTRACT") == "ADR-0058" {
+					expected, expectedReports = 200, 1
+				}
 			case "pid_reuse_substitute":
 				c.json(t, "/spike/control", map[string]any{"action": "reuse_identity"})
 				trace = append(trace, "same_pid_different_instance_injected")
@@ -131,11 +136,27 @@ func TestG01RestartRevalidation(t *testing.T) {
 				t.Fatal("committed command did not return exact stored result")
 			}
 			actualReports := len(saved["reports"].([]any))
+			if actualReports > 0 {
+				if actualReports != 1 || saved["facts"] != float64(1) || saved["commands"] != float64(1) {
+					t.Fatal("non-atomic or duplicate result")
+				}
+				r := saved["reports"].([]any)[0].(map[string]any)
+				if r["order"] != "unknown" || r["opportunity"] != "unknown" || r["precise_latency"] != nil || r["sent_at"] != nil {
+					t.Fatal("invented order/opportunity/time")
+				}
+				status2, raw2, err := c.b.request("POST", path, raw)
+				var retry map[string]any
+				_ = json.Unmarshal(raw2, &retry)
+				if err != nil || status2 != result.status || !reflect.DeepEqual(body, retry) || !reflect.DeepEqual(saved, c.json(t, "/spike/inspect", map[string]any{})) {
+					t.Fatal("retry changed committed result")
+				}
+			}
 			outcome := "PASS"
 			if result.status != expected || actualReports != expectedReports {
 				outcome = "FAIL"
 			}
-			observation := map[string]any{"case": name, "status": outcome, "expected_http": expected, "actual_http": result.status, "expected_reports": expectedReports, "actual_reports": actualReports, "reason": body["error"], "input_trace": trace, "os_handle_observation": true, "synthetic_identity_reuse": synthetic, "replacement_running_unregistered": replacementRunning, "cached_exit": control["cached_exit"], "api_calls": 1, "resends": 0, "production_snapshot_unchanged": true, "old_context_http": status, "windows": "NOT_RUN"}
+			observation := map[string]any{"case": name, "status": outcome, "expected_http": expected, "actual_http": result.status, "expected_reports": expectedReports, "actual_reports": actualReports, "reason": body["error"], "input_trace": trace, "os_handle_observation": true, "synthetic_identity_reuse": synthetic, "replacement_running_unregistered": replacementRunning, "cached_exit": control["cached_exit"], "api_calls": 1, "resends": 0, "production_snapshot_unchanged": true, "old_context_http": status, "windows": spikeWindowsLayer()}
+			observation["contract"] = os.Getenv("I02_G01_CONTRACT")
 			encoded, _ := json.Marshal(observation)
 			t.Log("G01_R2_OBSERVATION " + string(encoded))
 			if outcome != "PASS" {

@@ -4,6 +4,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,10 +14,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 )
+
+func spikeWindowsLayer() string {
+	if runtime.GOOS == "windows" {
+		return "EXECUTED_ISOLATED"
+	}
+	return "NOT_RUN"
+}
 
 type spikeHost struct {
 	b              *bridge
@@ -38,6 +47,15 @@ func (h *spikeHost) post(path string, p any) (int, map[string]any) {
 	var result map[string]any
 	_ = json.Unmarshal(data, &result)
 	return status, result
+}
+func (h *spikeHost) confirm(challenge map[string]any) (int, map[string]any) {
+	// Trusted adapter: never acknowledge another process's registration, even
+	// if the parent supplies a delayed challenge after a simulated PID reuse.
+	if challenge["host"] != h.id || challenge["pid"] != float64(os.Getpid()) {
+		return 409, map[string]any{"error": "challenge_not_for_this_process"}
+	}
+	h.mark("challenge_received_after_handle_open")
+	return h.post("/spike/host_confirm", challenge)
 }
 func (h *spikeHost) start() {
 	status, _ := h.post("/v1/commands", map[string]any{"kind": "start", "target": "intervention:arrangement-a", "version": 1, "payload": map[string]any{}, "command_id": "g01-user-start"})
@@ -138,7 +156,11 @@ func TestG01SpikeHostProcess(t *testing.T) {
 	if os.Getenv("G01_SPIKE_HOST") != "1" {
 		t.Skip("subprocess helper")
 	}
-	h := &spikeHost{b: newBridge(), id: fmt.Sprintf("host-%d-%d", os.Getpid(), time.Now().UnixNano())}
+	var runID [32]byte
+	if _, err := rand.Read(runID[:]); err != nil {
+		t.Fatal(err)
+	}
+	h := &spikeHost{b: newBridge(), id: fmt.Sprintf("host-%x", runID)}
 	h.b.client.Transport = &spikeTransport{h}
 	h.pump = newDeliveryPump(h.b, h.present)
 	scanner := bufio.NewScanner(os.Stdin)
@@ -155,11 +177,16 @@ func TestG01SpikeHostProcess(t *testing.T) {
 		status := 200
 		result := map[string]any{}
 		switch p.Op {
-		case "connect":
+		case "connect", "register_only":
 			h.b.set(p.Endpoint)
 			h.mode = p.Mode
 			status, result = h.post("/spike/host", map[string]any{"host": h.id, "pid": os.Getpid()})
+			if status == 200 && p.Op == "connect" {
+				status, result = h.confirm(result)
+			}
 			h.mark("connected")
+		case "confirm":
+			status, result = h.confirm(p.Report)
 		case "observe":
 		case "mode":
 			h.mode = p.Mode
@@ -189,7 +216,7 @@ func TestG01SpikeHostProcess(t *testing.T) {
 		default:
 			t.Fatal("unknown operation")
 		}
-		raw, _ := json.Marshal(map[string]any{"status": status, "result": result, "report": h.report, "permit": h.permit, "calls": h.calls, "trace": h.trace, "host": h.id})
+		raw, _ := json.Marshal(map[string]any{"status": status, "result": result, "report": h.report, "permit": h.permit, "calls": h.calls, "trace": h.trace, "host": h.id, "pid": os.Getpid()})
 		fmt.Println("G01_HOST " + string(raw))
 	}
 }
@@ -426,6 +453,7 @@ func TestG01BoundedSpike(t *testing.T) {
 			if response["status"] != float64(expected) {
 				t.Fatalf("status got %v want %d: %v", response["status"], expected, response["result"])
 			}
+			initialStatus := response["status"]
 			if reason != "" && response["result"].(map[string]any)["error"] != reason {
 				t.Fatalf("rejection reason: %v", response)
 			}
@@ -479,7 +507,7 @@ func TestG01BoundedSpike(t *testing.T) {
 			if hostRestart {
 				trace = append(append(traceBefore["trace"].([]any), "host_process_restarted"), trace...)
 			}
-			observation := map[string]any{"case": name, "status": "PASS", "expected_http": expected, "response": response["result"], "input_trace": trace, "association": sent["permit"], "api_calls": sent["calls"], "calls_in_final_host": final["calls"], "resends": 0, "core_restarted": coreRestart, "host_restarted": hostRestart, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "production_snapshot_unchanged_by_report": true, "windows": "NOT_RUN"}
+			observation := map[string]any{"case": name, "status": "PASS", "expected_http": expected, "actual_http": initialStatus, "response": response["result"], "input_trace": trace, "association": sent["permit"], "api_calls": sent["calls"], "calls_in_final_host": final["calls"], "resends": 0, "core_restarted": coreRestart, "host_restarted": hostRestart, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "production_snapshot_unchanged_by_report": true, "windows": spikeWindowsLayer()}
 			proof := "controlled callback order only; Windows API order unknown"
 			decision := "same_run_permit_and_call_match"
 			if expected != 200 {
@@ -546,7 +574,7 @@ func TestG01MixedCommittedAndUncommitted(t *testing.T) {
 			if beforeStep["calls"] != end["calls"] {
 				t.Fatal("mixed restart resent")
 			}
-			raw, _ := json.Marshal(map[string]any{"case": "mixed_" + boundary, "status": "PASS", "input_trace": trace, "api_calls": 2, "resends": 0, "saved_reports": 1, "core_restarted": boundary != "host", "host_restarted": boundary != "core", "committed_http": 200, "uncommitted_http": 409, "reason": "run_boundary_uncommitted", "order": "unknown", "opportunity": "unknown", "existing_state_and_report_preserved": true, "windows": "NOT_RUN"})
+			raw, _ := json.Marshal(map[string]any{"case": "mixed_" + boundary, "status": "PASS", "input_trace": trace, "api_calls": 2, "resends": 0, "saved_reports": 1, "core_restarted": boundary != "host", "host_restarted": boundary != "core", "committed_http": 200, "uncommitted_http": 409, "reason": "run_boundary_uncommitted", "order": "unknown", "opportunity": "unknown", "existing_state_and_report_preserved": true, "windows": spikeWindowsLayer()})
 			t.Log("G01_OBSERVATION " + string(raw))
 		})
 	}
@@ -586,7 +614,7 @@ func TestG01RestartBeforeRegistration(t *testing.T) {
 	if status != 409 || len(saved["reports"].([]any)) != 0 {
 		outcome = "FAIL"
 	}
-	observation := map[string]any{"case": "host_restart_before_registration", "status": outcome, "input_trace": []string{"permit_saved", "api_enter", "api_return", "result_request_held_in_transport", "user_response_committed", "old_host_killed_and_waited", "new_host_started_and_running", "new_host_registration_not_yet_received", "old_result_released_to_core"}, "api_calls": 1, "resends": 0, "core_restarted": false, "host_restarted": true, "old_and_new_host_differ": true, "expected_http": 409, "actual_http": status, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "reason": "retained OS process instance checked without replacement registration", "production_snapshot_unchanged_by_report": true, "windows": "NOT_RUN"}
+	observation := map[string]any{"case": "host_restart_before_registration", "status": outcome, "input_trace": []string{"permit_saved", "api_enter", "api_return", "result_request_held_in_transport", "user_response_committed", "old_host_killed_and_waited", "new_host_started_and_running", "new_host_registration_not_yet_received", "old_result_released_to_core"}, "api_calls": 1, "resends": 0, "core_restarted": false, "host_restarted": true, "old_and_new_host_differ": true, "expected_http": 409, "actual_http": status, "saved_reports": len(saved["reports"].([]any)), "order": "unknown", "opportunity": "unknown", "reason": "retained OS process instance checked without replacement registration", "production_snapshot_unchanged_by_report": true, "windows": spikeWindowsLayer()}
 	output, _ := json.Marshal(observation)
 	t.Log("G01_OBSERVATION " + string(output))
 	if outcome != "PASS" {

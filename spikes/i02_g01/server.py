@@ -1,5 +1,6 @@
 """隔离 G-01 实验端点；生产启动器不会导入本文件或创建实验表。"""
 import json
+import secrets
 import sqlite3
 import sys
 import threading
@@ -18,6 +19,9 @@ class Experiment:
         self.run = str(uuid.uuid4())
         self.host = None
         self.identities = {}
+        self.challenges = {}
+        self.open_substitute_pid = None  # Only deterministic PID reuse fault injection.
+        self.rollback_after_check = False
         self.hook = None
         self.hook_entered = threading.Event()
         self.hook_release = threading.Event()
@@ -72,6 +76,10 @@ class Experiment:
         elif action == 'reuse_identity':
             # Deterministic replacement of the instance behind the same numeric PID.
             self.identities[self.host].instance = 'synthetic-reused-instance'
+        elif action == 'substitute_open':
+            self.open_substitute_pid = p['pid']
+        elif action == 'rollback_after_check':
+            self.rollback_after_check = True
         elif action != 'inspect':
             raise Rejected('unknown_control')
         return dict(entered=self.hook_entered.is_set(), cached_exit=self.cached_exit,
@@ -85,16 +93,33 @@ class Experiment:
             if route == 'host':
                 host = p['host']
                 if host not in self.identities:
+                    self.checkpoint('before_identity_open')
                     try:
-                        self.identities[host] = ProcessIdentity(p.get('pid'))
+                        requested_pid = p.get('pid')
+                        identity = ProcessIdentity(self.open_substitute_pid or requested_pid)
+                        self.open_substitute_pid = None
+                        identity.pid = requested_pid  # Same-number reuse model when injected.
+                        self.identities[host] = identity
                     except (OSError, AttributeError):
                         raise Rejected('process_identity_unavailable')
                 identity = self.identities[host]
                 if identity.pid != p.get('pid'):
                     raise Rejected('process_instance_mismatch')
                 self.live(host, identity.instance)
-                self.host = host
-                return dict(core=self.run)
+                # Challenge is generated AFTER opening the retained OS object.
+                # Only the original live host may acknowledge its own PID/run.
+                challenge = dict(core=self.run, host=host, pid=identity.pid,
+                                 instance=identity.instance, nonce=secrets.token_hex(32))
+                self.challenges[host] = challenge
+                return challenge
+            if route == 'host_confirm':
+                challenge = self.challenges.get(p.get('host'))
+                if challenge is None or challenge != p:
+                    raise Rejected('binding_challenge_mismatch')
+                self.live(p['host'], p['instance'])
+                del self.challenges[p['host']]
+                self.host = p['host']
+                return dict(core=self.run, bound=True)
             if route == 'advance':
                 self.core.clock = lambda: p['now']
                 (self.path.parent/'clock.json').write_text(json.dumps(p['now']))
@@ -165,6 +190,9 @@ class Experiment:
             self.checkpoint('before_live_check')
             self.live(permit['host'], permit['process_instance'])
             self.checkpoint('after_live_check_before_commit')
+            if self.rollback_after_check:
+                self.rollback_after_check = False
+                raise OSError('injected_rollback_after_check')
             return result  # SQLite context manager commits next; OS exit is not serialized with it.
 
 
