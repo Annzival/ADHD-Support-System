@@ -1,5 +1,7 @@
 # G-01 隔离关联与重启实验
 
+> 当前 ADR-0058 复验入口：[结果与独立 Windows 步骤](../../docs/implementation/results/i02-g01-accepted-boundary-validation.md)。显式使用 `I02_G01_CONTRACT=ADR-0058` 运行新预期；旧报告和历史 commit 保留。本目录始终是隔离实验，不被生产启动器导入。
+
 > 以下为第一轮 `62bc99a` 的机制说明。第二轮加入保留 OS 进程句柄，原 `TestG01RestartBeforeRegistration` 在原断言下通过；新的 `TestG01RestartRevalidation/exit_after_check_before_commit` 仍失败。最新结果见 [第二轮报告](../../docs/implementation/results/i02-g01-restart-revalidation.md)。第一轮失败报告和摘要保持原样。
 
 本目录与 `desktop/i02_g01_spike_test.go` 仅供 Issue #33 有界验证。生产启动器不导入此目录；不修改生产表、回执守卫或命令白名单。实验端点使用现有回环 HTTP 验证和 Go bridge；正式 pump 经测试专用 transport 将结果转到 `/spike/result`，并用独立的内存结果交回逻辑验证取消后重试。设备调用是返回布尔结果的替身，不能证明 Windows 呈现或阅读。
