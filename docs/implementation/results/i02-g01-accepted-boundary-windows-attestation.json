@@ -1,0 +1,67 @@
+{
+  "scope": "ADR-0058 Windows 隔离核验操作者回传；不是完整原始摘要或生产验收",
+  "provenance": "用户在当前 I-02 执行对话粘贴的摘要器输出、环境和 Get-FileHash 输出",
+  "matrix_status": "PASS (operator-reported, complete summarizer validation succeeded)",
+  "source_commit": "647a4041a786eed3406032c12ffe4cd18e050449",
+  "summarizer_commit": "77a43d17051a4e781c79d0f305054ce7e6c91eb2",
+  "exit_code": 0,
+  "counts": {
+    "original_30": {
+      "total": 30,
+      "passed": 30,
+      "failed": 0
+    },
+    "prior_8": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "added_10": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0
+    }
+  },
+  "environment": {
+    "os": "Windows",
+    "kernel": "10",
+    "architecture": "AMD64",
+    "python": "3.12.3",
+    "sqlite": "3.45.1",
+    "go": "go version go1.25.0 windows/amd64",
+    "windows": "EXECUTED_ISOLATED",
+    "locked_windows_22h2_19045": "PENDING: original os.txt not yet returned"
+  },
+  "raw_output": {
+    "name": "matrix.txt",
+    "sha256": "4cb5a5969769a27d6c5100e5b37ac6c27004162cea58e457033177e0885d123f",
+    "bytes": 84582
+  },
+  "operator_summary": {
+    "name": "summary-newline-fixed.json",
+    "sha256": "d5e10db49f19c9c0b3960a17ebdadd97e3ba136618b32b2c88ead12445f2501e"
+  },
+  "summarizer_sources": {
+    "spikes/i02_g01/summarize_accepted.py": {
+      "git_sha256": "9dc6a1ff7e660b7e0d2df61ec15d95374bcecc8be1d239e43c5dbd5219088c23",
+      "worktree_sha256": "00f63c1c666eb6b3963a9d9f5a6b3c89d2348f28fedbd9d61e2246233e41d942"
+    },
+    "spikes/i02_g01/source_evidence.py": {
+      "git_sha256": "f0cdda0125326d05d47a793a84b13dbb975733f8f1c4a76dc6368c1caf298a87",
+      "worktree_sha256": "c410db5ab0140632d84b0a62dadbf3cb1a6db63cc7e4572360808a4e6ceea50b"
+    }
+  },
+  "local_readonly_checks": [
+    "两份摘要工具 Git blob 哈希与回传完全一致",
+    "将对应 Git 内容 LF 转 CRLF 后的字节哈希与回传工作区哈希完全一致",
+    "bc24f2a 至 647a404 的矩阵与生产来源代码无差异",
+    "原矩阵哈希与先前回传一致"
+  ],
+  "limits": [
+    "未接收原始 matrix.txt 或完整 summary JSON 字节；其哈希由操作者回传，未在本 session 对原文件独立重算",
+    "未重跑任何矩阵",
+    "PID 复用为确定性替身，原生通知／Wails／PC 重启不在此核验内",
+    "Windows 22H2/19045 精确系统版本尚待原 os.txt 核对",
+    "生产接纳未实现，I-02 未 PASS；既有浏览器 12/13 的失败保留"
+  ]
+}

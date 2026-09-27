@@ -1,5 +1,7 @@
 # I-02：确定性执行分支与恢复
 
+> 最新 Windows 回传：[隔离契约操作者证据](i02-g01-accepted-boundary-validation.md#windows-操作者证据归档)为 48/48 PASS，摘要完整校验已成功；Git／CRLF 工具哈希已核对，原矩阵未重跑。精确 Windows 22H2／19045 版本仍待原 os.txt，生产接纳与 I-02 整体尚未通过。以下等待摘要／NOT_RUN 文字保留为各 checkpoint 历史。
+
 > Windows 摘要后续：矩阵退出码 0 已由操作者回传，原日志哈希已记录；`576916c` 修复纯 CRLF/LF 造成的源码误报，实际修改仍拒绝，Git／工作区哈希分列。见 [仅用原日志重建摘要](i02-g01-accepted-boundary-validation.md#windows-摘要换行修复)。不重跑矩阵；等待完整 Windows 摘要核对，不据此宣称 Windows 或 I-02 PASS。
 
 > 最新契约复验：[ADR-0058 核验报告与 Windows 最小步骤](i02-g01-accepted-boundary-validation.md)、[独立机器摘要](i02-g01-accepted-boundary-validation.json)。源码 `bc24f2a`：Linux 隔离 48/48 PASS，等待 Windows 原进程实例机制验收；Python／Go 通过，补充浏览器 12 PASS／1 FAIL（ECONNRESET，未调试）。新规则已接受；下方研究中的“待取舍”及两轮 FAIL 都是各自历史，不覆盖当前 ADR-0058。本轮未启用生产接纳，I-02 未 PASS，PR #35 保持 Draft。

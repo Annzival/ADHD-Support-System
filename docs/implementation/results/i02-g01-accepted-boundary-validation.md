@@ -1,5 +1,7 @@
 # G-01：ADR-0058 新契约与原进程实例核验
 
+> 最新操作者回传：Windows 隔离矩阵与完整摘要校验 **48/48 PASS**，原日志哈希一致，工具 Git／CRLF 工作区哈希已本地核对。见文末“Windows 操作者证据归档”及[回传摘要](i02-g01-accepted-boundary-windows-attestation.json)。精确 Windows 22H2／19045 系统版本仍待原 os.txt；不是生产集成或 I-02 PASS。下述 NOT_RUN／等待摘要段落属于此前 checkpoint 历史。
+
 > Windows 后续进度：操作者报告现有矩阵退出码为 0，摘要曾因纯 CRLF/LF 差异停止。换行修复与**仅重建摘要**步骤见文末“Windows 摘要换行修复”。下述 Linux／NOT_RUN 结论保留为 `647a404` 当时证据；当前尚未收到通过完整校验的 Windows 摘要，不宣称 Windows PASS，不重跑矩阵。
 
 ## 分层结论与停止点
@@ -247,3 +249,18 @@ Get-FileHash -Algorithm SHA256 "$g01Out\matrix.txt"
 应核对三组分别为 total/passed **30/30、8/8、10/10**，failed 均 0；`source_commit` 与原 `commit.txt` 一致；`environment.windows` 为 `EXECUTED_ISOLATED`，每支 `evidence_layer` 为 `Windows process API + isolated HTTP/SQLite; synthetic device`。PID 复用仍是替身，API 显示／用户阅读、完整 Wails／PC 重启并不因此通过。
 
 回传新摘要及它的新 SHA-256、原矩阵不变的 SHA-256、两项 commit 与锁定环境。新摘要的哈希取实际生成结果，事先未知，不能用原日志哈希代替。若任何完整校验失败，回传准确错误和缺失分支；不要跳过校验或重跑已经通过的矩阵。当前状态为等待 Windows 摘要核对，PR #35 仍 Draft，I-02 未 PASS。
+
+
+## Windows 操作者证据归档
+
+操作者已复用原 `matrix.txt` 成功生成摘要，完整校验输出为原 30/30、原 8/8、新增 10/10，失败均 0；退出码仍为 0。按操作者回传记录 **Windows 隔离契约 PASS**，不冒称本 session 亲自执行或独立复算了未收到的原始文件。
+
+- 实验源码：`647a4041a786eed3406032c12ffe4cd18e050449`；本地只读确认其矩阵源码与 `bc24f2a` 相同。
+- 摘要工具：`77a43d17051a4e781c79d0f305054ce7e6c91eb2`。
+- 环境：Windows／AMD64、Python 3.12.3、SQLite 3.45.1、Go 1.25.0 windows/amd64，`EXECUTED_ISOLATED`。
+- 原 `matrix.txt`：84582 字节，SHA-256 `4cb5a5969769a27d6c5100e5b37ac6c27004162cea58e457033177e0885d123f`，与修复前回传一致。
+- 新 `summary-newline-fixed.json`：SHA-256 `d5e10db49f19c9c0b3960a17ebdadd97e3ba136618b32b2c88ead12445f2501e`。
+
+两份摘要工具的 Git blob 哈希均与回传一致；把对应 Git 字节从 LF 转 CRLF 后，哈希也分别与回传工作区字节哈希一致，支持本次换行修复没有掩盖内容差异。逐项值保存在[独立操作者回传摘要](i02-g01-accepted-boundary-windows-attestation.json)，不覆盖 Linux 摘要。原始日志及完整 Windows 摘要继续由操作者受控保存；仓库只记录回传信息及哈希，没有复制个人路径。
+
+环境元数据 `kernel: 10` 不能独自确认 Windows 10 22H2／19045；已请求读取原脚本保存的 `os.txt`，不需要新测试或重跑矩阵。在该信息回传前，精确锁定 Windows 环境核对仍待完成。生产接纳、生产同事务集成和完整 I-02 验收继续留后续授权；旧浏览器回归失败不被本次 Windows 结果覆盖。
