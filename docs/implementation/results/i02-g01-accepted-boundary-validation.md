@@ -1,5 +1,7 @@
 # G-01：ADR-0058 新契约与原进程实例核验
 
+> Windows 后续进度：操作者报告现有矩阵退出码为 0，摘要曾因纯 CRLF/LF 差异停止。换行修复与**仅重建摘要**步骤见文末“Windows 摘要换行修复”。下述 Linux／NOT_RUN 结论保留为 `647a404` 当时证据；当前尚未收到通过完整校验的 Windows 摘要，不宣称 Windows PASS，不重跑矩阵。
+
 ## 分层结论与停止点
 
 **Linux 隔离契约 PASS；等待 Windows 原进程机制验收。** 原 38 支按 ADR-0058 全部通过，新增 10 支通过。这里只验证候选，不是生产接纳实现或 I-02 PASS。生产 Core schema、命令路由、回执守卫、桌面业务和依赖均未修改。
@@ -184,3 +186,64 @@ Get-CimInstance Win32_Process | Where-Object {
 ## 回传
 
 本轮隔离候选在 Linux 满足 ADR-0058 的 48 支预期；Windows 首次绑定与存续路径等待上述实机证据。没有发现新的范围／ADR 冲突，未增加生产接纳授权。仍有生产集成原子性、完整 I-02 Windows 验收及浏览器稳定性限制。请当前治理线程核对分层结果后再授权下一步；PR #35 保持 Draft，不 Ready／merge／关闭 Issue。
+
+
+## Windows 摘要换行修复
+
+修复源码 `576916c`。本轮仅修改摘要工具及两项最小验证，没有改实验、Windows 测试断言、生产代码或产品规则，没有重跑 Go 矩阵。两轮 FAIL、研究和 `647a404` 的独立 Linux 机器摘要保持原样。
+
+操作者回传：`exit-code.txt` 为 0、工作树干净；`matrix.txt` 原始字节 SHA-256 为 **`4CB5A5969769A27D6C5100E5B37AC6C27004162CEA58E457033177E0885D123F`**。只读核对确认 `server.py` 与 Git 内容仅有 CRLF/LF 差异。旧摘要器直接比较字节，因正常 checkout 换行转换误报 `uncommitted source`。以上是操作者证据，本 session 尚未取得原 Windows 日志／通过校验的摘要，不能仅凭退出码和哈希宣称 Windows PASS。
+
+现在只在源码一致性比较时将 CRLF 转为 LF，不去除空白、BOM、末尾换行或其他字符，不把单独 CR 当作 LF。真正的内容修改继续报错。摘要哈希不归一化：
+
+| 字段 | 现在的明确含义 |
+| --- | --- |
+| `source_commit`／每支同名字段 | `--source-commit` 指定的原矩阵运行 commit，取操作者原 `commit.txt`；不是重建摘要时的 HEAD |
+| `sources_git_sha256` | 原矩阵 commit 中各实验／生产来源文件的 Git blob **原始字节** SHA-256 |
+| `sources_sha256` | 继续表示当前工作区来源文件的**原始字节** SHA-256；Windows CRLF 可与 Git 哈希不同 |
+| `source_comparison` | 明示只在比较时容许 CRLF→LF，不代表哈希也转换 |
+| `summarizer.commit`／`summarizer.sources` | 新摘要工具的版本，以及摘要器／比较模块各自的 Git 和工作区字节哈希，独立于矩阵源码 |
+| `raw_output.sha256` | 现有 `matrix.txt` 的原始字节哈希，必须仍与上述值一致，不重新编码或改写日志 |
+
+旧 Linux 摘要的 `sources_sha256` 原本就是工作区字节哈希；由于当时没有换行差异，它也等于 Git 内容哈希。旧文件不改名、不回填新字段。新版将摘要工具从矩阵来源列表单独列出，以允许只更新工具后解析原矩阵，同时仍校验两者源码。
+
+本轮本机验证：
+
+```bash
+python3 -m unittest spikes.i02_g01.test_source_evidence -v
+python3 -m spikes.i02_g01.summarize_accepted .scratch/i02-checks/g01-accepted-final-go.txt .scratch/i02-checks/g01-newline-linux-summary.json --source-commit bc24f2a --go .scratch/toolchain/go/bin/go
+```
+
+两项最小验证 PASS：纯 LF／CRLF 差异通过且两套哈希各对应原字节；字符、空格、末尾换行缺失及单独 CR 修改全部拒绝。复用旧 Linux 输出，完整摘要检查仍得 30＋8＋10 PASS，保留原源码 `bc24f2a`、Windows NOT_RUN；没有生成新的矩阵执行证据。受控验证输出 SHA-256：`g01-newline-unit.txt` 为 `91a7e120bf6c9ee2df3e938484f74d634a791fab912c229fd15af7549086e7f4`；新临时 Linux 摘要为 `4c13136c5e8aea10ead39d30c3987ad45e08dcd9d4e819e872abc219ebb6dbae`，未替换仓库旧摘要。
+
+### 操作者：只使用现有 matrix.txt
+
+正常快进更新本任务分支到包含修复的 checkpoint（工作树有修改时先保留，不覆盖）；不要重跑上面的 Go／Wails 矩阵脚本。以下在原 Windows 仓库根目录执行，使用原输出目录与原 `commit.txt`，不要把它改成新 HEAD。若缺原 commit 记录，先回传缺口，不猜测运行版本。
+
+```powershell
+git pull --ff-only origin agent/implement-mvp-deterministic-recovery
+$g01Python = 'D:\Tools\Python312\python.exe' # 原锁定路径
+$g01Out = '.scratch\g01-accepted-windows' # 已有 matrix.txt 所在目录
+$g01Expected = '4CB5A5969769A27D6C5100E5B37AC6C27004162CEA58E457033177E0885D123F'
+if ((Get-Content "$g01Out\exit-code.txt" -Raw).Trim() -ne '0') { throw '原矩阵退出码不是 0' }
+if ((Get-FileHash -Algorithm SHA256 "$g01Out\matrix.txt").Hash -ne $g01Expected) { throw '原日志哈希不匹配，停止并回传' }
+$g01Source = (Get-Content "$g01Out\commit.txt" -Raw).Trim()
+$g01Summary = "$g01Out\summary-newline-fixed.json"
+if (Test-Path $g01Summary) { throw '请保留已有摘要并换用新文件名' }
+& $g01Python -m spikes.i02_g01.summarize_accepted "$g01Out\matrix.txt" $g01Summary --source-commit $g01Source --go go
+if ($LASTEXITCODE -ne 0) { throw '完整摘要校验失败：保留错误并回传，不报 Windows PASS' }
+$g01Result = Get-Content -Encoding utf8 $g01Summary -Raw | ConvertFrom-Json
+$g01Result.original_30.counts
+$g01Result.prior_8.counts
+$g01Result.added_10.counts
+$g01Result.environment
+$g01Result.source_commit
+$g01Result.summarizer.commit
+$g01Result.raw_output
+Get-FileHash -Algorithm SHA256 $g01Summary
+Get-FileHash -Algorithm SHA256 "$g01Out\matrix.txt"
+```
+
+应核对三组分别为 total/passed **30/30、8/8、10/10**，failed 均 0；`source_commit` 与原 `commit.txt` 一致；`environment.windows` 为 `EXECUTED_ISOLATED`，每支 `evidence_layer` 为 `Windows process API + isolated HTTP/SQLite; synthetic device`。PID 复用仍是替身，API 显示／用户阅读、完整 Wails／PC 重启并不因此通过。
+
+回传新摘要及它的新 SHA-256、原矩阵不变的 SHA-256、两项 commit 与锁定环境。新摘要的哈希取实际生成结果，事先未知，不能用原日志哈希代替。若任何完整校验失败，回传准确错误和缺失分支；不要跳过校验或重跑已经通过的矩阵。当前状态为等待 Windows 摘要核对，PR #35 仍 Draft，I-02 未 PASS。
