@@ -175,3 +175,22 @@ class ProductionDelivery(unittest.TestCase):
                     identity.live=False
                     with self.assertRaises(Rejected):self.submit(core,payload)
                     self.assertEqual(self.tables(core),before)
+
+    def test_existing_database_opens_without_rebuilding_domain_or_old_command(self):
+        from agent_core.core import encode
+        core, _, _ = self.fixture()
+        # Model the pre-integration schema, including a committed legacy receipt.
+        with core.connect() as db:
+            db.execute('DROP TABLE delivery_permissions')
+            db.execute('DROP TABLE delivery_reports')
+            request=dict(kind='delivery_receipt',target='legacy-attempt',version=1,payload=dict(delivered=True))
+            result=dict(delivery_id='legacy-attempt')
+            db.execute('INSERT INTO commands VALUES (?,?,?)',('legacy-command',encode(request),encode(result)))
+            records=[tuple(r) for r in db.execute('SELECT * FROM records ORDER BY id')]
+            identity=core.database_id(db)
+        restored=Core(core.path,clock=lambda:1000)
+        self.addCleanup(restored.hosts.close)
+        with restored.connect() as db:
+            self.assertEqual([tuple(r) for r in db.execute('SELECT * FROM records ORDER BY id')],records)
+            self.assertEqual(restored.database_id(db),identity)
+        self.assertEqual(restored.command('delivery_receipt','legacy-attempt',1,dict(delivered=True),'legacy-command'),result)
