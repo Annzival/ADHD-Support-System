@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 )
 
@@ -118,6 +119,25 @@ func TestG01CancelledBeforeCallCannotPresent(t *testing.T) {
 			}
 			if calls != 0 {
 				t.Fatal("cancelled unsent attempt called device")
+			}
+		})
+	}
+}
+
+func TestG01InitialBindingRefusesWrongOrReusedProcessIdentity(t *testing.T) {
+	for _, c := range []struct {
+		name, run string
+		pid       int
+		want      bool
+	}{
+		{"original", hostRun, os.Getpid(), true},
+		{"wrong_pid", hostRun, os.Getpid() + 1, false},
+		{"replacement_with_reused_numeric_pid", "previous-process-run", os.Getpid(), false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			raw, _ := json.Marshal(map[string]any{"host_run": c.run, "pid": c.pid})
+			if hostChallengeMatches(raw) != c.want {
+				t.Fatal("first binding confused process instances")
 			}
 		})
 	}

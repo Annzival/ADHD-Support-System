@@ -63,6 +63,7 @@ class DeliveryEvidence:
             if prior:
                 if prior['request'] != encode(request):
                     self.reject('conflicting_device_report')
+                self.check_host(permission)
                 return json.loads(prior['result']), None
             # Causal order: an API result received while this context is still current
             # precedes any later successful user command under the same writer lock.
@@ -70,9 +71,16 @@ class DeliveryEvidence:
             context = self.get(db, d['target_kind'], d['target'])
             current = (d['status'] == 'claimed' and context['version'] == d['target_version']
                        and self.clock() < context.get('expires_at', context.get('retention_end', float('inf'))))
+            previously_counted = db.execute(
+                "SELECT 1 FROM delivery_reports p JOIN records r ON r.id=p.attempt "
+                "WHERE json_extract(r.body,'$.target')=? AND json_extract(p.result,'$.opportunity')='eligible' LIMIT 1",
+                (d['target'],)).fetchone() is not None
+            eligible = current and payload['delivered'] and d['target_kind'] == 'interventions'
             result = dict(delivery_id=target, delivered=payload['delivered'],
+                          target=d['target'], target_kind=d['target_kind'],
+                          counts_opportunity=eligible and not previously_counted,
                           order='before_response' if current else 'unknown',
-                          opportunity='eligible' if current and payload['delivered'] and d['target_kind'] == 'interventions' else 'unknown',
+                          opportunity='eligible' if eligible else 'unknown',
                           api_return_at=returned, received_at=self.clock(), user_seen='unknown')
             if current:
                 self.change(db, 'deliveries', d, status='delivered' if payload['delivered'] else 'failed',
@@ -103,3 +111,24 @@ class DeliveryEvidence:
             self.reject('stale_context')
         if self.clock() >= context.get('expires_at', context.get('retention_end', float('inf'))):
             self.reject('expired_context')
+
+    def delivery_metrics(self, state):
+        """按逻辑开始干预去重的只读投影；未知顺序报告不参与。"""
+        metrics = []
+        with self.connect() as db:
+            grace = self.policy(db)['grace']
+        attempts = {d['id']: d for d in state['deliveries']}
+        for i in state['interventions']:
+            reports = [r for r in state['device_reports'] if r.get('target', attempts[r['delivery_id']]['target']) == i['id'] and r['opportunity'] == 'eligible']
+            if not reports:
+                continue
+            first = min(reports, key=lambda r: attempts[r['delivery_id']]['attempt'])
+            session = next((s for s in state['sessions'] if s['intervention_id'] == i['id'] and s['entry_source'] in ('start_now','already_started')), None)
+            elapsed = session['entered_at'] - first['api_return_at'] if session else None
+            metrics.append(dict(intervention_id=i['id'], opportunity_count=1,
+                                entered=session is not None,
+                                response_level=('immediate' if elapsed <= grace else 'delayed') if elapsed is not None and elapsed >= 0 else 'unknown',
+                                response_latency_seconds=elapsed if elapsed is not None and elapsed >= 0 else None,
+                                time_basis='same_device_wall_clock_api_adapter_return',
+                                user_seen='unknown'))
+        return metrics

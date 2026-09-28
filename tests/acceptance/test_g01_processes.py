@@ -136,3 +136,27 @@ c.command('delivery_receipt','delivery:arrangement-a',2,r,'receipt')
         with self.assertRaises(Rejected):
             c.command('delivery_receipt','delivery:arrangement-a',2,json.loads(payload_file.read_text()),'receipt')
         self.assertEqual(c.snapshot(),before)
+
+    def test_registration_to_open_exit_and_pid_reuse_counterexamples(self):
+        from agent_core.process_identity import ProcessIdentity
+        for reuse in (False,True):
+            with self.subTest(pid_reuse_substitute=reuse):
+                c=self.core();old,run=self.host();replacement=[]
+                def open_after_registration(pid):
+                    # Deterministic boundary: Core has received the registration,
+                    # but has not opened its OS object yet.
+                    old.kill();old.wait(timeout=5)
+                    if not reuse:return ProcessIdentity(pid)
+                    new,_=self.host();replacement.append(new)
+                    return ProcessIdentity(new.pid) # model the old numeric PID being reused
+                c.hosts.opener=open_after_registration
+                if not reuse:
+                    with self.assertRaises(OSError):c.hosts.challenge(run,old.pid)
+                else:
+                    challenge=c.hosts.challenge(run,old.pid)
+                    # Model numeric PID equality separately; old run remains old.
+                    response=self.reply(replacement[0],dict(challenge,pid=replacement[0].pid))
+                    self.assertEqual(response,{})
+                    with self.assertRaises(ValueError):c.hosts.confirm(response)
+                self.assertEqual(c.hosts.bound,{})
+                self.assertEqual(c.snapshot()['device_reports'],[])

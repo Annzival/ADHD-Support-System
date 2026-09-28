@@ -1,6 +1,6 @@
 # G-01 隔离关联与重启实验
 
-> 当前隔离候选：ADR-0058 源码 `bc24f2a`／证据 `647a404`，Windows 回传核对 `c4ec817`；Linux 与 Windows 隔离矩阵各 48/48 PASS。它们不代表生产集成或 I-02 PASS。复验入口：[结果与独立 Windows 步骤](../../docs/implementation/results/i02-g01-accepted-boundary-validation.md)。显式使用 `I02_G01_CONTRACT=ADR-0058` 运行新预期；旧报告和历史 commit 保留。本目录始终是隔离实验，不被生产启动器导入。
+> 当前隔离候选：ADR-0058 源码 `bc24f2a`／证据 `647a404`，Windows 回传核对 `c4ec817`；Linux 与 Windows 隔离矩阵各 48/48 PASS。它们不代表生产集成或 I-02 PASS。复验入口：[结果与独立 Windows 步骤](../../docs/implementation/results/i02-g01-accepted-boundary-validation.md)。在上述历史隔离源码上显式使用 `I02_G01_CONTRACT=ADR-0058` 运行新预期；当前生产集成已改变正式协议，不在当前 checkout 重跑旧隔离矩阵；旧报告和历史 commit 保留。本目录始终是隔离实验，不被生产启动器导入。
 
 > 以下为第一轮 `62bc99a` 的机制说明。第二轮源码 `9848b29` 加入保留 OS 进程句柄，原 `TestG01RestartBeforeRegistration` 在原断言下通过；新的 `TestG01RestartRevalidation/exit_after_check_before_commit` 在当时严格边界下失败。该历史结果见 [第二轮报告](../../docs/implementation/results/i02-g01-restart-revalidation.md)。第一轮失败报告和摘要保持原样。
 

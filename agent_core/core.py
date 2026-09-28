@@ -164,6 +164,7 @@ class Core(DeliveryEvidence, Lifecycle):
             db.commit()
         state['active_session'] = next((s for s in state['sessions'] if s['status'] in ('executing', 'awaiting_closure')), None)
         state['now'] = self.clock()
+        state['delivery_metrics'] = self.delivery_metrics(state)
         state['stage'] = 'I02_DEVELOPMENT_ONLY'
         state['foreground'] = self.foreground(state)
         state['current_plan'] = self.current_plan()

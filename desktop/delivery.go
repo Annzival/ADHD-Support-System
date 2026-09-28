@@ -61,11 +61,7 @@ func (p *deliveryPump) bind() bool {
 	if err != nil || status != 200 {
 		return false
 	}
-	var identity struct {
-		Host string `json:"host_run"`
-		PID  int    `json:"pid"`
-	}
-	if json.Unmarshal(challenge, &identity) != nil || identity.Host != hostRun || identity.PID != os.Getpid() {
+	if !hostChallengeMatches(challenge) {
 		return false
 	}
 	// Only this original process answers a fresh challenge created after OpenProcess.
@@ -75,6 +71,14 @@ func (p *deliveryPump) bind() bool {
 	}
 	p.binding = binding
 	return true
+}
+
+func hostChallengeMatches(challenge []byte) bool {
+	var identity struct {
+		Host string `json:"host_run"`
+		PID  int    `json:"pid"`
+	}
+	return json.Unmarshal(challenge, &identity) == nil && identity.Host == hostRun && identity.PID == os.Getpid()
 }
 
 func deliveryCommand(kind string, d delivery, version int, payload any) []byte {

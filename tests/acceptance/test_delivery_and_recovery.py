@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from agent_core.core import Core, Rejected
-from delivery_fixture import prepare, receipt
+from delivery_fixture import bind, prepare, receipt
 
 
 class DeliveryRecovery(unittest.TestCase):
@@ -66,5 +66,5 @@ class DeliveryRecovery(unittest.TestCase):
             with self.assertRaises(Rejected):
                 core.command('start', 'intervention:arrangement-a', 1, {}, 'late-start')
             with self.assertRaises(Rejected):
-                core.command('delivery_claim', 'delivery:arrangement-a', 1, {}, 'late-delivery')
+                core.command('delivery_claim', 'delivery:arrangement-a', 1, bind(core), 'late-delivery')
             self.assertEqual(core.snapshot(), before)

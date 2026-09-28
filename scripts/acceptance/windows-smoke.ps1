@@ -149,7 +149,7 @@ if ($Mode -ne 'Run') {
         Save-Snapshot 'final-state'
         $observations = Get-Content (Join-Path $DataDirectory 'observations.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $allowedObservations = @('arrivalAndCorrectNotification','startAndFirstCheckpoint','cancelDurationLeavesPending','completionBeforeCheckpoint','completionAfterCheckpoint','finishClosure','skipClosure','nativeCloseSkipsClosure','staleNotificationShowsCurrentContext','coreRestartKeepsSameSessionAndCheckpoint','awaitingClosureSurvivesRestart','endedStateSurvivesRestart','overlayCloseAndReopen')
-        if ($Stage -eq 'I02') { $allowedObservations += @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier') }
+        if ($Stage -eq 'I02') { $allowedObservations += @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier','g01NormalDelivery','g01WindowClose','g01HostRestartNoReplay') }
         foreach ($property in $observations.PSObject.Properties) {
             if ($property.Name -notin $allowedObservations -or $property.Value -notin @('NOT_RUN','PASS','FAIL','BLOCKED')) { throw 'Observations must use the template fields and NOT_RUN/PASS/FAIL/BLOCKED only.' }
         }
@@ -168,6 +168,7 @@ if ($Mode -ne 'Run') {
             case = $run.case; binarySha256 = $run.binarySha256; environment = $run.environment
             databaseId = $final.state.database_id; activeSession = $final.state.active_session
             sessions = $final.state.sessions; evidence = $final.state.evidence
+            deviceReports = $final.state.device_reports; deliveryMetrics = $final.state.delivery_metrics
             observations = $observations; files = $hashes
         }
         Write-Json (Join-Path $DataDirectory 'evidence-summary.json') $summary
@@ -238,7 +239,7 @@ Write-Json (Join-Path $DataDirectory 'observations.json') ([ordered]@{
 })
 if ($Stage -eq 'I02') {
     $observations = Get-Content (Join-Path $DataDirectory 'observations.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($name in @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier')) { $observations | Add-Member NoteProperty $name 'NOT_RUN' }
+    foreach ($name in @('alreadyStarted','retrospectiveComplete','reschedule','skipToday','weakFollowup','singleForeground','continueCheckpoint','pausePacket','automaticClosure','unknownTrackingEnd','factCorrection','resumePacket','oldVersionChoice','deferRecovery','recoverySwitch','singleInstance','autostart','pcRestart','processSupervisor','recoveryCarrier','g01NormalDelivery','g01WindowClose','g01HostRestartNoReplay')) { $observations | Add-Member NoteProperty $name 'NOT_RUN' }
     Write-Json (Join-Path $DataDirectory 'observations.json') $observations
 }
 Start-Desktop
