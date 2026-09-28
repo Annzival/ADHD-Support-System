@@ -1,5 +1,7 @@
 # I-02：确定性执行分支与恢复
 
+> 当前生产集成（2026-09-29）：[结果与限制](i02-g01-production-integration.md)、[37 项及 G01-R/U/C 映射](i02-production-coverage.md)、[生产机器摘要](i02-g01-production-integration.json)。正式 Core／宿主已接入 ADR-0058；生产自动层通过，Windows 生产行为 NOT_RUN，历史浏览器 ECONNRESET 根因未确认，整体 BLOCKED／未 PASS。下方各轮结论均保留历史，不作为当前生产验收结论。
+
 > 最新 Windows 回传：[隔离契约操作者证据](i02-g01-accepted-boundary-validation.md#windows-操作者证据归档)为 48/48 PASS，摘要完整校验已成功；Git／CRLF 工具哈希已核对，原矩阵未重跑。原 os.txt 已确认 Windows 10 Build 19045、64 位；锁定环境核对完成，生产接纳与 I-02 整体尚未通过。以下等待摘要／NOT_RUN 文字保留为各 checkpoint 历史。
 
 > Windows 摘要后续：矩阵退出码 0 已由操作者回传，原日志哈希已记录；`576916c` 修复纯 CRLF/LF 造成的源码误报，实际修改仍拒绝，Git／工作区哈希分列。见 [仅用原日志重建摘要](i02-g01-accepted-boundary-validation.md#windows-摘要换行修复)。不重跑矩阵；等待完整 Windows 摘要核对，不据此宣称 Windows 或 I-02 PASS。
@@ -290,3 +292,14 @@ PR #42 已人工合并为 `13ae4e6`，任务分支正常合入为 `a100909`，�
 `go -C desktop test -race -count=1 ./...` 通过，新增真实 HTTP／正式 Core 的正常、调用中回应、返回后回应、请求丢失、响应丢失、同进程窗口关闭、API 失败，以及领取／调用前取消分支；原请求重试与负结果测试保留。原生进程补充测试通过：真实子进程首次绑定、退出前／后打开、错／旧挑战、替代进程不能回答旧挑战、检查前退出拒绝、检查后退出允许一次、已提交查询；真实 Core 在最终检查后退出时恢复库无半报告。PID 复用仍需确定性替身与真实退出分层，不宣称操作系统真的复用了 PID。
 
 输出：`.scratch/i02-checks/production-host-checkpoint.txt`、`production-native-processes.txt`。Windows 原生机制在当前生产源码上仍未运行；以前隔离 48/48 的证据不替代本次。完整补充分支、指标、浏览器原因与 Windows 手册继续处理中，未宣称完整验收。
+
+
+## 2026-09-29：生产回归与交接出口
+
+Core `500bd04`、宿主 `3cd3a5f` 之后补充了正常送达的去重指标、即时／延后进入和回顾式完成排除；首次绑定的登记到打开退出／PID 复用反例；真实 Core 未提交退出、混合持久状态、不同结果及用户命令竞争、逐写回滚、同库旧 schema 与旧原命令兼容。
+
+最终自动入口及哈希见 [生产结果](i02-g01-production-integration.md)与独立摘要；Python 64 个方法通过，Go race／vet、浏览器 13 项及 Windows 交叉构建通过。原 I-01 送达重试和收尾草稿保留。旧隔离 opt-in 测试没有作为生产验收运行或计数；本轮新增断言直接使用正式 SQLite、HTTP 和 pump。
+
+Windows 当前生产构建仍 NOT_RUN，操作及采集见 [更新手册](../windows-i02.md)。原生通知、焦点、托盘、单实例、登录启动、守护和真实 PC 重启不可由自动替身或交叉编译替代。旧浏览器 ECONNRESET 三次有界定位未复现，尚不能归因为环境或称已修复；按停止条件保留失败和具体缺口，交独立复审判断验收影响。故当前不是“仅等待 Windows”，I-02 整体仍 BLOCKED。
+
+未发现需要改变产品范围或 ADR 的新冲突，未进入 I-03／I-04。当前检查点可供独立代码复审；不自行 Ready、合并、关闭 Issue，也不建议在 Windows 和未决风险核对之前将 PR #35 视为完整可合并。
