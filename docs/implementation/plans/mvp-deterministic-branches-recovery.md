@@ -45,9 +45,9 @@ git diff --check
 
 以上入口及测试数量以实际源码为准；实现者提供“场景／参数 → 测试或人工步骤 → 结果证据”的映射。PR #35 的 `50b17d8` 已交付 `docs/implementation/windows-i02.md` 与 I02 脚本，但 Windows 原生验收尚未执行；手册存在不等于通过，新增 G-01 仍需独立证据。
 
-## 可直接复制到新任务的 Prompt
+## 历史启动 Prompt（保留追溯，不再用于启动）
 
-使用条件：先由用户合并本交接文档 PR，再复制下列完整内容。不是 stacked 启动，不从未合并文档分支借用起点。
+下方保留 PR #34 阶段的原始启动指令，不再作为当前可执行入口。任务已经启动，当前只使用[生产集成交接的完整续接 Prompt](i02-g01-production-integration.md#完整续接-prompt)，沿用现有分支、Issue #33 和 Draft PR #35。本文件前文的范围与验收仍是有效约束；历史 Prompt 不能绕过新交接的人工合并条件。
 
 ```text
 你在 ADHD-Support-System 仓库执行 I-02：确定性执行分支与恢复的 implementation 任务，沿用 GitHub Issue #33。
