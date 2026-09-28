@@ -53,15 +53,18 @@ def positive(value):
 
 
 from .lifecycle import Lifecycle
+from .delivery_evidence import DeliveryEvidence, SCHEMA as DELIVERY_SCHEMA
+from .host_identity import HostIdentity
 
 
-class Core(Lifecycle):
+class Core(DeliveryEvidence, Lifecycle):
     def __init__(self, path, clock=time.time, fault=None):
         self.path, self.clock, self.fault = Path(path), clock, fault
+        self.hosts = HostIdentity()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute('PRAGMA journal_mode=WAL')
-            db.executescript(SCHEMA)
+            db.executescript(SCHEMA + DELIVERY_SCHEMA)
             db.execute("INSERT OR IGNORE INTO metadata VALUES ('database_id',?)", (str(uuid.uuid4()),))
 
     @contextmanager
@@ -106,8 +109,9 @@ class Core(Lifecycle):
                     db.rollback()
                     return json.loads(prior['result'])
                 result, fact = operation(db)
-                self.write(db, 'INSERT INTO events(command_id,fact,target,occurred_at,body) VALUES (?,?,?,?,?)',
-                           (command_id, fact, request['target'], self.clock(), encode(result)))
+                if fact is not None:
+                    self.write(db, 'INSERT INTO events(command_id,fact,target,occurred_at,body) VALUES (?,?,?,?,?)',
+                               (command_id, fact, request['target'], self.clock(), encode(result)))
                 self.write(db, 'INSERT INTO commands VALUES (?,?,?)', (command_id, encode(request), encode(result)))
                 db.commit()
                 return result
@@ -154,6 +158,7 @@ class Core(Lifecycle):
             db.execute('BEGIN')
             state = {kind: self.rows(db, kind) for kind in KINDS}
             state['events'] = [dict(row) for row in db.execute('SELECT * FROM events ORDER BY sequence')]
+            state['device_reports'] = [json.loads(row[0]) for row in db.execute('SELECT result FROM delivery_reports ORDER BY attempt')]
             state['command_count'] = db.execute('SELECT COUNT(*) FROM commands').fetchone()[0]
             state['database_id'] = db.execute("SELECT value FROM metadata WHERE key='database_id'").fetchone()[0]
             db.commit()
@@ -162,5 +167,5 @@ class Core(Lifecycle):
         state['stage'] = 'I02_DEVELOPMENT_ONLY'
         state['foreground'] = self.foreground(state)
         state['current_plan'] = self.current_plan()
-        state['unsupported'] = ['late_delivery_result_pending_G01', 'plan_import']
+        state['unsupported'] = ['plan_import']
         return state

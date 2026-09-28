@@ -1,3 +1,5 @@
+import os
+import uuid
 import base64
 import http.client
 import json
@@ -128,8 +130,16 @@ class ProcessTransport(unittest.TestCase):
         self.assertEqual(state['deliveries'][0]['status'], 'pending')
         def submit(kind, target, version, payload, identity):
             return self.http('/v1/commands', dict(kind=kind, target=target, version=version, payload=payload, command_id=identity))
-        self.assertEqual(submit('delivery_claim', 'delivery:arrangement-a', 1, {}, 'claim')[0], 200)
-        self.assertEqual(submit('delivery_receipt', 'delivery:arrangement-a', 2, {'delivered': True}, 'receipt')[0], 200)
+        status, challenge = self.http('/v1/host/challenge', dict(host_run=uuid.uuid4().hex, pid=os.getpid()))
+        self.assertEqual(status, 200)
+        status, binding = self.http('/v1/host/confirm', challenge)
+        self.assertEqual(status, 200)
+        status, permission = submit('delivery_claim', 'delivery:arrangement-a', 1, binding, 'claim')
+        self.assertEqual(status, 200)
+        call = uuid.uuid4().hex
+        self.assertEqual(submit('delivery_begin', 'delivery:arrangement-a', 2, dict(permission=permission, call=call), 'begin')[0], 200)
+        self.assertEqual(submit('delivery_receipt', 'delivery:arrangement-a', 2,
+                               dict(permission=permission, call=call, source='api_return', delivered=True, api_return_at=time.time()), 'receipt')[0], 200)
         valid = dict(kind='interventions', id='intervention:arrangement-a', version=1)
         self.assertTrue(self.http('/v1/context', valid)[1]['valid'])
         status, result = submit('start', valid['id'], 1, {}, 'start')

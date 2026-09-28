@@ -14,7 +14,7 @@ USER_KINDS = {
     'continue': 'checkpoints', 'correct_fact': 'evidence',
     'resume_packet': 'recoveries', 'archive_packet': 'recoveries', 'switch_current': 'recoveries',
     'defer_recovery': 'recoveries', 'return_previous': 'recoveries',
-    'delivery_claim': 'deliveries', 'delivery_receipt': 'deliveries',
+    'delivery_claim': 'deliveries', 'delivery_begin': 'deliveries', 'delivery_receipt': 'deliveries',
 }
 SYSTEM_KINDS = {'start_due': 'arrangements', 'checkpoint_due': 'checkpoints',
                 'delivery_expire': 'deliveries', 'followup': 'schedules',
@@ -90,7 +90,7 @@ class Lifecycle:
         return self.put_new(db, 'schedules', identity, target=target, due_at=due_at, kind=kind, status='scheduled')
 
     def cancel_deliveries(self, db, target):
-        # G-01 proposal is not an enabled historical-result acceptance rule.
+        # Cancel future presentation; separately associated device reports may persist.
         for d in self.rows(db, 'deliveries'):
             if d['target'] == target and d['status'] in ('pending', 'claimed'):
                 self.change(db, 'deliveries', d, status='cancelled')
@@ -247,27 +247,11 @@ class Lifecycle:
                     if (old_a['start_at'], old_a['id']) < (r['start_at'], target):
                         self.cancel_deliveries(db, old['id'])
             return dict(intervention_id=i['id']), 'start_intervention_created'
-        if kind in ('delivery_expire', 'delivery_claim', 'delivery_receipt'):
-            if r['status'] not in ('pending', 'claimed') or (kind == 'delivery_claim' and r['status'] != 'pending'):
+        if kind == 'delivery_expire':
+            if r['status'] not in ('pending', 'claimed'):
                 self.reject('delivery_not_pending')
-            if kind == 'delivery_expire':
-                self.change(db, 'deliveries', r, status='expired')
-                return dict(delivery_id=target), 'delivery_expired'
-            context = self.get(db, r['target_kind'], r['target'])
-            if context['version'] != r['target_version']:
-                self.reject('stale_context')
-            limit = context.get('expires_at', context.get('retention_end', float('inf')))
-            if now >= limit:
-                self.reject('expired_context')
-            if kind == 'delivery_claim':
-                self.change(db, 'deliveries', r, status='claimed')
-                return dict(delivery_id=target), 'delivery_claimed'
-            if type(p.get('delivered')) is not bool:
-                self.reject('delivery_result_required')
-            self.change(db, 'deliveries', r, status='delivered' if p['delivered'] else 'failed', delivered_at=now if p['delivered'] else None)
-            if p['delivered'] and r['attempt'] == 1 and r['target_kind'] != 'recoveries':
-                self.schedule(db, 'follow:' + r['target'], r['target'], now + self.policy(db)['grace'], 'followup')
-            return dict(delivery_id=target), 'delivery_result_recorded'
+            self.change(db, 'deliveries', r, status='expired')
+            return dict(delivery_id=target), 'delivery_expired'
         if kind == 'followup':
             if r['status'] != 'scheduled' or now < r['due_at']:
                 self.reject('invalid_schedule')

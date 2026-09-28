@@ -1,3 +1,4 @@
+from delivery_fixture import receipt
 """B-04 I-02: real SQLite, controlled clocks, write faults and competing commands."""
 import concurrent.futures
 import tempfile
@@ -91,7 +92,7 @@ class LifecycleTests(unittest.TestCase):
         for category in ('sessions','checkpoints','packets','evidence'):self.assertEqual(s[category],[])
 
     def receipt(self,c):
-        self.send(c,'delivery_receipt','deliveries','pending',dict(delivered=True))
+        receipt(c)
 
     def test_ex07_08_followup_once_or_expired_no_replay(self):
         for cause in ('normal','quiet','offline','next'):
@@ -151,7 +152,7 @@ class LifecycleTests(unittest.TestCase):
             c,now,path=self.fixture(window_end=window);self.start(c)
             c.recover();self.assertEqual(c.snapshot()['checkpoints'][0]['due_at'],1060)
             now[0]=1060;c.tick(desktop_online=True)
-            d=self.record(c,'deliveries','pending');c.command('delivery_receipt',d['id'],d['version'],dict(delivered=True),'checkpoint-receipt')
+            d=self.record(c,'deliveries','pending');receipt(c,d['id'],'checkpoint-receipt')
             now[0]=1090;c.tick(desktop_online=True);self.assertEqual(len([d for d in c.snapshot()['deliveries'] if d['attempt']==2]),1)
             now[0]=deadline;c=Core(path,clock=lambda:now[0]);c.recover();s=self.invariants(c)
             self.assertEqual(s['sessions'][0]['status'],'tracking_ended');self.assertEqual(s['evidence'],[]);self.assertEqual(s['packets'],[])

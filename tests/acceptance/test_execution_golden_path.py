@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from agent_core.core import Core
+from delivery_fixture import receipt
 
 
 class GoldenPath(unittest.TestCase):
@@ -16,8 +17,7 @@ class GoldenPath(unittest.TestCase):
             now[0] = 1010
             core.tick(desktop_online=True)
             intervention = core.snapshot()['interventions'][0]
-            core.command('delivery_receipt', 'delivery:arrangement-a', 1,
-                         {'delivered': True}, 'receipt-1')
+            receipt(core, identity='receipt-1')
             result = core.command('start', intervention['id'], intervention['version'], {}, 'start-1')
             state = core.snapshot()
             self.assertEqual(len(state['sessions']), 1)

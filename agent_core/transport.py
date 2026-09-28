@@ -191,6 +191,18 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('payload required')
                 result = self.server.core.command(body['kind'], body['target'], body['version'], body['payload'], body['command_id'])
                 self.reply(200, result)
+            elif self.path == '/v1/host/challenge':
+                try:
+                    result = self.server.core.hosts.challenge(body['host_run'], body['pid'])
+                except (OSError, ValueError):
+                    raise Rejected('host_binding_unavailable')
+                self.reply(200, result)
+            elif self.path == '/v1/host/confirm':
+                try:
+                    result = self.server.core.hosts.confirm(body)
+                except (OSError, ValueError):
+                    raise Rejected('host_binding_unavailable')
+                self.reply(200, result)
             elif self.path == '/v1/context':
                 result = self.server.core.context(body['kind'], body['id'], body['version'])
                 self.reply(200 if result['valid'] else 409, result)
