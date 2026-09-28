@@ -2,11 +2,11 @@
 
 ## 状态与依据
 
-任务类型：implementation；跟踪 [Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)。交接 PR #34 已合并，独立任务已启动，PR #35 保留 `7834bdb` 交错证据，并以源码 `f50af6e`／证据 `50b17d8` 回传其余三个工作包及桌面入口。I-02 尚未完成；G-01 的产品取舍已确认，当前先按[补充验证交接](i02-g01-accepted-boundary-validation.md)完成隔离技术验证，不直接启用新的生产接纳规则。
+任务类型：implementation；跟踪 [Issue #33](https://github.com/Annzival/ADHD-Support-System/issues/33)。交接 PR #34 已合并，独立任务已启动，PR #35 保留 `7834bdb` 交错证据，并以源码 `f50af6e`／证据 `50b17d8` 回传其余三个工作包及桌面入口。I-02 尚未完成；G-01 隔离候选 `c4ec817` 已获治理接纳，当前按[生产集成交接](i02-g01-production-integration.md)的合并条件继续，不重复隔离验证，也不将候选 PASS 当作生产完成。
 
 I-01 已在限定范围内 PASS，经独立复审后由用户合并 [PR #32](https://github.com/Annzival/ADHD-Support-System/pull/32)，main 合并锚点为 `9fcd766`。产品代码修复为 `21b4a24`，证据 checkpoint 为 `c277988`；[结果报告](../results/mvp-first-vertical-slice.md)保留各轮证据和限制。
 
-本任务展开[构建交接报告](../../product/mvp-build-handoff.md)既定 I-02，不扩展 MVP。[ADR-0057](../../adr/0057-allow-late-delivery-facts-without-reopening-actions.md)与 ADR-0058 已确认有限追加、不恢复旧操作、重启边界和同一运行期顺序未知的保存规则；门槛 3、4 的关联证据与验收映射待技术验证回传。其余不受影响的工作可继续，I-02 完整实现与验收尚未发生。
+本任务展开[构建交接报告](../../product/mvp-build-handoff.md)既定 I-02，不扩展 MVP。[ADR-0057](../../adr/0057-allow-late-delivery-facts-without-reopening-actions.md)与 ADR-0058 已确认有限追加、不恢复旧操作、重启边界和同一运行期顺序未知的保存规则；门槛 3、4 的构建前证据已接纳。I-02 完整实现与验收尚未完成。
 
 ## 验证问题与范围
 
@@ -29,7 +29,7 @@ I-01 已在限定范围内 PASS，经独立复审后由用户合并 [PR #32](htt
 - 权威状态、期限、干预策略、调度、恢复及更正规则全部在 Python Core。桌面宿主仅保留传输工作与设备桥接职责；前端草稿不是权威事实。沿用 SQLite 当前记录、成功事件、命令结果及必要调度同事务保存。
 - 用受控时钟和隔离夹具覆盖窗口缺失、估时缺失、本地零点、安静时段、多个安排／方案版本及过期上下文；不让 I-01 的固定 4 小时测试窗口成为产品默认值。真实方案导入仍由 I-03 验收。
 - 版本、关联和前置条件以领域矩阵为准；执行者可选择 schema／模块／接口实现，不可用 UI 禁用替代 Core 校验，或用重建夹具冒充同库重启恢复。
-- 原有 Go 送达丢包测试和两个页面的收尾草稿回归继续保留。先按 G-01 补充交接验证已确认边界的关联与时间依据；证据回传并接纳后，再把诊断转为正式验收。不得用“用户开始了”推断已送达，或直接放宽所有旧版本命令；候选技术机制不因产品行为接受而自动通过验证。
+- 原有 Go 送达丢包测试和两个页面的收尾草稿回归继续保留。G-01 隔离证据已接纳，按生产集成交接把相关行为转为正式路径验收。不得用“用户开始了”推断已送达，或直接放宽所有旧版本命令；候选验证通过不自动证明生产实现通过。
 - Linux 负责实现、领域／协议／浏览器自动测试及构建检查；Windows 负责真实通知、焦点、小窗、托盘、单实例、开机启动、进程守护和 PC 重启证据。每轮记录源码 commit、二进制哈希、环境和数据库身份，不能用旧 spike 或 I-01 实机 PASS 替新实现填写 PASS。
 - 使用 I-01 已验证的 Windows 10 22H2 x64、Python 3.12.3 x64、Go 1.25.0、Wails beta.8 和 Fixed WebView2 151.0.4129.78。需要升级或改变环境时先提交原因与证据，不静默外推。
 
@@ -45,9 +45,9 @@ git diff --check
 
 以上入口及测试数量以实际源码为准；实现者提供“场景／参数 → 测试或人工步骤 → 结果证据”的映射。PR #35 的 `50b17d8` 已交付 `docs/implementation/windows-i02.md` 与 I02 脚本，但 Windows 原生验收尚未执行；手册存在不等于通过，新增 G-01 仍需独立证据。
 
-## 可直接复制到新任务的 Prompt
+## 历史启动 Prompt（保留追溯，不再用于启动）
 
-使用条件：先由用户合并本交接文档 PR，再复制下列完整内容。不是 stacked 启动，不从未合并文档分支借用起点。
+下方保留 PR #34 阶段的原始启动指令，不再作为当前可执行入口。任务已经启动，当前只使用[生产集成交接的完整续接 Prompt](i02-g01-production-integration.md#完整续接-prompt)，沿用现有分支、Issue #33 和 Draft PR #35。本文件前文的范围与验收仍是有效约束；历史 Prompt 不能绕过新交接的人工合并条件。
 
 ```text
 你在 ADHD-Support-System 仓库执行 I-02：确定性执行分支与恢复的 implementation 任务，沿用 GitHub Issue #33。
