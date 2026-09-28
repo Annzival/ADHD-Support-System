@@ -1,5 +1,7 @@
 # G-01：已接受提交边界的验证交接
 
+> 本轮已结束：`c4ec817` 的 Linux 48/48 与 Windows 操作者回传 48/48 已获治理接纳。下方 Prompt 保留为历史验证契约，不再作为当前执行入口；下一步按[生产集成交接](i02-g01-production-integration.md)的合并条件继续。隔离 PASS 不代表完整 I-02 PASS。
+
 任务类型：technical spike 的契约复验与 Windows 能力核验；不是继续寻找严格协调方案。依据 [ADR-0058](../../adr/0058-allow-inflight-delivery-result-commit-after-host-restart.md)，原规则被有限调整；两轮 FAIL 与研究保持原样。沿用独立 I-02 任务、Issue #33、原实现分支和 Draft PR #35。
 
 ## 完整续接 Prompt
