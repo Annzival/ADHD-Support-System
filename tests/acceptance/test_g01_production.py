@@ -28,6 +28,7 @@ class ProductionDelivery(unittest.TestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         core = Core(Path(directory.name) / 'state.sqlite3', clock=lambda: 1000)
+        core.elapsed_clock=lambda:dict(clock='controlled_test',ticks=int(core.clock()*1_000_000_000),frequency=1_000_000_000)
         self.addCleanup(core.hosts.close)
         core.hosts.opener = ControlledIdentity
         core.seed_fixture(confirmed=True, start=1000, duration=60, window_end=2000)
@@ -75,6 +76,7 @@ class ProductionDelivery(unittest.TestCase):
         self.assertEqual(state['deliveries'][0]['delivered_at'], 999.5)
         follow = next(s for s in state['schedules'] if s['kind']=='followup')
         self.assertEqual(follow['due_at'], 1599.5)
+        core.elapsed_clock=lambda:dict(clock='controlled_test',ticks=1_000_500_000_000,frequency=1_000_000_000)
         self.respond(core)
         before = self.tables(core)
         self.assertEqual(self.submit(core, payload), result)

@@ -2,6 +2,7 @@
 import json
 import math
 import uuid
+from .elapsed import comparable
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS delivery_permissions (
@@ -31,7 +32,7 @@ class DeliveryEvidence:
                 permission = dict(binding, permit=str(uuid.uuid4()), attempt=target,
                                   database_id=self.database_id(db), version=version,
                                   target=d['target'], target_kind=d['target_kind'],
-                                  target_version=d['target_version'], call=None)
+                                  target_version=d['target_version'], call=None, call_elapsed=None)
                 self.write(db, 'INSERT INTO delivery_permissions VALUES (?,?)', (target, encode(permission)))
                 self.change(db, 'deliveries', d, status='claimed')
                 return permission, 'delivery_claimed'
@@ -41,6 +42,8 @@ class DeliveryEvidence:
             permission = json.loads(row[0])
             association = payload.get('permission')
             expected = dict(permission, call=None)
+            if 'call_elapsed' in expected:
+                expected['call_elapsed'] = None
             if association != expected or version != permission['version'] + 1:
                 self.reject('delivery_association_mismatch')
             if kind == 'delivery_begin':
@@ -50,6 +53,7 @@ class DeliveryEvidence:
                 if not isinstance(call, str) or not 16 <= len(call) <= 128 or permission['call'] is not None:
                     self.reject('invalid_device_call')
                 permission['call'] = call
+                permission['call_elapsed'] = self.elapsed_mark()
                 self.write(db, 'UPDATE delivery_permissions SET body=? WHERE attempt=?', (encode(permission), target))
                 return dict(call=call), 'device_call_authorized'
             if permission['call'] is None or payload.get('call') != permission['call'] or payload.get('source') != 'api_return':
@@ -76,7 +80,13 @@ class DeliveryEvidence:
                 "WHERE json_extract(r.body,'$.target')=? AND json_extract(p.result,'$.opportunity')='eligible' LIMIT 1",
                 (d['target'],)).fetchone() is not None
             eligible = current and payload['delivered'] and d['target_kind'] == 'interventions'
-            result = dict(delivery_id=target, delivered=payload['delivered'],
+            begin, returned_elapsed, received = permission.get('call_elapsed'), payload.get('elapsed'), self.elapsed_mark()
+            timing = None
+            if (comparable(begin, returned_elapsed, received)
+                    and begin.get('core_run') == received.get('core_run') == permission['core_run']
+                    and begin['ticks'] <= returned_elapsed['ticks'] <= received['ticks']):
+                timing = dict(returned_elapsed, core_run=permission['core_run'])
+            result = dict(delivery_id=target, delivered=payload['delivered'], elapsed=timing,
                           target=d['target'], target_kind=d['target_kind'],
                           counts_opportunity=eligible and not previously_counted,
                           order='before_response' if current else 'unknown',
@@ -124,11 +134,22 @@ class DeliveryEvidence:
                 continue
             first = min(reports, key=lambda r: attempts[r['delivery_id']]['attempt'])
             session = next((s for s in state['sessions'] if s['intervention_id'] == i['id'] and s['entry_source'] in ('start_now','already_started')), None)
-            elapsed = session['entered_at'] - first['api_return_at'] if session else None
+            sent = first.get('elapsed')
+            entered = session.get('entered_elapsed') if session else None
+            elapsed = None
+            if (comparable(sent, entered) and sent.get('core_run') is not None
+                    and sent.get('core_run') == entered.get('core_run') and entered['ticks'] >= sent['ticks']):
+                delta = entered['ticks'] - sent['ticks']
+                # QPC readings on different threads have ±1 tick ordering ambiguity.
+                # Do not classify an interval touching zero or the grace boundary.
+                ambiguous = sent['clock'] == 'windows_qpc_v1' and (
+                    delta <= 1 or abs(delta - grace * sent['frequency']) <= 1)
+                if not ambiguous:
+                    elapsed = delta / sent['frequency']
             metrics.append(dict(intervention_id=i['id'], opportunity_count=1,
                                 entered=session is not None,
                                 response_level=('immediate' if elapsed <= grace else 'delayed') if elapsed is not None and elapsed >= 0 else 'unknown',
                                 response_latency_seconds=elapsed if elapsed is not None and elapsed >= 0 else None,
-                                time_basis='same_device_wall_clock_api_adapter_return',
+                                time_basis=sent['clock'] if elapsed is not None else 'unknown',
                                 user_seen='unknown'))
         return metrics

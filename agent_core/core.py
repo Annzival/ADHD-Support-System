@@ -55,17 +55,28 @@ def positive(value):
 from .lifecycle import Lifecycle
 from .delivery_evidence import DeliveryEvidence, SCHEMA as DELIVERY_SCHEMA
 from .host_identity import HostIdentity
+from .elapsed import read_elapsed, valid
 
 
 class Core(DeliveryEvidence, Lifecycle):
-    def __init__(self, path, clock=time.time, fault=None):
+    def __init__(self, path, clock=time.time, fault=None, elapsed_clock=read_elapsed):
         self.path, self.clock, self.fault = Path(path), clock, fault
         self.hosts = HostIdentity()
+        self.elapsed_clock = elapsed_clock
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript(SCHEMA + DELIVERY_SCHEMA)
             db.execute("INSERT OR IGNORE INTO metadata VALUES ('database_id',?)", (str(uuid.uuid4()),))
+
+    def elapsed_mark(self):
+        try:
+            mark = self.elapsed_clock()
+            if valid(mark):
+                return dict(mark, core_run=self.hosts.core_run)
+        except (OSError, ValueError, TypeError):
+            pass
+        return None
 
     @contextmanager
     def connect(self):

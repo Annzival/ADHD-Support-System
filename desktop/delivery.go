@@ -161,10 +161,11 @@ func (p *deliveryPump) step(deliveries []delivery) {
 				continue
 			}
 			delivered := p.present(d)
+			elapsed := readElapsed()
 			returned := p.now()
 			a.presented = true
 			a.receipt = deliveryCommand("delivery_receipt", d, d.Version+1, map[string]any{
-				"permission": a.permission, "call": a.call, "source": "api_return", "delivered": delivered, "api_return_at": returned})
+				"permission": a.permission, "call": a.call, "source": "api_return", "delivered": delivered, "api_return_at": returned, "elapsed": elapsed})
 		}
 		// Cancellation stops new calls, not retries of the already returned result.
 		// Keep the exact bytes even when the snapshot no longer contains the attempt.

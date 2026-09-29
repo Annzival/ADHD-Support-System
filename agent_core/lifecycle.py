@@ -148,6 +148,7 @@ class Lifecycle:
         s = self.put_new(db, 'sessions', str(uuid.uuid4()), action_id=a['action_id'], arrangement_id=a['id'],
                          plan_version=a['plan_version'], intervention_id=intervention, packet_id=packet,
                          status='awaiting_closure' if retro else 'executing', entered_at=now, entry_source=source,
+                         entered_elapsed=self.elapsed_mark(),
                          actual_started_at=None, actual_ended_at=None, report='completed' if retro else None,
                          reported_at=now if retro else None)
         cp = None if retro else self.checkpoint(db, s, a, duration)

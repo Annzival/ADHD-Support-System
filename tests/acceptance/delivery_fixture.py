@@ -14,7 +14,7 @@ def prepare(core, target='delivery:arrangement-a', identity='receipt'):
     permit = core.command('delivery_claim', target, d['version'], bind(core), identity + ':claim')
     call = uuid.uuid4().hex
     core.command('delivery_begin', target, d['version'] + 1, dict(permission=permit, call=call), identity + ':begin')
-    return dict(permission=permit, call=call, source='api_return', delivered=True, api_return_at=core.clock())
+    return dict(permission=permit, call=call, source='api_return', delivered=True, api_return_at=core.clock(), elapsed=core.elapsed_clock())
 
 
 def receipt(core, target='delivery:arrangement-a', identity='receipt'):
