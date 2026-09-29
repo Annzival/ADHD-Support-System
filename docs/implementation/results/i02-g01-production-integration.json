@@ -338,5 +338,175 @@
     "正常延迟采用同机墙钟适配器返回到会话提交；不是显示/阅读时刻，时钟调整不能证明顺序",
     "不宣称 I-02 PASS；仍需独立代码复审和用户人工合并"
   ],
-  "hash_semantics": "Git 和工作区均为原始字节 SHA-256；只在源码一致性检查时容许 CRLF/LF；原始输出哈希不归一化"
+  "hash_semantics": "Git 和工作区均为原始字节 SHA-256；只在源码一致性检查时容许 CRLF/LF；原始输出哈希不归一化",
+  "p2_timing_fix": {
+    "source_commit": "3f7820a55dc78d30e50e1fff2edc4f9ae53d7581",
+    "date": "2026-09-29",
+    "status": "PASS_AUTOMATED_PENDING_INDEPENDENT_REVIEW",
+    "environment": {
+      "os": "Linux",
+      "kernel": "6.8.0-49-generic",
+      "architecture": "x86_64",
+      "python": "3.12.3",
+      "sqlite": "3.45.1",
+      "go": "go version go1.25.0 linux/amd64",
+      "node": "v24.19.0"
+    },
+    "baseline_source_commit": "c819bdfda21d11056970fa640175daebc5e5bf10",
+    "baseline_evidence_commit": "ec0dad29b418364608e760710b59231103d30961",
+    "before": {
+      "status": "EXPECTED_FAIL",
+      "failed_subtests": 3,
+      "wall_seconds": [
+        610,
+        100,
+        10
+      ],
+      "levels": [
+        "delayed",
+        "immediate",
+        "immediate"
+      ],
+      "note": "定向缺失依据断言在修复前执行；新增受控计时测试验证真实经过 10/700 秒与墙钟差 610/100 分离"
+    },
+    "after": {
+      "python_methods": 71,
+      "python_status": "PASS",
+      "go_race": "PASS",
+      "go_vet": "PASS",
+      "browser_passed": 13,
+      "browser_failed": 0,
+      "browser_skipped": 0,
+      "windows_cross_build": "COMPILED_NOT_EXECUTED",
+      "diff_check": "PASS"
+    },
+    "commands": {
+      "python": "python3 -m unittest discover -s tests/acceptance -v",
+      "go_race": ".scratch/toolchain/go/bin/go -C desktop test -race -count=1 -v ./...",
+      "go_vet": ".scratch/toolchain/go/bin/go -C desktop vet ./...",
+      "browser": "I01_TEST_GO=\"$PWD/.scratch/toolchain/go/bin/go\" I01_BROWSER_EXECUTABLE=/home/Parzival/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome LD_LIBRARY_PATH=\"$PWD/.scratch/browser-libs/extracted/usr/lib/x86_64-linux-gnu\" npm test --prefix desktop",
+      "windows_cross_build": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 .scratch/toolchain/go/bin/go -C desktop build -o ../.scratch/i02-p2-desktop.exe .",
+      "diff_check": "git diff --check",
+      "targeted": "python3 -m unittest discover -s tests/acceptance -p test_delivery_timing.py -v"
+    },
+    "mechanism": {
+      "windows": "windows_qpc_v1 / QueryPerformanceCounter + QueryPerformanceFrequency",
+      "linux": "linux_boottime_v1 / CLOCK_BOOTTIME",
+      "scope": "same Core run, same explicit OS clock/frequency, host sample bounded by Core begin/receipt; complete committed old pairs remain readable",
+      "failure": "latency null / level unknown only; delivery, entered and opportunity facts preserved",
+      "precision": "Windows QPC <=1 tick at zero or within 1 tick of grace: unknown"
+    },
+    "raw_outputs": {
+      "p2-before": {
+        "path": ".scratch/i02-checks/p2-before.txt",
+        "sha256": "ec876e64286d7fffb65addaef857aa298ff129da258aa360ec2e27167a18e958",
+        "bytes": 3400
+      },
+      "p2-targeted": {
+        "path": ".scratch/i02-checks/p2-targeted.txt",
+        "sha256": "dc4c184339035f9bd275833b5f055ed8b012ccf7de7ed5dccced2cf8b99d7ccf",
+        "bytes": 3379
+      },
+      "p2-python-final": {
+        "path": ".scratch/i02-checks/p2-python-final.txt",
+        "sha256": "5f114fcce1c0e7468460a77527338ef511c6cbc29b1693bb2df1180a2b8676b6",
+        "bytes": 13790
+      },
+      "p2-go": {
+        "path": ".scratch/i02-checks/p2-go.txt",
+        "sha256": "c6180af17019b12842c8f2cd29e2040ede4d7242ed0a5eac19c5197d87585d0d",
+        "bytes": 5316
+      },
+      "p2-vet": {
+        "path": ".scratch/i02-checks/p2-vet.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "p2-browser": {
+        "path": ".scratch/i02-checks/p2-browser.txt",
+        "sha256": "4dab240cc1e79df2983565316fffbfa7dd07b1c09113e92cc3fbbc5d509dffe1",
+        "bytes": 1355
+      },
+      "p2-cross-build": {
+        "path": ".scratch/i02-checks/p2-cross-build.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "p2-diff": {
+        "path": ".scratch/i02-checks/p2-diff.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "sources": {
+      "agent_core/core.py": {
+        "git_sha256": "22f736ab04bbebd031e88d56c16f102596e5e4b9df9a7ba9e1799e2fb9d29290",
+        "worktree_sha256": "22f736ab04bbebd031e88d56c16f102596e5e4b9df9a7ba9e1799e2fb9d29290"
+      },
+      "agent_core/delivery_evidence.py": {
+        "git_sha256": "da48f272e502f65e03eaecba87e4c00803323accc88988b862f43a055ce8df00",
+        "worktree_sha256": "da48f272e502f65e03eaecba87e4c00803323accc88988b862f43a055ce8df00"
+      },
+      "agent_core/elapsed.py": {
+        "git_sha256": "6917a145dd37a53188cc0077564d286c10639de52f29c7d6c95aef07f3dd12c1",
+        "worktree_sha256": "6917a145dd37a53188cc0077564d286c10639de52f29c7d6c95aef07f3dd12c1"
+      },
+      "agent_core/lifecycle.py": {
+        "git_sha256": "fbcc35ddef849ce2bee26b179d14159a2795b3f8b0385cd35c2d551061a71e6c",
+        "worktree_sha256": "fbcc35ddef849ce2bee26b179d14159a2795b3f8b0385cd35c2d551061a71e6c"
+      },
+      "desktop/delivery.go": {
+        "git_sha256": "623ec58be98910db2c77241f9b8977e7de65f5a4bcae5aac9e9eb42d68bf3703",
+        "worktree_sha256": "623ec58be98910db2c77241f9b8977e7de65f5a4bcae5aac9e9eb42d68bf3703"
+      },
+      "desktop/delivery_test.go": {
+        "git_sha256": "824bb0cac487ff3c2e5a2892970300dd8c931f4488ad8afb8e89274e07adac21",
+        "worktree_sha256": "824bb0cac487ff3c2e5a2892970300dd8c931f4488ad8afb8e89274e07adac21"
+      },
+      "desktop/elapsed.go": {
+        "git_sha256": "903a909d9621d3e453d68c9b28f7b8f8eae8ee115857d1f8c80b45cb01caf9e0",
+        "worktree_sha256": "903a909d9621d3e453d68c9b28f7b8f8eae8ee115857d1f8c80b45cb01caf9e0"
+      },
+      "desktop/elapsed_linux.go": {
+        "git_sha256": "13b9af979aa05e2dc415d6279e25530e766428feaeaf11dd8dcad903eb509fc5",
+        "worktree_sha256": "13b9af979aa05e2dc415d6279e25530e766428feaeaf11dd8dcad903eb509fc5"
+      },
+      "desktop/elapsed_other.go": {
+        "git_sha256": "22f0643a387a2a04bffb98be991205d0cd35494e32092297e28a53fddbcfee83",
+        "worktree_sha256": "22f0643a387a2a04bffb98be991205d0cd35494e32092297e28a53fddbcfee83"
+      },
+      "desktop/elapsed_windows.go": {
+        "git_sha256": "1391b62af7d342c5b5d00c0d44d4eb7ba028d46a62b560f7a061a504d242a560",
+        "worktree_sha256": "1391b62af7d342c5b5d00c0d44d4eb7ba028d46a62b560f7a061a504d242a560"
+      },
+      "tests/acceptance/delivery_fixture.py": {
+        "git_sha256": "4a9019d4be65741de86f277154aaab43a2a5b075356f25a09be4bde00c5ca4c8",
+        "worktree_sha256": "4a9019d4be65741de86f277154aaab43a2a5b075356f25a09be4bde00c5ca4c8"
+      },
+      "tests/acceptance/test_delivery_timing.py": {
+        "git_sha256": "97fc002d17f9108e67b2247ab86f6c0f49174b8beec16390cb01ea48c721f81b",
+        "worktree_sha256": "97fc002d17f9108e67b2247ab86f6c0f49174b8beec16390cb01ea48c721f81b"
+      },
+      "tests/acceptance/test_g01_production.py": {
+        "git_sha256": "0b8bd7c438aec2e944b4ce09986840172ae447d03a056e5816ad759a0946d4e8",
+        "worktree_sha256": "0b8bd7c438aec2e944b4ce09986840172ae447d03a056e5816ad759a0946d4e8"
+      }
+    },
+    "windows_production_status": "NOT_RUN",
+    "browser_root_cause": "UNKNOWN",
+    "browser_pressure_diagnosis_resumed": false,
+    "scope_or_adr_conflict_found": false,
+    "windows_steps": "No new operation; existing metrics expectation uses windows_qpc_v1 or unknown instead of wall-clock subtraction",
+    "sources_access_date": "2026-09-29",
+    "primary_sources": [
+      "https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps",
+      "https://docs.python.org/3.12/library/time.html#time.CLOCK_BOOTTIME"
+    ],
+    "cross_binary": {
+      "path": ".scratch/i02-p2-desktop.exe",
+      "sha256": "62d5107753521aaf8f0f0f82001fd31b27f095cffaf058c457a5750b6cc3738f",
+      "execution": "NOT_RUN"
+    },
+    "historical_top_level": "All earlier fields retained as c819bdf/ec0dad2 evidence; current P2 mechanism/results are in this object, not a rewrite of historical reports"
+  }
 }

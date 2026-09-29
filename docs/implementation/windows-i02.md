@@ -64,7 +64,7 @@ Run 中的自动测试现在直接运行正式 `agent_core`、HTTP 桥和 delive
 1. A 轮首次通知后、尚未回应时保存 Snapshot。`state.device_reports` 中对应尝试应只有一份报告，`delivered=true` 只代表原生 API 调用返回成功；`api_return_at` 是宿主适配器返回时刻，`received_at` 是 Core 接收时刻，不能当作显示或阅读时刻。`state.delivery_metrics` 同一开始干预最多一项机会。原生 API 失败应保存负结果，不填成功。
 2. 关闭主窗留托盘，再从托盘打开、保存 Snapshot。宿主 PID 不变，不新增发送或重复报告；填写 `g01WindowClose`。实际旧结果在关闭窗口期间是否尚未提交不可由人工猜测，这条竞争由自动控制点核验。
 3. 已收到通知后从托盘真正退出，保持原 DataDirectory 用 Resume 重新运行。新宿主不得重发旧尝试；已存报告仍在同库。填写 `g01HostRestartNoReplay`。本步骤不声称复现未提交结果，未提交／检查后退出／回滚的控制点由上述生产自动测试负责。
-4. A 的正常送达及会话进入，核对 `delivery_metrics` 的同干预去重、真实进入来源及延迟字段。迟到顺序未知报告不进入该指标。该延迟使用同机墙钟下设备适配器返回到 Core 会话提交的差值；不是用户看见时间，跨时钟调整不能据此作因果判断。填写 `g01NormalDelivery`。
+4. A 的正常送达及会话进入，核对 `delivery_metrics` 的同干预去重、真实进入来源及延迟字段。迟到顺序未知报告不进入该指标。该延迟使用同机 QPC 样本，正常有效计时的 `time_basis` 应为 `windows_qpc_v1`；缺失／失效／跨 Core 运行期或精度边界不确定时，秒数为 null、分级 unknown，但已有机会和明确进入保留。不要用墙钟差核对耗时，也不要把它当作用户看见时间。填写 `g01NormalDelivery`。
 
 若需单独复核生产自动层（无需重跑旧隔离矩阵），在干净源码根目录运行：
 

@@ -65,4 +65,19 @@ P = `tests/acceptance/test_g01_production.py`；N = `test_g01_processes.py`；H 
 | 正常送达与指标 | P `normal_result`、`followup_does_not_count`；H normal／api_failure；D/L 原首次与较弱跟进 | 一干预一次机会，正常进入延迟保留；Windows g01NormalDelivery |
 | I-01 保留 | delivery_test.go 领取／结果请求和响应丢失、负结果、慢领取不阻断心跳；UI 两页同会话收尾草稿 | 旧 opt-in 实验跳过不是验收通过，也未计入生产覆盖 |
 
-未知顺序报告不生成精确进入延迟；正常顺序由原事务尚未解决的上下文及后续用户事务确定。正常延迟的时间基准是同机墙钟下宿主适配器返回与 Core 进入时刻之差，不是显示／阅读时间；时钟调整不是新的顺序证据。未实现任何新的观察仪表盘或正式 dogfooding。
+未知顺序报告不生成精确进入延迟；正常顺序由原事务尚未解决的上下文及后续用户事务确定。P2 修复后的正常延迟使用经核对的同机 QPC／CLOCK_BOOTTIME 样本及同 Core 运行期，不是墙钟差或显示／阅读时间；计时依据不足仅将时间指标标为未知。未实现任何新的观察仪表盘或正式 dogfooding。
+
+## OBS-01 时间指标 P2 补充（源码 3f7820a）
+
+| 分支 | 生产路径断言 | 证据层 |
+| --- | --- | --- |
+| 正常、宽限内／边界／外 | `test_delivery_timing.elapsed_normal_boundaries_and_wall_jumps`：0/599/600/601 秒，机会 1、进入 true | Python 可控双时钟 PASS |
+| 墙钟前跳／回拨且差值非负 | 同测试：实际 10 秒／700 秒分别保留 immediate／delayed，不使用 610／100 秒墙钟差 | Python PASS；修复前失败输出保留 |
+| 旧记录缺依据、非法／不匹配／范围外、读失败 | `wall_clock_alone`、`missing_invalid_or_unbounded_samples`：null/unknown，其他事实保留 | Python PASS |
+| Core 重启与旧完整样本对 | `core_restart_does_not_mix_epochs`：跨期不接续，旧完整对只读保留，原命令返回 | Python PASS；原真实进程重启回归保留 |
+| 宿主新运行／重复报告 | `host_replacement_cannot_replace_committed_timing`、正常分支原命令重试；既有 G01 重启／冲突／逐写回滚 | Python PASS；不篡改原报告 |
+| 迟到且顺序未知 | `late_unknown_order_never_has_latency`：无机会、无延迟 | Python PASS |
+| QPC 精度边界 | `qpc_tick_ambiguity`：零点及宽限边界 ±1 tick 未知 | 确定性替身 PASS，非 Windows 运行 |
+| 真实跨进程共同计时源 | Go `TestDeliveryElapsedClockAcrossRealBridge`，正式 pump→HTTP→Core 校验开始／接收范围 | Linux PASS；Windows NOT_RUN |
+
+本轮只修复时间证据，不改变 OBS-01 的机会或进入规则，不作为正式观察准入。Windows 手册 A／G-01 原步骤的指标预期已同步，无新增操作。详见生产报告 P2 节及机器摘要 `p2_timing_fix`。

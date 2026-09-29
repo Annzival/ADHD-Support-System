@@ -1,5 +1,7 @@
 # I-02：确定性执行分支与恢复
 
+> 时间指标 P2（2026-09-29）：源码 `3f7820a` 改为同机明确计时源与同 Core 运行期核对；Python 71、Go race／vet、前端 13、Windows 交叉构建通过。详见[生产报告 P2](i02-g01-production-integration.md#p2墙钟调整导致耗时错误2026-09-29)。仅本项修复供独立复审，I-02 未 PASS；Windows 生产验收未完成、旧 ECONNRESET 原因未知。
+
 > 当前生产集成（2026-09-29）：[结果与限制](i02-g01-production-integration.md)、[37 项及 G01-R/U/C 映射](i02-production-coverage.md)、[生产机器摘要](i02-g01-production-integration.json)。正式 Core／宿主已接入 ADR-0058；生产自动层通过，Windows 生产行为 NOT_RUN，历史浏览器 ECONNRESET 根因未确认，整体 BLOCKED／未 PASS。下方各轮结论均保留历史，不作为当前生产验收结论。
 
 > 最新 Windows 回传：[隔离契约操作者证据](i02-g01-accepted-boundary-validation.md#windows-操作者证据归档)为 48/48 PASS，摘要完整校验已成功；Git／CRLF 工具哈希已核对，原矩阵未重跑。原 os.txt 已确认 Windows 10 Build 19045、64 位；锁定环境核对完成，生产接纳与 I-02 整体尚未通过。以下等待摘要／NOT_RUN 文字保留为各 checkpoint 历史。
