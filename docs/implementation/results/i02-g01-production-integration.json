@@ -1,0 +1,512 @@
+{
+  "schema_version": 1,
+  "source_commit": "c819bdfda21d11056970fa640175daebc5e5bf10",
+  "date": "2026-09-29",
+  "task": "Issue #33 / Draft PR #35 I-02 production integration",
+  "overall_status": "BLOCKED",
+  "production_automated_status": "PASS",
+  "windows_production_status": "NOT_RUN",
+  "environment": {
+    "os": "Linux",
+    "kernel": "6.8.0-49-generic",
+    "architecture": "x86_64",
+    "python": "3.12.3",
+    "sqlite": "3.45.1",
+    "go": "go version go1.25.0 linux/amd64",
+    "node": "v24.19.0"
+  },
+  "checks": {
+    "python": {
+      "methods": 64,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "go_race": {
+      "status": "PASS",
+      "passed_tests_and_subtests": [
+        "TestBridgeForwardsCoreStatusAndNeverReportsUnavailableAsSuccess",
+        "TestBootstrapTimeoutReapsChildAndRemovesHandoff",
+        "TestBootstrapRealCoreConsumesMaterialAndPreservesState",
+        "TestDeliveryRetriesUncertainCommandsWithoutRepeatingPresentation",
+        "TestDeliveryRetriesUncertainCommandsWithoutRepeatingPresentation/delivery_claim/committed_response_loss",
+        "TestDeliveryRetriesUncertainCommandsWithoutRepeatingPresentation/delivery_claim/request_loss",
+        "TestDeliveryRetriesUncertainCommandsWithoutRepeatingPresentation/delivery_receipt/committed_response_loss",
+        "TestDeliveryRetriesUncertainCommandsWithoutRepeatingPresentation/delivery_receipt/request_loss",
+        "TestSlowClaimDoesNotBlockDesktopHeartbeat",
+        "TestExpiredClaimAndOrphanClaimNeverPresent",
+        "TestFailedNativeSubmissionRetriesOnlyOriginalNegativeReceipt",
+        "TestG01ProductionPumpInterleavings",
+        "TestG01ProductionPumpInterleavings/normal",
+        "TestG01ProductionPumpInterleavings/during_call",
+        "TestG01ProductionPumpInterleavings/after_return",
+        "TestG01ProductionPumpInterleavings/request_loss",
+        "TestG01ProductionPumpInterleavings/response_loss",
+        "TestG01ProductionPumpInterleavings/window_close",
+        "TestG01ProductionPumpInterleavings/api_failure",
+        "TestG01CancelledBeforeCallCannotPresent",
+        "TestG01CancelledBeforeCallCannotPresent/delivery_claim",
+        "TestG01CancelledBeforeCallCannotPresent/delivery_begin",
+        "TestG01InitialBindingRefusesWrongOrReusedProcessIdentity",
+        "TestG01InitialBindingRefusesWrongOrReusedProcessIdentity/original",
+        "TestG01InitialBindingRefusesWrongOrReusedProcessIdentity/wrong_pid",
+        "TestG01InitialBindingRefusesWrongOrReusedProcessIdentity/replacement_with_reused_numeric_pid"
+      ],
+      "historical_opt_in_or_helpers_not_counted": [
+        "TestI02DeliveryInterleavingEvidence",
+        "TestG01TransactionQualification",
+        "TestG01InitialBinding",
+        "TestG01RestartRevalidation",
+        "TestG01SpikeHostProcess",
+        "TestG01BoundedSpike",
+        "TestG01MixedCommittedAndUncommitted",
+        "TestG01RestartBeforeRegistration"
+      ]
+    },
+    "go_vet": "PASS",
+    "browser": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "status": "PASS_THIS_RUN_ONLY"
+    },
+    "windows_cross_build": "COMPILED_NOT_EXECUTED",
+    "powershell_syntax": "PASS",
+    "python_discovery": {
+      "passed": 6
+    },
+    "diff_check": "PASS"
+  },
+  "commands": {
+    "python": "python3 -m unittest discover -s tests/acceptance -v",
+    "go_race": ".scratch/toolchain/go/bin/go -C desktop test -race -count=1 -v ./...",
+    "go_vet": ".scratch/toolchain/go/bin/go -C desktop vet ./...",
+    "browser": "I01_TEST_GO=\"$PWD/.scratch/toolchain/go/bin/go\" I01_BROWSER_EXECUTABLE=/home/Parzival/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome LD_LIBRARY_PATH=\"$PWD/.scratch/browser-libs/extracted/usr/lib/x86_64-linux-gnu\" npm test --prefix desktop",
+    "windows_cross_build": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 .scratch/toolchain/go/bin/go -C desktop build -o ../.scratch/i02-production-desktop.exe .",
+    "diff_check": "git diff --check"
+  },
+  "coverage": "docs/implementation/results/i02-production-coverage.md",
+  "sources": {
+    "agent_core/__init__.py": {
+      "git_sha256": "5b8b49c9cad8194ec412c27d57ca243fbe8fc271c8e2f2e02229820569115323",
+      "worktree_sha256": "5b8b49c9cad8194ec412c27d57ca243fbe8fc271c8e2f2e02229820569115323"
+    },
+    "agent_core/__main__.py": {
+      "git_sha256": "75d18ee7b26b49bcb225494e30b5900fb6d4db204fe1f9e24f1d3cbe6381bc9e",
+      "worktree_sha256": "75d18ee7b26b49bcb225494e30b5900fb6d4db204fe1f9e24f1d3cbe6381bc9e"
+    },
+    "agent_core/core.py": {
+      "git_sha256": "e7570ba9b4495136d81a8e6f32b60d06107268fe413f69ffd611ba10e7a507b0",
+      "worktree_sha256": "e7570ba9b4495136d81a8e6f32b60d06107268fe413f69ffd611ba10e7a507b0"
+    },
+    "agent_core/delivery_evidence.py": {
+      "git_sha256": "15b2a2fe8b1253e8820dfb74b714e1d442095c0f7e77411f6f279f0d1b9eb1b3",
+      "worktree_sha256": "15b2a2fe8b1253e8820dfb74b714e1d442095c0f7e77411f6f279f0d1b9eb1b3"
+    },
+    "agent_core/host_identity.py": {
+      "git_sha256": "e2470a8910319c29ca47063ff47f86c034b21d96449bc3a298c2fbf5860685da",
+      "worktree_sha256": "e2470a8910319c29ca47063ff47f86c034b21d96449bc3a298c2fbf5860685da"
+    },
+    "agent_core/lifecycle.py": {
+      "git_sha256": "27398eddc8334d26098a14bce1b8c80691270f7e61cf4e638e4d4854de5337ff",
+      "worktree_sha256": "27398eddc8334d26098a14bce1b8c80691270f7e61cf4e638e4d4854de5337ff"
+    },
+    "agent_core/process_identity.py": {
+      "git_sha256": "06bae5cfb4457967b035ce871c3562d36fdd2b359c0c5b2fa65fd13da73463ab",
+      "worktree_sha256": "06bae5cfb4457967b035ce871c3562d36fdd2b359c0c5b2fa65fd13da73463ab"
+    },
+    "agent_core/transport.py": {
+      "git_sha256": "a12be264d5d81256e8cb665daf7251f31fcd75859ffba88af1cad6738b02c837",
+      "worktree_sha256": "a12be264d5d81256e8cb665daf7251f31fcd75859ffba88af1cad6738b02c837"
+    },
+    "desktop/autostart_windows.go": {
+      "git_sha256": "d99e40f68d9e5833479c0d527c49c140aea0d34f87b0dc93a02597f9686b2244",
+      "worktree_sha256": "d99e40f68d9e5833479c0d527c49c140aea0d34f87b0dc93a02597f9686b2244"
+    },
+    "desktop/bridge.go": {
+      "git_sha256": "2dfc048aece6b762ff4b991a8f450f177e0fe209767786a01874aa5d3ea2ad07",
+      "worktree_sha256": "2dfc048aece6b762ff4b991a8f450f177e0fe209767786a01874aa5d3ea2ad07"
+    },
+    "desktop/bridge_test.go": {
+      "git_sha256": "b9f5b260848a6450568165b51de1de09b9a9472d63a70d0d06ac5b066be45b48",
+      "worktree_sha256": "b9f5b260848a6450568165b51de1de09b9a9472d63a70d0d06ac5b066be45b48"
+    },
+    "desktop/delivery.go": {
+      "git_sha256": "d0eab858a41c5af35f6bc0e43958d1f635c0b04e9fe4cfb6599779599f87120a",
+      "worktree_sha256": "d0eab858a41c5af35f6bc0e43958d1f635c0b04e9fe4cfb6599779599f87120a"
+    },
+    "desktop/delivery_test.go": {
+      "git_sha256": "53aa2a9c1305889b90a3e06bcfb534b60975a88135e73e5b816c8b1078e11b8d",
+      "worktree_sha256": "53aa2a9c1305889b90a3e06bcfb534b60975a88135e73e5b816c8b1078e11b8d"
+    },
+    "desktop/delivery_watch.go": {
+      "git_sha256": "ae56950c30b460272ca2f88ccd93fe46902cdc44dd5b69092d6c17ff4b1ece92",
+      "worktree_sha256": "ae56950c30b460272ca2f88ccd93fe46902cdc44dd5b69092d6c17ff4b1ece92"
+    },
+    "desktop/frontend/app.js": {
+      "git_sha256": "f610776b2c849857cbd95f46c213df2aa28607542f2f271f0e6ac0c50c6841e0",
+      "worktree_sha256": "f610776b2c849857cbd95f46c213df2aa28607542f2f271f0e6ac0c50c6841e0"
+    },
+    "desktop/frontend/index.html": {
+      "git_sha256": "cd0718bd2c4cf9a3ecf051136b8f0f01dc40001110c267509524c2a494aa5bb7",
+      "worktree_sha256": "cd0718bd2c4cf9a3ecf051136b8f0f01dc40001110c267509524c2a494aa5bb7"
+    },
+    "desktop/frontend/style.css": {
+      "git_sha256": "fc3b0b333dcc42abf85641827c35c38363f1e970366e777fecb634e241f1db72",
+      "worktree_sha256": "fc3b0b333dcc42abf85641827c35c38363f1e970366e777fecb634e241f1db72"
+    },
+    "desktop/g01_delivery_test.go": {
+      "git_sha256": "64913abf46882a86e174629659a9ad5465da2e3a270391deeace8622a20f1915",
+      "worktree_sha256": "64913abf46882a86e174629659a9ad5465da2e3a270391deeace8622a20f1915"
+    },
+    "desktop/go.mod": {
+      "git_sha256": "d6026dd4ca71d61e451ad06681d362145c1ccb78fca241cbefb9d7b05f3f5771",
+      "worktree_sha256": "d6026dd4ca71d61e451ad06681d362145c1ccb78fca241cbefb9d7b05f3f5771"
+    },
+    "desktop/go.sum": {
+      "git_sha256": "02a021aee61ca02b6b0eb27882d386e3c7d10187f6c35304648f1a22e8ce7871",
+      "worktree_sha256": "02a021aee61ca02b6b0eb27882d386e3c7d10187f6c35304648f1a22e8ce7871"
+    },
+    "desktop/i02_delivery_probe_test.go": {
+      "git_sha256": "5d84ee20e47b2c9e30a527831451c2ceedfa587b904fa5f030e2dd01c356a68c",
+      "worktree_sha256": "5d84ee20e47b2c9e30a527831451c2ceedfa587b904fa5f030e2dd01c356a68c"
+    },
+    "desktop/i02_g01_accepted_test.go": {
+      "git_sha256": "4b56c33d2f089f12d03f00afac27083cfdc411c8b91411563a3c6639f4b81e2f",
+      "worktree_sha256": "4b56c33d2f089f12d03f00afac27083cfdc411c8b91411563a3c6639f4b81e2f"
+    },
+    "desktop/i02_g01_restart_test.go": {
+      "git_sha256": "b1d8d2ca4df1ac97d268c334b6c9a53d66bc8507a116907d77d749ce90c9f6fb",
+      "worktree_sha256": "b1d8d2ca4df1ac97d268c334b6c9a53d66bc8507a116907d77d749ce90c9f6fb"
+    },
+    "desktop/i02_g01_spike_test.go": {
+      "git_sha256": "719d8f578b9738e3ac4149075922f81b2e7ba67ae7ff03302f86f55f22835ff3",
+      "worktree_sha256": "719d8f578b9738e3ac4149075922f81b2e7ba67ae7ff03302f86f55f22835ff3"
+    },
+    "desktop/main_other.go": {
+      "git_sha256": "07b7fb989df2e1940851081dc4ddf20c02ce495d038c3aebd882efb0d422242f",
+      "worktree_sha256": "07b7fb989df2e1940851081dc4ddf20c02ce495d038c3aebd882efb0d422242f"
+    },
+    "desktop/main_windows.go": {
+      "git_sha256": "b2a0ea02e4ec1848c13f4da8b77575e666b97e69e9762a911c212ee3e83665ff",
+      "worktree_sha256": "b2a0ea02e4ec1848c13f4da8b77575e666b97e69e9762a911c212ee3e83665ff"
+    },
+    "desktop/package-lock.json": {
+      "git_sha256": "84fc5ae777361a07019ff6dea536655e16ccc0f3305d3c94086c450931503cf2",
+      "worktree_sha256": "84fc5ae777361a07019ff6dea536655e16ccc0f3305d3c94086c450931503cf2"
+    },
+    "desktop/package.json": {
+      "git_sha256": "9fdb9e73c7562eeefe6c07b02e93ba262f89cc2acedc43fe61e57c53daf6b50d",
+      "worktree_sha256": "9fdb9e73c7562eeefe6c07b02e93ba262f89cc2acedc43fe61e57c53daf6b50d"
+    },
+    "desktop/tests/frontend.test.mjs": {
+      "git_sha256": "b86a2f850f90060cab25fe103dbb830520fa9400e8a115b8a56a2952224dc504",
+      "worktree_sha256": "b86a2f850f90060cab25fe103dbb830520fa9400e8a115b8a56a2952224dc504"
+    },
+    "scripts/acceptance/tests/test-python-discovery.ps1": {
+      "git_sha256": "d25608d6e8834a6de13d44c06a18355a589bd22d823a5b22a16773e4cd438536",
+      "worktree_sha256": "d25608d6e8834a6de13d44c06a18355a589bd22d823a5b22a16773e4cd438536"
+    },
+    "scripts/acceptance/windows-smoke.ps1": {
+      "git_sha256": "fbce26566d4be0aa4a1cd006b9750525c8e138bd2386bab0a42f832a03a6e780",
+      "worktree_sha256": "fbce26566d4be0aa4a1cd006b9750525c8e138bd2386bab0a42f832a03a6e780"
+    },
+    "tests/acceptance/delivery_fixture.py": {
+      "git_sha256": "50cf767d27a48db453547e2d78682f464b1d1b96fc04ebefb0dfe5ebc7a4e869",
+      "worktree_sha256": "50cf767d27a48db453547e2d78682f464b1d1b96fc04ebefb0dfe5ebc7a4e869"
+    },
+    "tests/acceptance/test_atomicity.py": {
+      "git_sha256": "4adb95de9615e59e11c0543b4b949eaf36987237c330cf221cd93ac7d12f3a41",
+      "worktree_sha256": "4adb95de9615e59e11c0543b4b949eaf36987237c330cf221cd93ac7d12f3a41"
+    },
+    "tests/acceptance/test_delivery_and_recovery.py": {
+      "git_sha256": "e31ff531700e8e97d6bb994051db0d7fcd95c173c9253f62e83995a6a74cfc20",
+      "worktree_sha256": "e31ff531700e8e97d6bb994051db0d7fcd95c173c9253f62e83995a6a74cfc20"
+    },
+    "tests/acceptance/test_execution_golden_path.py": {
+      "git_sha256": "190f881b4df8841379b42e315550321ff35d4dc12a0dfce48cf397d29783a459",
+      "worktree_sha256": "190f881b4df8841379b42e315550321ff35d4dc12a0dfce48cf397d29783a459"
+    },
+    "tests/acceptance/test_g01_processes.py": {
+      "git_sha256": "207e4a00c90a54f1c2a776ad94b1f770c8ad09e778fac45c528a7542f88f38df",
+      "worktree_sha256": "207e4a00c90a54f1c2a776ad94b1f770c8ad09e778fac45c528a7542f88f38df"
+    },
+    "tests/acceptance/test_g01_production.py": {
+      "git_sha256": "4f23a319fda6a64c7a11cc17d7bb5bc6e7689e38d2a6a2e699fd5a5e9dfde71d",
+      "worktree_sha256": "4f23a319fda6a64c7a11cc17d7bb5bc6e7689e38d2a6a2e699fd5a5e9dfde71d"
+    },
+    "tests/acceptance/test_i02_lifecycle.py": {
+      "git_sha256": "57c14583eac73dd60fd8b88c86aea3b610355538e2eb8e12001ba072917cd560",
+      "worktree_sha256": "57c14583eac73dd60fd8b88c86aea3b610355538e2eb8e12001ba072917cd560"
+    },
+    "tests/acceptance/test_transport.py": {
+      "git_sha256": "1e014eeb9fa2087ba6325426bf09c67e0383fb5b240c5d862ac7d40e2933ecde",
+      "worktree_sha256": "1e014eeb9fa2087ba6325426bf09c67e0383fb5b240c5d862ac7d40e2933ecde"
+    }
+  },
+  "raw_outputs": {
+    "python": {
+      "path": ".scratch/i02-checks/production-final-python-v3.txt",
+      "sha256": "da3a7cc6de3dda55b32aec5281324d58c7fe88c6b37fe7a29f3f82517678e59f",
+      "bytes": 10509
+    },
+    "go_race": {
+      "path": ".scratch/i02-checks/production-final-go-v2.txt",
+      "sha256": "648abb24cada6481076c5bf8fae45ef100f5301ae12acb2eab7e70b292d702f3",
+      "bytes": 5206
+    },
+    "go_vet": {
+      "path": ".scratch/i02-checks/production-final-vet.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "browser": {
+      "path": ".scratch/i02-checks/production-final-browser-v2.txt",
+      "sha256": "068934a402a8e04ebcbdded6068fdcf0905fec9dd05a3b441360bd9a09fa0af3",
+      "bytes": 1352
+    },
+    "windows_cross_build": {
+      "path": ".scratch/i02-checks/production-final-cross-build.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "powershell_syntax": {
+      "path": ".scratch/i02-checks/production-powershell.txt",
+      "sha256": "2376140b1f593fd14c77a48262d0bbac453a4499964443feb309ed9009471fe3",
+      "bytes": 23
+    },
+    "python_discovery": {
+      "path": ".scratch/i02-checks/production-python-discovery.txt",
+      "sha256": "10d70eb63764f1792f374cefccc526698ef3c05f1f5f529dc1e762b3f253b488",
+      "bytes": 321
+    },
+    "browser_baseline": {
+      "path": ".scratch/i02-checks/production-browser-baseline.txt",
+      "sha256": "051f09cf00404c52d22abfd1fd966d2b16bbb272754c1d7ea10d1e545b1dd2ac",
+      "bytes": 1353
+    },
+    "browser_serial_probe": {
+      "path": ".scratch/i02-checks/browser-transport-probe.txt",
+      "sha256": "5b20ac3a668aa5bab21d0797364f78f0604969cdbeb6c4c0109034a5253df542",
+      "bytes": 46
+    },
+    "browser_parallel_probe": {
+      "path": ".scratch/i02-checks/browser-transport-parallel.txt",
+      "sha256": "0091a529ffa1c79aaac6651fc7c12a52957629067012647136a534cf6073114f",
+      "bytes": 45
+    },
+    "historical_browser_failure": {
+      "path": ".scratch/i02-checks/g01-accepted-ui.txt",
+      "sha256": "8ae44bfcb0486500bee662c269116978539f3cec3e9c5cbab6b0eda3d19b181e",
+      "bytes": 1928
+    }
+  },
+  "historical_reports_unchanged_from_c4ec817": {
+    "docs/implementation/results/i02-g01-verification.md": "02d500c663612bd123b6b691a098bb036288f688ac940222d0ff344acec21595",
+    "docs/implementation/results/i02-g01-verification.json": "0e2112ff09fd9961e883065839f047fec3e44e78f32bb80b8c391f8214f20a18",
+    "docs/implementation/results/i02-g01-restart-revalidation.md": "7ed71d74b145844860e9003ccadc23870cd23a913fb4f95cefdac48416ca215a",
+    "docs/implementation/results/i02-g01-restart-revalidation.json": "d59d854e86c461caaf1fa916500af1c778047e35b224a1cf4ffa5018948bdc4b",
+    "docs/implementation/results/i02-g01-commit-boundary-research.md": "d3be56c799a891b11f82f5907544d6d6f5cf88adba660386c1d1246b7649c17a",
+    "docs/implementation/results/i02-g01-accepted-boundary-validation.md": "a04f474991a5203c82334276a62d8155879c1e6f0dfa042632a3694e91f35faf",
+    "docs/implementation/results/i02-g01-accepted-boundary-validation.json": "d27dff42497f736ab57ee499ce665f24c13906d1b0d9c632a8108f20ca291621",
+    "docs/implementation/results/i02-g01-accepted-boundary-windows-attestation.json": "2d983e553a5318b94e0220e8fe068675415da3c0dab8cdd144dbf9b7d5e3a92a"
+  },
+  "cross_binary": {
+    "path": ".scratch/i02-production-desktop.exe",
+    "sha256": "581732ea9d31d634d0d89a0b696bdacff7eb149572bbc30034813606b6cf177d",
+    "execution": "NOT_RUN"
+  },
+  "browser_unresolved": {
+    "historical_symptom": "fetch failed / read ECONNRESET",
+    "cause": "UNKNOWN",
+    "serial_probe": {
+      "passed": 1000,
+      "failed": 0
+    },
+    "parallel_probe": {
+      "workers": 32,
+      "passed": 960,
+      "failed": 0
+    },
+    "stop": "三次复现无新增定位证据，按用户条件停止；最终回归不是根因修复证据",
+    "environment_only_cause_proven": false
+  },
+  "scope_or_adr_conflict_found": false,
+  "limits": [
+    "Windows 生产原生行为尚未运行；旧 Windows 48/48 是隔离候选证据",
+    "真实 Linux 进程退出与 PID 复用替身分层",
+    "自动设备回调不证明原生通知显示或用户看见",
+    "正常延迟采用同机墙钟适配器返回到会话提交；不是显示/阅读时刻，时钟调整不能证明顺序",
+    "不宣称 I-02 PASS；仍需独立代码复审和用户人工合并"
+  ],
+  "hash_semantics": "Git 和工作区均为原始字节 SHA-256；只在源码一致性检查时容许 CRLF/LF；原始输出哈希不归一化",
+  "p2_timing_fix": {
+    "source_commit": "3f7820a55dc78d30e50e1fff2edc4f9ae53d7581",
+    "date": "2026-09-29",
+    "status": "PASS_AUTOMATED_PENDING_INDEPENDENT_REVIEW",
+    "environment": {
+      "os": "Linux",
+      "kernel": "6.8.0-49-generic",
+      "architecture": "x86_64",
+      "python": "3.12.3",
+      "sqlite": "3.45.1",
+      "go": "go version go1.25.0 linux/amd64",
+      "node": "v24.19.0"
+    },
+    "baseline_source_commit": "c819bdfda21d11056970fa640175daebc5e5bf10",
+    "baseline_evidence_commit": "ec0dad29b418364608e760710b59231103d30961",
+    "before": {
+      "status": "EXPECTED_FAIL",
+      "failed_subtests": 3,
+      "wall_seconds": [
+        610,
+        100,
+        10
+      ],
+      "levels": [
+        "delayed",
+        "immediate",
+        "immediate"
+      ],
+      "note": "定向缺失依据断言在修复前执行；新增受控计时测试验证真实经过 10/700 秒与墙钟差 610/100 分离"
+    },
+    "after": {
+      "python_methods": 71,
+      "python_status": "PASS",
+      "go_race": "PASS",
+      "go_vet": "PASS",
+      "browser_passed": 13,
+      "browser_failed": 0,
+      "browser_skipped": 0,
+      "windows_cross_build": "COMPILED_NOT_EXECUTED",
+      "diff_check": "PASS"
+    },
+    "commands": {
+      "python": "python3 -m unittest discover -s tests/acceptance -v",
+      "go_race": ".scratch/toolchain/go/bin/go -C desktop test -race -count=1 -v ./...",
+      "go_vet": ".scratch/toolchain/go/bin/go -C desktop vet ./...",
+      "browser": "I01_TEST_GO=\"$PWD/.scratch/toolchain/go/bin/go\" I01_BROWSER_EXECUTABLE=/home/Parzival/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome LD_LIBRARY_PATH=\"$PWD/.scratch/browser-libs/extracted/usr/lib/x86_64-linux-gnu\" npm test --prefix desktop",
+      "windows_cross_build": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 .scratch/toolchain/go/bin/go -C desktop build -o ../.scratch/i02-p2-desktop.exe .",
+      "diff_check": "git diff --check",
+      "targeted": "python3 -m unittest discover -s tests/acceptance -p test_delivery_timing.py -v"
+    },
+    "mechanism": {
+      "windows": "windows_qpc_v1 / QueryPerformanceCounter + QueryPerformanceFrequency",
+      "linux": "linux_boottime_v1 / CLOCK_BOOTTIME",
+      "scope": "same Core run, same explicit OS clock/frequency, host sample bounded by Core begin/receipt; complete committed old pairs remain readable",
+      "failure": "latency null / level unknown only; delivery, entered and opportunity facts preserved",
+      "precision": "Windows QPC <=1 tick at zero or within 1 tick of grace: unknown"
+    },
+    "raw_outputs": {
+      "p2-before": {
+        "path": ".scratch/i02-checks/p2-before.txt",
+        "sha256": "ec876e64286d7fffb65addaef857aa298ff129da258aa360ec2e27167a18e958",
+        "bytes": 3400
+      },
+      "p2-targeted": {
+        "path": ".scratch/i02-checks/p2-targeted.txt",
+        "sha256": "dc4c184339035f9bd275833b5f055ed8b012ccf7de7ed5dccced2cf8b99d7ccf",
+        "bytes": 3379
+      },
+      "p2-python-final": {
+        "path": ".scratch/i02-checks/p2-python-final.txt",
+        "sha256": "5f114fcce1c0e7468460a77527338ef511c6cbc29b1693bb2df1180a2b8676b6",
+        "bytes": 13790
+      },
+      "p2-go": {
+        "path": ".scratch/i02-checks/p2-go.txt",
+        "sha256": "c6180af17019b12842c8f2cd29e2040ede4d7242ed0a5eac19c5197d87585d0d",
+        "bytes": 5316
+      },
+      "p2-vet": {
+        "path": ".scratch/i02-checks/p2-vet.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "p2-browser": {
+        "path": ".scratch/i02-checks/p2-browser.txt",
+        "sha256": "4dab240cc1e79df2983565316fffbfa7dd07b1c09113e92cc3fbbc5d509dffe1",
+        "bytes": 1355
+      },
+      "p2-cross-build": {
+        "path": ".scratch/i02-checks/p2-cross-build.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "p2-diff": {
+        "path": ".scratch/i02-checks/p2-diff.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "sources": {
+      "agent_core/core.py": {
+        "git_sha256": "22f736ab04bbebd031e88d56c16f102596e5e4b9df9a7ba9e1799e2fb9d29290",
+        "worktree_sha256": "22f736ab04bbebd031e88d56c16f102596e5e4b9df9a7ba9e1799e2fb9d29290"
+      },
+      "agent_core/delivery_evidence.py": {
+        "git_sha256": "da48f272e502f65e03eaecba87e4c00803323accc88988b862f43a055ce8df00",
+        "worktree_sha256": "da48f272e502f65e03eaecba87e4c00803323accc88988b862f43a055ce8df00"
+      },
+      "agent_core/elapsed.py": {
+        "git_sha256": "6917a145dd37a53188cc0077564d286c10639de52f29c7d6c95aef07f3dd12c1",
+        "worktree_sha256": "6917a145dd37a53188cc0077564d286c10639de52f29c7d6c95aef07f3dd12c1"
+      },
+      "agent_core/lifecycle.py": {
+        "git_sha256": "fbcc35ddef849ce2bee26b179d14159a2795b3f8b0385cd35c2d551061a71e6c",
+        "worktree_sha256": "fbcc35ddef849ce2bee26b179d14159a2795b3f8b0385cd35c2d551061a71e6c"
+      },
+      "desktop/delivery.go": {
+        "git_sha256": "623ec58be98910db2c77241f9b8977e7de65f5a4bcae5aac9e9eb42d68bf3703",
+        "worktree_sha256": "623ec58be98910db2c77241f9b8977e7de65f5a4bcae5aac9e9eb42d68bf3703"
+      },
+      "desktop/delivery_test.go": {
+        "git_sha256": "824bb0cac487ff3c2e5a2892970300dd8c931f4488ad8afb8e89274e07adac21",
+        "worktree_sha256": "824bb0cac487ff3c2e5a2892970300dd8c931f4488ad8afb8e89274e07adac21"
+      },
+      "desktop/elapsed.go": {
+        "git_sha256": "903a909d9621d3e453d68c9b28f7b8f8eae8ee115857d1f8c80b45cb01caf9e0",
+        "worktree_sha256": "903a909d9621d3e453d68c9b28f7b8f8eae8ee115857d1f8c80b45cb01caf9e0"
+      },
+      "desktop/elapsed_linux.go": {
+        "git_sha256": "13b9af979aa05e2dc415d6279e25530e766428feaeaf11dd8dcad903eb509fc5",
+        "worktree_sha256": "13b9af979aa05e2dc415d6279e25530e766428feaeaf11dd8dcad903eb509fc5"
+      },
+      "desktop/elapsed_other.go": {
+        "git_sha256": "22f0643a387a2a04bffb98be991205d0cd35494e32092297e28a53fddbcfee83",
+        "worktree_sha256": "22f0643a387a2a04bffb98be991205d0cd35494e32092297e28a53fddbcfee83"
+      },
+      "desktop/elapsed_windows.go": {
+        "git_sha256": "1391b62af7d342c5b5d00c0d44d4eb7ba028d46a62b560f7a061a504d242a560",
+        "worktree_sha256": "1391b62af7d342c5b5d00c0d44d4eb7ba028d46a62b560f7a061a504d242a560"
+      },
+      "tests/acceptance/delivery_fixture.py": {
+        "git_sha256": "4a9019d4be65741de86f277154aaab43a2a5b075356f25a09be4bde00c5ca4c8",
+        "worktree_sha256": "4a9019d4be65741de86f277154aaab43a2a5b075356f25a09be4bde00c5ca4c8"
+      },
+      "tests/acceptance/test_delivery_timing.py": {
+        "git_sha256": "97fc002d17f9108e67b2247ab86f6c0f49174b8beec16390cb01ea48c721f81b",
+        "worktree_sha256": "97fc002d17f9108e67b2247ab86f6c0f49174b8beec16390cb01ea48c721f81b"
+      },
+      "tests/acceptance/test_g01_production.py": {
+        "git_sha256": "0b8bd7c438aec2e944b4ce09986840172ae447d03a056e5816ad759a0946d4e8",
+        "worktree_sha256": "0b8bd7c438aec2e944b4ce09986840172ae447d03a056e5816ad759a0946d4e8"
+      }
+    },
+    "windows_production_status": "NOT_RUN",
+    "browser_root_cause": "UNKNOWN",
+    "browser_pressure_diagnosis_resumed": false,
+    "scope_or_adr_conflict_found": false,
+    "windows_steps": "No new operation; existing metrics expectation uses windows_qpc_v1 or unknown instead of wall-clock subtraction",
+    "sources_access_date": "2026-09-29",
+    "primary_sources": [
+      "https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps",
+      "https://docs.python.org/3.12/library/time.html#time.CLOCK_BOOTTIME"
+    ],
+    "cross_binary": {
+      "path": ".scratch/i02-p2-desktop.exe",
+      "sha256": "62d5107753521aaf8f0f0f82001fd31b27f095cffaf058c457a5750b6cc3738f",
+      "execution": "NOT_RUN"
+    },
+    "historical_top_level": "All earlier fields retained as c819bdf/ec0dad2 evidence; current P2 mechanism/results are in this object, not a rewrite of historical reports"
+  }
+}

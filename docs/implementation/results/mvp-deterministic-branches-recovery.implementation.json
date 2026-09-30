@@ -1,0 +1,137 @@
+{
+  "status": "BLOCKED",
+  "scope": "I-02 不依赖 G-01 的实现与自动验证；不是整体 PASS 或 Windows PASS",
+  "source_commit": "f50af6e1f49d8be8ed44697dd377d17779e7d3cc",
+  "prior_checkpoints": [
+    "7834bdb",
+    "57cedc2",
+    "433c2ed",
+    "7b4201d"
+  ],
+  "environment": {
+    "os": "Linux",
+    "architecture": "x86_64",
+    "python": "3.12.3",
+    "python_bits": 64,
+    "sqlite": "3.45.1",
+    "go": "go version go1.25.0 linux/amd64",
+    "node": "v24.19.0",
+    "playwright": "1.58.2",
+    "browser": "Chrome for Testing 151.0.7922.34 (Linux)",
+    "target": "Windows amd64, CGO_ENABLED=0; cross-build only",
+    "wails": "v3.0.0-beta.8"
+  },
+  "checks": {
+    "python": {
+      "result": "PASS",
+      "methods": 46,
+      "output": "domain-complete.txt"
+    },
+    "go_race": {
+      "result": "PASS",
+      "diagnostic_enabled": true,
+      "output": "go-complete.txt",
+      "limit": "四支交错只保留诊断观察，尚不是 G-01 验收答案"
+    },
+    "go_vet": {
+      "result": "PASS",
+      "output": "vet-complete.txt"
+    },
+    "windows_cross_build": {
+      "result": "PASS",
+      "output": "build-complete.txt"
+    },
+    "browser": {
+      "result": "PASS",
+      "tests": 13,
+      "skipped": 0,
+      "output": "ui-audit.txt",
+      "limit": "真实 Core HTTP、Wails 锁定 runtime、Linux Chromium；没有原生 Windows 载体"
+    },
+    "powershell_python_discovery": {
+      "result": "PASS",
+      "cases": 6,
+      "output": "powershell-complete.txt",
+      "limit": "Linux PowerShell 解析及隔离 discovery 检查，不是 Windows 实机运行"
+    },
+    "windows_native": {
+      "result": "NOT_RUN"
+    },
+    "g01_acceptance": {
+      "result": "BLOCKED",
+      "reason": "此前允许的发送身份依据、先后判断与未提交结果跨重启边界待主线程确认"
+    }
+  },
+  "sources_sha256": {
+    "agent_core/__init__.py": "5b8b49c9cad8194ec412c27d57ca243fbe8fc271c8e2f2e02229820569115323",
+    "agent_core/__main__.py": "75d18ee7b26b49bcb225494e30b5900fb6d4db204fe1f9e24f1d3cbe6381bc9e",
+    "agent_core/core.py": "a99e5a6ad9dff8e9c0db6daf6e586b3c88473986830ba668d3d24a4c91c1cbda",
+    "agent_core/lifecycle.py": "c5578374b0863c45996193cdbe855f840983e3149a618d466551b41a9730ef9a",
+    "agent_core/transport.py": "8ef6046e06291e08a4ae485b0787e7e19875aa86b70fb27f57680d8defb99876",
+    "desktop/autostart_windows.go": "d99e40f68d9e5833479c0d527c49c140aea0d34f87b0dc93a02597f9686b2244",
+    "desktop/bridge.go": "2dfc048aece6b762ff4b991a8f450f177e0fe209767786a01874aa5d3ea2ad07",
+    "desktop/bridge_test.go": "b9f5b260848a6450568165b51de1de09b9a9472d63a70d0d06ac5b066be45b48",
+    "desktop/delivery.go": "e6f6f9d8f63d94feed35b77929e411328cf771458df9e882c6a2b7848eddaa9b",
+    "desktop/delivery_test.go": "53aa2a9c1305889b90a3e06bcfb534b60975a88135e73e5b816c8b1078e11b8d",
+    "desktop/delivery_watch.go": "ae56950c30b460272ca2f88ccd93fe46902cdc44dd5b69092d6c17ff4b1ece92",
+    "desktop/frontend/app.js": "f610776b2c849857cbd95f46c213df2aa28607542f2f271f0e6ac0c50c6841e0",
+    "desktop/frontend/index.html": "cd0718bd2c4cf9a3ecf051136b8f0f01dc40001110c267509524c2a494aa5bb7",
+    "desktop/frontend/style.css": "fc3b0b333dcc42abf85641827c35c38363f1e970366e777fecb634e241f1db72",
+    "desktop/go.mod": "d6026dd4ca71d61e451ad06681d362145c1ccb78fca241cbefb9d7b05f3f5771",
+    "desktop/go.sum": "02a021aee61ca02b6b0eb27882d386e3c7d10187f6c35304648f1a22e8ce7871",
+    "desktop/i02_delivery_probe_test.go": "5d84ee20e47b2c9e30a527831451c2ceedfa587b904fa5f030e2dd01c356a68c",
+    "desktop/main_other.go": "07b7fb989df2e1940851081dc4ddf20c02ce495d038c3aebd882efb0d422242f",
+    "desktop/main_windows.go": "b2a0ea02e4ec1848c13f4da8b77575e666b97e69e9762a911c212ee3e83665ff",
+    "desktop/package-lock.json": "84fc5ae777361a07019ff6dea536655e16ccc0f3305d3c94086c450931503cf2",
+    "desktop/package.json": "9fdb9e73c7562eeefe6c07b02e93ba262f89cc2acedc43fe61e57c53daf6b50d",
+    "desktop/tests/frontend.test.mjs": "b86a2f850f90060cab25fe103dbb830520fa9400e8a115b8a56a2952224dc504",
+    "scripts/acceptance/tests/test-python-discovery.ps1": "d25608d6e8834a6de13d44c06a18355a589bd22d823a5b22a16773e4cd438536",
+    "scripts/acceptance/windows-smoke.ps1": "18a2b2742be5f02f9575f790ea0aad5cf87107e45e0c0f3940cad41804afc230",
+    "tests/acceptance/test_atomicity.py": "4adb95de9615e59e11c0543b4b949eaf36987237c330cf221cd93ac7d12f3a41",
+    "tests/acceptance/test_delivery_and_recovery.py": "e8ff002ea252992e245145c5304231cea52afa5d9813f8f388e6d58e96839384",
+    "tests/acceptance/test_execution_golden_path.py": "9b262b04eaca75bf2c35eaf6cccafd0598455432bec8606d69c4f4a32ab3e739",
+    "tests/acceptance/test_i02_lifecycle.py": "0b912d1e7f53d6499defeff966d9747f4638dd107aaaa5955f3979d53bcb896f",
+    "tests/acceptance/test_transport.py": "de83361a3a5c2b2a5fa55030c749834bc06eb4ff0055c51fae8b345e9890d3c0"
+  },
+  "raw_outputs": {
+    "domain-complete.txt": {
+      "sha256": "46017237b424adede9e9ff2bcda91a14954a7005b1fadf8be8e4816e59c11849",
+      "bytes": 7389
+    },
+    "go-complete.txt": {
+      "sha256": "7fda6f224274bcb886864da9fe4e73b5d4fcf72ba71f67c09d9c11f1ffb89ec6",
+      "bytes": 61
+    },
+    "vet-complete.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "build-complete.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "ui-audit.txt": {
+      "sha256": "e3fe640b38a4e79ed145b7bc1f5230586ab51609cfa16886552277656214611a",
+      "bytes": 1354
+    },
+    "powershell-complete.txt": {
+      "sha256": "10d70eb63764f1792f374cefccc526698ef3c05f1f5f529dc1e762b3f253b488",
+      "bytes": 321
+    }
+  },
+  "raw_output_location": ".scratch/i02-checks/（受控本机保存，不提交，保留至复审结束）",
+  "validation_binary": {
+    "path": ".scratch/i02-desktop.exe",
+    "sha256": "c4a22cb22ad7b039e0557b1896cd1dfb06665ec22b0be31ee9d2f73a61ac5c1c",
+    "vcs_note": "本二进制在提交前按与 source_commit 相同的产品源码构建，内嵌 VCS 可能是前一提交并标记 dirty；仅作交叉构建检查。Windows Run 从最终干净 checkpoint 重新构建并记录独立哈希。"
+  },
+  "historical_evidence_sha256": {
+    "docs/implementation/results/mvp-deterministic-branches-recovery.interleaving.json": "ba9de9012d993fe170341f6fd5ea7abe77769061ba93a14f7428c156a45d48a6"
+  },
+  "limits": [
+    "未启用 G-01 推荐的历史回执接纳逻辑",
+    "没有 Windows 通知、焦点、小窗、托盘、单实例、登录启动、守护或 PC 重启本轮证据",
+    "方案版本是合成夹具，没有测试 I-03 原文导入或方案启用事务",
+    "旧 I-01 和 7834bdb 证据不覆盖、不合并为本轮结果"
+  ]
+}

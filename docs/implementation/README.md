@@ -79,3 +79,31 @@ I-01 用户命令为 `start`、`report_complete`、`finish_closure`、`skip_clos
 完整的开始校正、改期、今天不做、续行、暂停包、无回应跟进、自动期限收束、恢复干预／切换、旧版本选择和历史更正留给 I-02；未提供的命令明确拒绝。开机启动及完整五项宿主回归亦不在本阶段完成声明中。I-03 导入和供应商集成、I-04 集成与观察准入均未开始。
 
 SQLite 架构为首个开发切片；没有旧产品数据迁移、备份恢复或断电可靠性承诺。JSON 记录保留对象类型、稳定身份和版本，关系由 Core 命令统一维护；以后表结构调整属于实现选择，不能改变产品对象或历史事实。
+
+## I-02 当前实现与运行
+
+I-02 在独立 Draft PR #35 实现确定性分支、期限、会话与恢复；上文 I-01 历史范围保留。最新状态见 [I-02 结果](results/mvp-deterministic-branches-recovery.md)，原生操作见 [Windows I-02 手册](windows-i02.md)。G-01 推荐方案 [尚待主线程确认](plans/i02-late-delivery-proposal.md)，当前不接纳新的迟到历史回执规则，不宣称整体 PASS。
+
+新增用户命令：`already_started`、`already_completed`、`reschedule`、`skip_today`、`continue`、`pause`、`correct_fact`、`resume_packet`、`archive_packet`、`switch_current`、`defer_recovery`、`return_previous`。全部经同一命令／版本／SQLite 事务入口，宿主只转发。系统期限由 Core 执行，HTTP 用户白名单不开放系统 tick／过期命令。
+
+- 改期 payload 为 `confirmed=true`、具体 epoch 秒 `start_at`，可选 `window_end`；不复制已经不适用的旧窗口。
+- 已开始、续行、包接续及切换都明确传 `duration_confirmed=true`、`duration_seconds`；切换另需 `confirmed=true`。
+- 恢复命令目标是恢复记录及其版本；使用包另传 `packet_id`。同一事务重验两侧来源，不能直接提交任意包绕过恢复上下文。
+- 更正目标是原证据，传 `result`、`content`、`reason`；原证据不修改，恢复资格从原事实与追加更正读取。
+- 快照新增 `packets`、`recoveries`、`corrections`、`decisions`、`foreground`；前台由 Core 投影，页面不另决定领域优先级。
+
+原自动命令仍可运行；新增领域用例：
+
+```bash
+python3 -m unittest discover -s tests/acceptance -p 'test_i02_lifecycle.py' -v
+```
+
+隔离开发多版本夹具示例（不是导入／正式设置）：
+
+```bash
+python3 -m agent_core seed --data-dir .i01-runs/i02-example --confirm-development-fixture --start-delay 45 --duration 600 --second-delay 90 --second-version Q --grace-seconds 30
+```
+
+`--window-seconds 0` 显式去掉窗口；`--without-duration` 去掉估时；测试可传具体时区偏移和安静区间。真实运行的本地零点由操作系统本地时区计算，测试偏移仅为确定性夹具。没有新增 Python 包或升级运行环境。
+
+Windows 脚本现在支持 `-Stage I02`、`BeforeReboot`／`AfterReboot`；运行参数和清理步骤见手册。重启必须使用同目录和同 checkpoint；旧证据不能用重建库替代。跨平台测试中的原生呈现回调仍只是替身。

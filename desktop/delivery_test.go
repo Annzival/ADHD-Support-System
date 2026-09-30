@@ -195,3 +195,31 @@ func TestFailedNativeSubmissionRetriesOnlyOriginalNegativeReceipt(t *testing.T) 
 		t.Fatal("negative receipt must retry unchanged")
 	}
 }
+
+// The real Python Core accepts this Go sample only between its own begin/receipt
+// readings. This exercises a shared OS counter, not two private monotonic epochs.
+func TestDeliveryElapsedClockAcrossRealBridge(t *testing.T) {
+	b := deliveryCore(t)
+	p := newDeliveryPump(b, func(delivery) bool { return true })
+	p.step(deliverySnapshot(t, b))
+	status, raw, err := b.request("GET", "/v1/state", nil)
+	if err != nil || status != 200 {
+		t.Fatal("state unavailable")
+	}
+	var state struct {
+		Reports []struct {
+			Elapsed *elapsedReading `json:"elapsed"`
+		} `json:"device_reports"`
+	}
+	if err := json.Unmarshal(raw, &state); err != nil {
+		t.Fatal(err)
+	}
+	if len(state.Reports) != 1 || state.Reports[0].Elapsed == nil {
+		t.Fatalf("Core did not validate host counter: %s", raw)
+	}
+	sample := readElapsed()
+	prior := state.Reports[0].Elapsed
+	if sample == nil || sample.Clock != prior.Clock || sample.Frequency != prior.Frequency || sample.Ticks < prior.Ticks {
+		t.Fatal("counter incompatible or reversed")
+	}
+}

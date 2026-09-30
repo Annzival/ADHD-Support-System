@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from agent_core.core import Core, Rejected
+from delivery_fixture import bind, prepare, receipt
 
 
 class DeliveryRecovery(unittest.TestCase):
@@ -16,10 +17,10 @@ class DeliveryRecovery(unittest.TestCase):
             now[0] = 1010
             core.tick(desktop_online=True)
             core.tick(desktop_online=True)
-            core.command('delivery_claim', 'delivery:arrangement-a', 1, {}, 'claim')
-            core.command('delivery_receipt', 'delivery:arrangement-a', 2, {'delivered': True}, 'receipt')
+            payload = prepare(core)
+            core.command('delivery_receipt', 'delivery:arrangement-a', 2, payload, 'receipt')
             before = core.snapshot()
-            core.command('delivery_receipt', 'delivery:arrangement-a', 2, {'delivered': True}, 'receipt')
+            core.command('delivery_receipt', 'delivery:arrangement-a', 2, payload, 'receipt')
             self.assertEqual(core.snapshot(), before)
             self.assertEqual(len(before['interventions']), 1)
             self.assertEqual(len(before['deliveries']), 1)
@@ -39,10 +40,13 @@ class DeliveryRecovery(unittest.TestCase):
                 core.recover()
                 core.tick(desktop_online=True)
                 state = core.snapshot()
-                self.assertEqual(len(state['deliveries']), 1)
+                self.assertEqual(len([d for d in state['deliveries'] if d['target_kind'] == 'interventions']), 1)
                 self.assertEqual(state['deliveries'][0]['status'], 'expired')
                 self.assertEqual(state['actions'][0]['status'], 'pending')
                 self.assertEqual(state['evidence'], [])
+                recovery_delivery = next(d for d in state['deliveries'] if d['target_kind'] == 'recoveries')
+                self.assertEqual(recovery_delivery['status'], 'pending')
+                receipt(core, recovery_delivery['id'], 'recovery-receipt')
                 before = core.snapshot()
                 core.recover()
                 self.assertEqual(core.snapshot(), before)
@@ -62,5 +66,5 @@ class DeliveryRecovery(unittest.TestCase):
             with self.assertRaises(Rejected):
                 core.command('start', 'intervention:arrangement-a', 1, {}, 'late-start')
             with self.assertRaises(Rejected):
-                core.command('delivery_claim', 'delivery:arrangement-a', 1, {}, 'late-delivery')
+                core.command('delivery_claim', 'delivery:arrangement-a', 1, bind(core), 'late-delivery')
             self.assertEqual(core.snapshot(), before)

@@ -1,8 +1,15 @@
 package main
 
-import "encoding/json"
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"time"
+)
 
 type delivery struct {
+	Strength      string `json:"strength"`
 	ID            string `json:"id"`
 	Version       int    `json:"version"`
 	Target        string `json:"target"`
@@ -12,98 +19,157 @@ type delivery struct {
 }
 
 type deliveryAttempt struct {
-	original  delivery
-	presented bool
-	delivered bool
-	done      bool
+	original   delivery
+	permission json.RawMessage
+	call       string
+	receipt    []byte
+	presented  bool
+	done       bool
 }
 
-// Volatile transport work for one Core connection epoch, not domain state.
-// Keep exact commands across WebSocket reconnects; never adopt an orphan claim.
+// Transport memory belongs to this process and Core connection. It is never
+// persisted or transferred into a replacement host's identity.
 type deliveryPump struct {
 	bridge   *bridge
 	present  func(delivery) bool
 	attempts map[string]*deliveryAttempt
+	binding  json.RawMessage
+	now      func() float64
+}
+
+var hostRun = randomIdentity()
+
+func randomIdentity() string {
+	var value [32]byte
+	if _, err := rand.Read(value[:]); err != nil {
+		panic("OS random source unavailable")
+	}
+	return hex.EncodeToString(value[:])
 }
 
 func newDeliveryPump(b *bridge, present func(delivery) bool) *deliveryPump {
-	return &deliveryPump{bridge: b, present: present, attempts: map[string]*deliveryAttempt{}}
+	return &deliveryPump{bridge: b, present: present, attempts: map[string]*deliveryAttempt{},
+		now: func() float64 { return float64(time.Now().UnixNano()) / 1e9 }}
 }
-func (p *deliveryPump) command(kind string, d delivery, version int, payload any) (success, terminal bool) {
-	prefix := "claim:"
-	if kind == "delivery_receipt" {
-		prefix = "receipt:"
+
+func (p *deliveryPump) bind() bool {
+	if p.binding != nil {
+		return true
 	}
+	raw, _ := json.Marshal(map[string]any{"host_run": hostRun, "pid": os.Getpid()})
+	status, challenge, err := p.bridge.request("POST", "/v1/host/challenge", raw)
+	if err != nil || status != 200 {
+		return false
+	}
+	if !hostChallengeMatches(challenge) {
+		return false
+	}
+	// Only this original process answers a fresh challenge created after OpenProcess.
+	status, binding, err := p.bridge.request("POST", "/v1/host/confirm", challenge)
+	if err != nil || status != 200 {
+		return false
+	}
+	p.binding = binding
+	return true
+}
+
+func hostChallengeMatches(challenge []byte) bool {
+	var identity struct {
+		Host string `json:"host_run"`
+		PID  int    `json:"pid"`
+	}
+	return json.Unmarshal(challenge, &identity) == nil && identity.Host == hostRun && identity.PID == os.Getpid()
+}
+
+func deliveryCommand(kind string, d delivery, version int, payload any) []byte {
+	prefix := map[string]string{"delivery_claim": "claim:", "delivery_begin": "begin:", "delivery_receipt": "receipt:"}[kind]
 	raw, _ := json.Marshal(map[string]any{"kind": kind, "target": d.ID, "version": version, "payload": payload, "command_id": prefix + d.ID})
-	status, _, err := p.bridge.request("POST", "/v1/commands", raw)
+	return raw
+}
+
+func (p *deliveryPump) send(raw []byte) (bool, bool, []byte) {
+	status, result, err := p.bridge.request("POST", "/v1/commands", raw)
+	if err != nil {
+		return false, false, nil
+	}
+	return status == 200, status == 200 || status == 400 || status == 409, result
+}
+
+func (p *deliveryPump) valid(d delivery) (bool, bool) {
+	raw, _ := json.Marshal(map[string]any{"kind": d.TargetKind, "id": d.Target, "version": d.TargetVersion})
+	status, result, err := p.bridge.request("POST", "/v1/context", raw)
 	if err != nil {
 		return false, false
 	}
-	return status == 200, status == 200 || status == 400 || status == 409
+	if status == 400 || status == 409 {
+		return false, true
+	}
+	var context struct {
+		Valid bool `json:"valid"`
+		State struct {
+			Deliveries []delivery `json:"deliveries"`
+		} `json:"state"`
+	}
+	if status != 200 || json.Unmarshal(result, &context) != nil {
+		return false, false
+	}
+	for _, current := range context.State.Deliveries {
+		if current.ID == d.ID && current.Status == "claimed" && context.Valid {
+			return true, false
+		}
+	}
+	return false, true
 }
+
 func (p *deliveryPump) step(deliveries []delivery) {
-	seen := map[string]bool{}
 	for _, current := range deliveries {
-		seen[current.ID] = true
-		a := p.attempts[current.ID]
-		if a == nil {
-			if current.Status != "pending" {
-				continue
-			}
-			a = &deliveryAttempt{original: current}
-			p.attempts[current.ID] = a
+		if p.attempts[current.ID] == nil && current.Status == "pending" {
+			p.attempts[current.ID] = &deliveryAttempt{original: current, call: randomIdentity()}
 		}
+	}
+	for _, a := range p.attempts {
 		if a.done {
-			continue
-		}
-		// A changed/expired context must never regain a presentation through replay.
-		if current.Status != "pending" && current.Status != "claimed" && !(a.presented && (current.Status == "delivered" || current.Status == "failed")) {
-			a.done = true
 			continue
 		}
 		d := a.original
 		if !a.presented {
-			success, terminal := p.command("delivery_claim", d, d.Version, map[string]any{})
+			if !p.bind() {
+				continue
+			}
+			if a.permission == nil {
+				success, terminal, result := p.send(deliveryCommand("delivery_claim", d, d.Version, p.binding))
+				if !success {
+					a.done = terminal
+					continue
+				}
+				a.permission = append(json.RawMessage(nil), result...)
+			}
+			// A replayed grant is not fresh permission to present cancelled work.
+			valid, terminal := p.valid(d)
+			if !valid {
+				a.done = terminal
+				continue
+			}
+			success, terminal, _ := p.send(deliveryCommand("delivery_begin", d, d.Version+1, map[string]any{"permission": a.permission, "call": a.call}))
 			if !success {
 				a.done = terminal
 				continue
 			}
-			// The saved result can outlive its context. Re-read current authority before
-			// native presentation, especially after a lost claim response.
-			contextBody, _ := json.Marshal(map[string]any{"kind": d.TargetKind, "id": d.Target, "version": d.TargetVersion})
-			status, raw, err := p.bridge.request("POST", "/v1/context", contextBody)
-			if err == nil && (status == 400 || status == 409) {
-				a.done = true
+			valid, terminal = p.valid(d)
+			if !valid {
+				a.done = terminal
 				continue
 			}
-			var latest struct {
-				Valid bool `json:"valid"`
-				State struct {
-					Deliveries []delivery `json:"deliveries"`
-				} `json:"state"`
-			}
-			if err != nil || status != 200 || json.Unmarshal(raw, &latest) != nil {
-				continue
-			}
-			valid := false
-			for _, now := range latest.State.Deliveries {
-				if now.ID == d.ID && now.Status == "claimed" {
-					valid = true
-				}
-			}
-			if !valid || !latest.Valid {
-				a.done = true
-				continue
-			}
-			a.delivered = p.present(d)
+			delivered := p.present(d)
+			elapsed := readElapsed()
+			returned := p.now()
 			a.presented = true
+			a.receipt = deliveryCommand("delivery_receipt", d, d.Version+1, map[string]any{
+				"permission": a.permission, "call": a.call, "source": "api_return", "delivered": delivered, "api_return_at": returned, "elapsed": elapsed})
 		}
-		_, terminal := p.command("delivery_receipt", d, d.Version+1, map[string]any{"delivered": a.delivered})
+		// Cancellation stops new calls, not retries of the already returned result.
+		// Keep the exact bytes even when the snapshot no longer contains the attempt.
+		_, terminal, _ := p.send(a.receipt)
 		a.done = terminal
-	}
-	for id := range p.attempts {
-		if !seen[id] {
-			delete(p.attempts, id)
-		}
 	}
 }

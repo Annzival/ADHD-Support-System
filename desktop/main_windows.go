@@ -48,13 +48,13 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	h.app = application.New(application.Options{
-		Name: "ADHD Support System · I-01 开发验收", Description: "首个确定性执行闭环（隔离开发数据）",
+		Name: "ADHD Support System · I-02 开发验收", Description: "首个确定性执行闭环（隔离开发数据）",
 		Assets:         application.AssetOptions{Handler: application.BundledAssetFileServer(assets), DisableLogging: true, Middleware: h.middleware},
 		Services:       []application.Service{application.NewService(h.notifications)},
 		Windows:        application.WindowsOptions{DisableQuitOnLastWindowClosed: true, WebviewBrowserPath: *runtime},
 		SingleInstance: &application.SingleInstanceOptions{UniqueID: "a7ccfd38-3e0c-4bf0-82c1-93a7cb73ab71", OnSecondInstanceLaunch: func(application.SecondInstanceData) { h.mainWindow.Show().Focus() }},
 	})
-	h.mainWindow = h.app.Window.NewWithOptions(application.WebviewWindowOptions{Name: "main", Title: "执行支持 · I-01 开发验收", Width: 780, Height: 680, URL: "/"})
+	h.mainWindow = h.app.Window.NewWithOptions(application.WebviewWindowOptions{Name: "main", Title: "执行支持 · I-02 开发验收", Width: 780, Height: 680, URL: "/"})
 	h.overlay = h.app.Window.NewWithOptions(application.WebviewWindowOptions{Name: "overlay", Title: "当前行动 · 开发验收", Width: 430, Height: 580, AlwaysOnTop: true, Hidden: true, URL: "/?surface=overlay"})
 	for _, window := range []*application.WebviewWindow{h.mainWindow, h.overlay} {
 		w := window
@@ -65,10 +65,16 @@ func main() {
 	}
 	tray := h.app.SystemTray.New()
 	tray.SetIcon(icons.SystrayLight)
-	tray.SetTooltip("执行支持 · I-01 开发验收")
+	tray.SetTooltip("执行支持 · I-02 开发验收")
 	menu := h.app.NewMenu()
 	menu.Add("显示主窗口").OnClick(func(*application.Context) { h.mainWindow.Show().Focus() })
 	menu.Add("显示当前行动").OnClick(func(*application.Context) { h.overlay.Show().Focus() })
+	menu.Add("启用本用户登录时启动").OnClick(func(*application.Context) {
+		h.configureAutostart(true)
+	})
+	menu.Add("关闭本用户登录时启动").OnClick(func(*application.Context) {
+		h.configureAutostart(false)
+	})
 	menu.Add("退出开发验收").OnClick(func(*application.Context) { h.app.Quit() })
 	tray.SetMenu(menu)
 	h.notifications.OnNotificationResponse(func(result notifications.NotificationResult) {
@@ -107,6 +113,11 @@ func (h *desktopHost) middleware(next http.Handler) http.Handler {
 				defer h.mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
 				_ = json.NewEncoder(w).Encode(h.notice)
+				return
+			}
+			if r.URL.Path == "/ui/open" && r.Method == "POST" {
+				h.mainWindow.Show().Focus()
+				w.WriteHeader(204)
 				return
 			}
 			if r.URL.Path == "/ui/hide" && r.Method == "POST" {
@@ -178,11 +189,29 @@ func (h *desktopHost) watch(ctx context.Context, material endpoint) {
 		if notificationErr == nil {
 			notificationErr = h.notifications.SendNotificationWithActions(notifications.NotificationOptions{ID: d.ID, Title: "执行支持 · 开发验收", Body: "约定的行动或检查时间已到。可在应用中查看并选择。", CategoryID: category.ID, Data: contextData})
 		}
-		h.overlay.Show().Focus()
+		if d.Strength != "weak" && d.TargetKind != "recoveries" {
+			h.overlay.Show().Focus()
+		}
 		// Successful native notification submission is the transport receipt, not proof of presence.
 		delivered := notificationErr == nil
 		h.record("presentation_requested", map[string]any{"context_id": d.Target, "notification_submitted": delivered})
 		return delivered
 	})
 	watchDeliveries(ctx, material, pump)
+}
+
+func (h *desktopHost) configureAutostart(enabled bool) {
+	err := setAutostart(enabled)
+	message := "已关闭登录时启动。"
+	if enabled {
+		message = "已启用本用户登录时启动。"
+	}
+	if err != nil {
+		message = "未能保存登录启动设置，请保留当前状态稍后重试。"
+	}
+	h.mu.Lock()
+	h.notice = map[string]any{"message": message}
+	h.mu.Unlock()
+	h.record("autostart_configured", map[string]any{"enabled": enabled, "success": err == nil})
+	h.mainWindow.Show().Focus()
 }

@@ -1,0 +1,191 @@
+{
+  "status": "BLOCKED",
+  "scope": "I02 pre-implementation evidence checkpoint; not I02 PASS",
+  "production_source_commit": "afd6eaaef23840a8a64be11391dab6b5c3a8810c",
+  "environment": {
+    "os": "Linux",
+    "architecture": "x86_64",
+    "python": "3.12.3",
+    "python_bits": 64,
+    "sqlite": "3.45.1",
+    "go": "go version go1.25.0 linux/amd64",
+    "node": "v24.19.0",
+    "playwright": "1.58.2",
+    "browser": "Chrome for Testing 151.0.7922.34 (Linux)"
+  },
+  "sources_sha256": {
+    "agent_core/core.py": "2ed12e7ae598b5ba0b77984a7b5660e7520556193bd9ee5eee796ccee01d4b7c",
+    "agent_core/transport.py": "572ebad512594dcff7e5beef2c22cdd9e0e57c385b9f5a043f012ebb4efa0ad6",
+    "desktop/delivery.go": "51a1920edd225ad21c926181cbee551ad5c7842b33dc87e3e87b968e573bf73b",
+    "desktop/delivery_test.go": "53aa2a9c1305889b90a3e06bcfb534b60975a88135e73e5b816c8b1078e11b8d",
+    "desktop/i02_delivery_probe_test.go": "fcbac55ab7f5be5ff781ca7f90eb89d5bace5827c31a37f32384511e592e4c58",
+    "desktop/go.mod": "d6026dd4ca71d61e451ad06681d362145c1ccb78fca241cbefb9d7b05f3f5771",
+    "desktop/go.sum": "02a021aee61ca02b6b0eb27882d386e3c7d10187f6c35304648f1a22e8ce7871",
+    "desktop/package-lock.json": "84fc5ae777361a07019ff6dea536655e16ccc0f3305d3c94086c450931503cf2"
+  },
+  "observations": [
+    {
+      "case": "receipt_before_response",
+      "native_submission": "synthetic_success",
+      "presentations": 1,
+      "delivery_status": "delivered",
+      "delivery_version": 3,
+      "delivery_target_version": 1,
+      "delivered_at": 100,
+      "late_receipt_http_status": 200,
+      "late_receipt_error": "",
+      "old_user_context_http_status": 409,
+      "session_count": 1,
+      "session_status": "executing",
+      "checkpoint_count": 1,
+      "checkpoint_due_at": 160,
+      "checkpoint_references_session": true,
+      "schedule_statuses": [
+        "fired",
+        "scheduled"
+      ],
+      "evidence_count": 0,
+      "event_facts": [
+        "development_fixture_confirmed",
+        "start_intervention_created",
+        "delivery_claimed",
+        "delivery_result_recorded",
+        "execution_session_started"
+      ],
+      "pump_receipt_requests_before_manual_retry": null,
+      "semantic_acceptance": "UNDECIDED_G01"
+    },
+    {
+      "case": "response_inside_presentation",
+      "native_submission": "synthetic_success",
+      "presentations": 1,
+      "delivery_status": "cancelled",
+      "delivery_version": 3,
+      "delivery_target_version": 1,
+      "delivered_at": null,
+      "late_receipt_http_status": 409,
+      "late_receipt_error": "stale_context",
+      "old_user_context_http_status": 409,
+      "session_count": 1,
+      "session_status": "executing",
+      "checkpoint_count": 1,
+      "checkpoint_due_at": 160,
+      "checkpoint_references_session": true,
+      "schedule_statuses": [
+        "fired",
+        "scheduled"
+      ],
+      "evidence_count": 0,
+      "event_facts": [
+        "development_fixture_confirmed",
+        "start_intervention_created",
+        "delivery_claimed",
+        "execution_session_started"
+      ],
+      "pump_receipt_requests_before_manual_retry": null,
+      "semantic_acceptance": "UNDECIDED_G01"
+    },
+    {
+      "case": "receipt_request_lost_then_response",
+      "native_submission": "synthetic_success",
+      "presentations": 1,
+      "delivery_status": "cancelled",
+      "delivery_version": 3,
+      "delivery_target_version": 1,
+      "delivered_at": null,
+      "late_receipt_http_status": 409,
+      "late_receipt_error": "stale_context",
+      "old_user_context_http_status": 409,
+      "session_count": 1,
+      "session_status": "executing",
+      "checkpoint_count": 1,
+      "checkpoint_due_at": 160,
+      "checkpoint_references_session": true,
+      "schedule_statuses": [
+        "fired",
+        "scheduled"
+      ],
+      "evidence_count": 0,
+      "event_facts": [
+        "development_fixture_confirmed",
+        "start_intervention_created",
+        "delivery_claimed",
+        "execution_session_started"
+      ],
+      "pump_receipt_requests_before_manual_retry": 1,
+      "semantic_acceptance": "UNDECIDED_G01"
+    },
+    {
+      "case": "receipt_committed_response_lost_then_response",
+      "native_submission": "synthetic_success",
+      "presentations": 1,
+      "delivery_status": "delivered",
+      "delivery_version": 3,
+      "delivery_target_version": 1,
+      "delivered_at": 100,
+      "late_receipt_http_status": 200,
+      "late_receipt_error": "",
+      "old_user_context_http_status": 409,
+      "session_count": 1,
+      "session_status": "executing",
+      "checkpoint_count": 1,
+      "checkpoint_due_at": 160,
+      "checkpoint_references_session": true,
+      "schedule_statuses": [
+        "fired",
+        "scheduled"
+      ],
+      "evidence_count": 0,
+      "event_facts": [
+        "development_fixture_confirmed",
+        "start_intervention_created",
+        "delivery_claimed",
+        "delivery_result_recorded",
+        "execution_session_started"
+      ],
+      "pump_receipt_requests_before_manual_retry": 2,
+      "semantic_acceptance": "UNDECIDED_G01"
+    }
+  ],
+  "checks": {
+    "python": {
+      "result": "PASS",
+      "test_methods": 17
+    },
+    "go_race": {
+      "result": "PASS",
+      "original_test_entries": 7,
+      "diagnostic_entries": 1,
+      "diagnostic_branches": 4
+    },
+    "go_vet": {
+      "result": "PASS"
+    },
+    "frontend_first_attempt": {
+      "result": "NOT_RUN_BROWSER_DEPENDENCY_PATH",
+      "reason": "LD_LIBRARY_PATH omitted extracted directory"
+    },
+    "frontend_corrected_path": {
+      "result": "PASS",
+      "tests": 6
+    },
+    "windows": {
+      "result": "NOT_RUN"
+    },
+    "i02_functional_acceptance": {
+      "result": "BLOCKED"
+    }
+  },
+  "raw_output_sha256": {
+    "frontend-corrected-path.txt": "3aa5e36033d5c37320ee5586ab784e9e2f2a38009b2731df2bff6baf57e6e32c",
+    "frontend.txt": "e619df091311652fbf407c6f06d3f3599a0f06792b552f78ee4e0065fc544139",
+    "go-race.txt": "566e51d8bdcf40418254d42e0e260d748fb84ea58086a7a11dbd3b4e707fca99",
+    "go-vet-final.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "go-vet.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "interleaving-final.txt": "1f16c6a0bcd0d02b6b821475bf00db7ff3362d2bbd2374e5c576f00b21edabf2",
+    "interleaving.txt": "82d5dc6dd310e086e3ec273d6b4ee9af59b94b01ee480cbc1a33b3fa7016c2ef",
+    "python.txt": "871344bc19244d624374a28b398d72d6f23977adf3684340fa00fec303ce9c80"
+  },
+  "raw_storage": "local checkout .scratch/i02-checks; controlled, excluded from Git; retain until task review",
+  "interpretation": "Native callback is synthetic. Diagnostic harness success is not semantic acceptance. No product code or ADR changed."
+}

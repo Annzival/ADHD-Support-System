@@ -75,7 +75,7 @@ class Atomicity(unittest.TestCase):
             before = core.snapshot()
             with self.assertRaises(Rejected):
                 core.command(*args[:4], 'old-notification')
-            for kind in ('pause', 'continue', 'reschedule', 'already_completed'):
+            for kind in ('plan_import', 'model_suggestion', 'historical_backfill'):
                 with self.assertRaisesRegex(Rejected, 'operation_not_available'):
                     core.command(kind, args[1], 1, {}, kind)
             self.assertEqual(core.snapshot(), before)
